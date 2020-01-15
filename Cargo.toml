@@ -1,0 +1,8 @@
+[package]
+name = "core-os-riscv"
+version = "0.1.0"
+authors = ["Alex Chi <iskyzh@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+riscv = "0.5.4"
