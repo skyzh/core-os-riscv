@@ -52,18 +52,6 @@ extern "C" fn kinit() -> usize {
 
 	println!("mhartid {}", mhartid::read());
 
-	/*
-	let ptr = alloc::ALLOC.lock().allocate(64 * 4096);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	let ptr2 = alloc::ALLOC.lock().allocate(1);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	alloc::ALLOC.lock().deallocate(ptr);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	alloc::ALLOC.lock().deallocate(ptr2);
-	alloc::ALLOC.lock().debug();
-	*/
 	use constant::*;
 	unsafe {
 		println!("TEXT:   0x{:x} -> 0x{:x}", TEXT_START, TEXT_END);
@@ -114,20 +102,6 @@ extern "C" fn kinit() -> usize {
 		EntryAttributes::RW as usize,
 		0,
 	);
-	pgtable.map(
-		UART_BASE_ADDR + 0x1000,
-		UART_BASE_ADDR,
-		EntryAttributes::RW as usize,
-		0,
-	);
-	unsafe {
-		pgtable.map(
-			UART_BASE_ADDR + 0x10000,
-			KERNEL_STACK_START,
-			EntryAttributes::RW as usize,
-			0,
-		);
-	}
 	pgtable.walk();
 	pgtable.id_map_range(
 		unsafe { HEAP_START },
@@ -145,24 +119,19 @@ extern "C" fn kinit() -> usize {
 extern "C" fn kmain() -> usize {
 	use uart::*;
 	use constant::*;
-	println!("{:X}", satp::read().bits());
 	println!("Now in supervisor mode!");
 	println!("Try writing to UART...");
-	let mut a = Uart::new(UART_BASE_ADDR);
-	a.put(97);
-	let mut b = Uart::new(UART_BASE_ADDR + 0x1000);
-	b.put(98);
-	unsafe {
-		core::ptr::write_volatile(KERNEL_STACK_START as *mut u8, 233);
-		core::ptr::write_volatile((UART_BASE_ADDR as *mut u8).add(0x10000), 234);
-		println!(
-			"{}",
-			core::ptr::read_volatile(KERNEL_STACK_START as *mut u8)
-		);
-		println!(
-			"{}",
-			core::ptr::read_volatile((UART_BASE_ADDR as *mut u8).add(0x10000))
-		);
-	}
-	loop {}
+	
+	let ptr = alloc::ALLOC.lock().allocate(64 * 4096);
+	let ptr = alloc::ALLOC.lock().allocate(1);
+	let ptr2 = alloc::ALLOC.lock().allocate(1);
+	let ptr = alloc::ALLOC.lock().allocate(1);
+	alloc::ALLOC.lock().deallocate(ptr);
+	let ptr = alloc::ALLOC.lock().allocate(1);
+	let ptr = alloc::ALLOC.lock().allocate(1);
+	let ptr = alloc::ALLOC.lock().allocate(1);
+	alloc::ALLOC.lock().deallocate(ptr2);
+	
+	alloc::ALLOC.lock().debug();
+	loop { unsafe { asm::wfi(); } }
 }
