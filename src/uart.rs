@@ -110,3 +110,11 @@ impl Uart {
 		}
 	}
 }
+
+use lazy_static::lazy_static;
+use crate::nulllock::Mutex;
+const UART_BASE_ADDR : usize = 0x1000_0000;
+
+lazy_static! {
+    pub static ref UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR));
+}

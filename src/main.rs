@@ -14,6 +14,7 @@ mod memory;
 mod alloc;
 mod nulllock;
 mod print;
+mod uart;
 
 use riscv::{register::*, asm};
 
@@ -92,13 +93,11 @@ fn kmain() {
 	// The UART is sitting at MMIO address 0x1000_0000, so for testing
 	// now, lets connect to it and see if we can initialize it and write
 	// to it.
-	let mut my_uart = uart::Uart::new(0x1000_0000);
-
-	my_uart.init();
+	uart::UART.lock().init();
 
 	// Now test println! macro!
-	println!("This is my operating system!");
-	println!("I'm so awesome. If you start typing something, I'll show you what you typed!");
+	println!("mhartid {}", mhartid::read());
+
 	let ptr = alloc::ALLOCATOR.lock().allocate(64 * 4096);
 	let ptr = alloc::ALLOCATOR.lock().allocate(1);
 	let ptr2 = alloc::ALLOCATOR.lock().allocate(1);
@@ -110,9 +109,3 @@ fn kmain() {
 	alloc::ALLOCATOR.lock().deallocate(ptr2);
 	alloc::ALLOCATOR.lock().debug();
 }
-
-// ///////////////////////////////////
-// / RUST MODULES
-// ///////////////////////////////////
-
-pub mod uart;

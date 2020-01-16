@@ -3,7 +3,7 @@ use core::fmt;
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
 	use core::fmt::Write;
-	let mut uart = crate::uart::Uart::new(0x1000_0000);
+	let mut uart = crate::uart::UART.lock();
 	uart.write_fmt(args).unwrap();
 }
 

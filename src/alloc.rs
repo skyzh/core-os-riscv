@@ -82,6 +82,9 @@ impl Allocator {
             } else {
                 j += 1;
             }
+            if j == MAX_PAGE {
+                break;
+            }
         }
     }
 }
