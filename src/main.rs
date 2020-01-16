@@ -2,13 +2,18 @@
 #![no_main]
 #![feature(panic_info_message,asm)]
 #![feature(global_asm)]
+#![feature(format_args_nl)]
 
-global_asm!(include_str!("trap.S"));
-global_asm!(include_str!("boot.S"));
+global_asm!(include_str!("asm/trap.S"));
+global_asm!(include_str!("asm/boot.S"));
+global_asm!(include_str!("asm/ld_symbols.S"));
 
 mod init;
 mod link;
 mod memory;
+mod alloc;
+mod nulllock;
+mod print;
 
 use riscv::{register::*, asm};
 
@@ -25,48 +30,21 @@ pub unsafe extern "C" fn start() -> ! {
     }
 	mtvec::write(asm_trap_vector as *const () as usize, mtvec::TrapMode::Vectored);
 	*/
-	asm!("li		t0, (0b11 << 11) | (1 << 7) | (1 << 3)");
+	asm!("li t0, (0b11 << 11) | (1 << 7) | (1 << 3)");
 	asm!("csrw	mstatus, t0");
-	asm!("la		t1, kmain");
+	asm!("la t1, kmain");
 	asm!("csrw	mepc, t1");
-	asm!("la		t2, asm_trap_vector");
+	asm!("la t2, asm_trap_vector");
 	asm!("csrw	mtvec, t2");
-	asm!("li		t3, (1 << 3) | (1 << 7) | (1 << 11)");
+	asm!("li t3, (1 << 3) | (1 << 7) | (1 << 11)");
 	asm!("csrw	mie, t3");
 	asm!("mret");
+	// TODO: specify return addr
 	loop {
 		asm::wfi();
 	}
 }
 
-// ///////////////////////////////////
-// / RUST MACROS
-// ///////////////////////////////////
-#[macro_export]
-macro_rules! print
-{
-	($($args:tt)+) => ({
-			use core::fmt::Write;
-			let _ = write!(crate::uart::Uart::new(0x1000_0000), $($args)+);
-			});
-}
-#[macro_export]
-macro_rules! println
-{
-	() => ({
-		   print!("\r\n")
-		   });
-	($fmt:expr) => ({
-			print!(concat!($fmt, "\r\n"))
-			});
-	($fmt:expr, $($args:tt)+) => ({
-			print!(concat!($fmt, "\r\n"), $($args)+)
-			});
-}
-
-// ///////////////////////////////////
-// / LANGUAGE STRUCTURES / FUNCTIONS
-// ///////////////////////////////////
 #[no_mangle]
 extern "C" fn eh_personality() {}
 
@@ -121,60 +99,7 @@ fn kmain() {
 	// Now test println! macro!
 	println!("This is my operating system!");
 	println!("I'm so awesome. If you start typing something, I'll show you what you typed!");
-
-	// Now see if we can read stuff:
-	// Usually we can use #[test] modules in Rust, but it would convolute the
-	// task at hand. So, we'll just add testing snippets.
-	loop {
-		if let Some(c) = my_uart.get() {
-			match c {
-				8 => {
-					// This is a backspace, so we essentially have
-					// to write a space and backup again:
-					print!("{}{}{}", 8 as char, ' ', 8 as char);
-				},
-				  10 | 13 => {
-					  // Newline or carriage-return
-					  println!();
-				  },
-				  0x1b => {
-					  // Those familiar with ANSI escape sequences
-					  // knows that this is one of them. The next
-					  // thing we should get is the left bracket [
-					  // These are multi-byte sequences, so we can take
-					  // a chance and get from UART ourselves.
-					  // Later, we'll button this up.
-					  if let Some(next_byte) = my_uart.get() {
-						  if next_byte == 91 {
-							  // This is a right bracket! We're on our way!
-							  if let Some(b) = my_uart.get() {
-								  match b as char {
-									  'A' => {
-										  println!("That's the up arrow!");
-									  },
-									  'B' => {
-										  println!("That's the down arrow!");
-									  },
-									  'C' => {
-										  println!("That's the right arrow!");
-									  },
-									  'D' => {
-										  println!("That's the left arrow!");
-									  },
-									  _ => {
-										  println!("That's something else.....");
-									  }
-								  }
-							  }
-						  }
-					  }
-				  },
-				  _ => {
-					  print!("{}", c as char);
-				  }
-			}
-		}
-	}
+	
 }
 
 // ///////////////////////////////////

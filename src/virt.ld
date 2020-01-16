@@ -17,15 +17,15 @@ PHDRS
 SECTIONS
 {
   .text : {
-    PROVIDE(_text_start = .);
+    PROVIDE(__text_start = .);
     *(.text.init) *(.text .text.*)
-    PROVIDE(_text_end = .);
+    PROVIDE(__text_end = .);
   } >ram AT>ram :text
-   PROVIDE(_global_pointer = .);
+   PROVIDE(__global_pointer = .);
   .rodata : {
-    PROVIDE(_rodata_start = .);
+    PROVIDE(__rodata_start = .);
     *(.rodata .rodata.*)
-    PROVIDE(_rodata_end = .);
+    PROVIDE(__rodata_end = .);
   } >ram AT>ram :text
 
   .data : {
