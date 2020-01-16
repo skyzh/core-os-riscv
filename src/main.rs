@@ -20,34 +20,6 @@ mod uart;
 use riscv::{asm, register::*};
 
 #[no_mangle]
-pub unsafe extern "C" fn start() -> ! {
-	memory::zero_volatile(constant::bss_range());
-	/*
-	mstatus::set_fs(mstatus::FS::Dirty);
-	mstatus::set_mpp(mstatus::MPP::Supervisor);
-	mstatus::set_spp(mstatus::SPP::Supervisor);
-	mepc::write(kmain as *const () as usize);
-	extern "C" {
-		static asm_trap_vector: usize;
-	}
-	mtvec::write(asm_trap_vector as *const () as usize, mtvec::TrapMode::Vectored);
-	*/
-	asm!("li t0, (0b11 << 11) | (1 << 7) | (1 << 3)");
-	asm!("csrw	mstatus, t0");
-	asm!("la t1, kmain");
-	asm!("csrw	mepc, t1");
-	asm!("la t2, asm_trap_vector");
-	asm!("csrw	mtvec, t2");
-	asm!("li t3, (1 << 3) | (1 << 7) | (1 << 11)");
-	asm!("csrw	mie, t3");
-	asm!("mret");
-	// TODO: specify return addr
-	loop {
-		asm::wfi();
-	}
-}
-
-#[no_mangle]
 extern "C" fn eh_personality() {}
 
 #[panic_handler]
@@ -74,7 +46,8 @@ extern "C" fn abort() -> ! {
 	}
 }
 #[no_mangle]
-extern "C" fn kmain() {
+extern "C" fn kinit() -> usize {
+	// memory::zero_volatile(constant::bss_range());
 	uart::UART.lock().init();
 
 	println!("mhartid {}", mhartid::read());
@@ -108,7 +81,7 @@ extern "C" fn kmain() {
 		);
 	}
 	use mmu::EntryAttributes;
-	use mmu::{KERNEL_PGTABLE, Table};
+	use mmu::{Table, KERNEL_PGTABLE};
 	let mut pgtable = KERNEL_PGTABLE.lock();
 	pgtable.id_map_range(
 		unsafe { TEXT_START },
@@ -135,19 +108,61 @@ extern "C" fn kmain() {
 		unsafe { KERNEL_STACK_END },
 		EntryAttributes::RW as usize,
 	);
+	pgtable.map(
+		UART_BASE_ADDR,
+		UART_BASE_ADDR,
+		EntryAttributes::RW as usize,
+		0,
+	);
+	pgtable.map(
+		UART_BASE_ADDR + 0x1000,
+		UART_BASE_ADDR,
+		EntryAttributes::RW as usize,
+		0,
+	);
+	unsafe {
+		pgtable.map(
+			UART_BASE_ADDR + 0x10000,
+			KERNEL_STACK_START,
+			EntryAttributes::RW as usize,
+			0,
+		);
+	}
 	pgtable.walk();
 	pgtable.id_map_range(
 		unsafe { HEAP_START },
 		unsafe { HEAP_START + HEAP_SIZE },
 		EntryAttributes::RW as usize,
 	);
+	use uart::*;
 	/* TODO: use Rust primitives */
 	let root_ppn = (&mut *pgtable as *mut Table as usize) >> 12;
 	let satp_val = 8 << 60 | root_ppn;
+	satp_val
+}
+
+#[no_mangle]
+extern "C" fn kmain() -> usize {
+	use uart::*;
+	use constant::*;
+	println!("{:X}", satp::read().bits());
+	println!("Now in supervisor mode!");
+	println!("Try writing to UART...");
+	let mut a = Uart::new(UART_BASE_ADDR);
+	a.put(97);
+	let mut b = Uart::new(UART_BASE_ADDR + 0x1000);
+	b.put(98);
 	unsafe {
-		asm!("csrw satp, $0" :: "r"(satp_val));
-		asm!("sfence.vma");
+		core::ptr::write_volatile(KERNEL_STACK_START as *mut u8, 233);
+		core::ptr::write_volatile((UART_BASE_ADDR as *mut u8).add(0x10000), 234);
+		println!(
+			"{}",
+			core::ptr::read_volatile(KERNEL_STACK_START as *mut u8)
+		);
+		println!(
+			"{}",
+			core::ptr::read_volatile((UART_BASE_ADDR as *mut u8).add(0x10000))
+		);
 	}
-	println!("MMU intialized!");
 	loop {}
 }
