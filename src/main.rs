@@ -10,6 +10,34 @@ mod init;
 mod link;
 mod memory;
 
+use riscv::{register::*, asm};
+
+#[no_mangle]
+pub unsafe extern "C" fn start() -> ! { 
+	memory::zero_volatile(link::bss_range());
+	/*
+	mstatus::set_fs(mstatus::FS::Dirty);
+	mstatus::set_mpp(mstatus::MPP::Supervisor);
+	mstatus::set_spp(mstatus::SPP::Supervisor);
+	mepc::write(kmain as *const () as usize);
+	extern "C" {
+        static asm_trap_vector: usize;
+    }
+	mtvec::write(asm_trap_vector as *const () as usize, mtvec::TrapMode::Vectored);
+	*/
+	asm!("li		t0, (0b11 << 11) | (1 << 7) | (1 << 3)");
+	asm!("csrw	mstatus, t0");
+	asm!("la		t1, kmain");
+	asm!("csrw	mepc, t1");
+	asm!("la		t2, asm_trap_vector");
+	asm!("csrw	mtvec, t2");
+	asm!("li		t3, (1 << 3) | (1 << 7) | (1 << 11)");
+	asm!("csrw	mie, t3");
+	asm!("mret");
+	loop {
+		asm::wfi();
+	}
+}
 
 // ///////////////////////////////////
 // / RUST MACROS
