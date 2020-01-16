@@ -4,7 +4,7 @@
 #![feature(global_asm)]
 
 mod boot;
-mod runtime_init;
+mod init;
 mod link;
 mod memory;
 
@@ -29,8 +29,4 @@ fn kmain() {
 	// Main should initialize all sub-systems and get
 	// ready to start scheduling. The last thing this
 	// should do is start the timer.
-}
-
-pub fn kernel_init() {
-	loop {}
 }

@@ -5,7 +5,7 @@ use riscv::{asm, register::*};
 #[no_mangle]
 pub unsafe extern "C" fn start() -> ! {
     if mhartid::read() == 0 {
-        crate::runtime_init::runtime_init();
+        crate::init::runtime_init();
     }
     loop {
         asm::wfi();
