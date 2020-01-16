@@ -1,13 +1,10 @@
+pub use crate::constant::*;
+
 pub const MAX_PAGE: usize = 128 * 1024 * 1024 / (1 << 12);
 
 pub struct Allocator {
     pub base_addr: usize,
     pub page_allocated: [usize;MAX_PAGE]
-}
-
-extern "C" {
-    static HEAP_START: usize;
-    static HEAP_SIZE: usize;
 }
 
 pub const PAGE_SIZE: usize = 1 << 12;
@@ -93,7 +90,7 @@ use lazy_static::lazy_static;
 use crate::nulllock::Mutex;
 
 lazy_static! {
-    pub static ref ALLOCATOR: Mutex<Allocator> = Mutex::new(Allocator::new());
+    pub static ref ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new());
 }
 
 pub fn test() {

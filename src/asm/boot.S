@@ -9,7 +9,7 @@ _start:
 	# need to wait for an IPI
 	csrr	t0, mhartid
 	bnez	t0, 3f
-	la		sp, __stack
+	la		sp, __stack_end
 	# SATP should be zero, but let's make sure
 	csrw	satp, zero
 	call    start
