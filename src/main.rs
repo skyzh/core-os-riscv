@@ -99,7 +99,16 @@ fn kmain() {
 	// Now test println! macro!
 	println!("This is my operating system!");
 	println!("I'm so awesome. If you start typing something, I'll show you what you typed!");
-	
+	let ptr = alloc::ALLOCATOR.lock().allocate(64 * 4096);
+	let ptr = alloc::ALLOCATOR.lock().allocate(1);
+	let ptr2 = alloc::ALLOCATOR.lock().allocate(1);
+	let ptr = alloc::ALLOCATOR.lock().allocate(1);
+	alloc::ALLOCATOR.lock().deallocate(ptr);
+	let ptr = alloc::ALLOCATOR.lock().allocate(1);
+	let ptr = alloc::ALLOCATOR.lock().allocate(1);
+	let ptr = alloc::ALLOCATOR.lock().allocate(1);
+	alloc::ALLOCATOR.lock().deallocate(ptr2);
+	alloc::ALLOCATOR.lock().debug();
 }
 
 // ///////////////////////////////////
