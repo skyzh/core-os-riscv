@@ -1,3 +1,8 @@
+// Copyright (c) 2020 Alex Chi
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 .section .rodata
 .global HEAP_START
 HEAP_START: .dword __heap_start

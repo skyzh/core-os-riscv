@@ -1,3 +1,8 @@
+// Copyright (c) 2020 Alex Chi
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 pub use crate::constant::*;
 
 pub const MAX_PAGE: usize = 128 * 1024 * 1024 / (1 << 12);
