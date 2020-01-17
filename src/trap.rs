@@ -37,6 +37,7 @@ extern "C" fn m_trap(
                 println!("Machine software interrupt CPU#{}", hart);
             }
             7 => unsafe {
+                println!("Timer interrupt interrupt CPU#{}", hart);
                 // Machine timer
                 let mtimecmp = 0x0200_4000 as *mut u64;
                 let mtime = 0x0200_bff8 as *const u64;
