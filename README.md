@@ -4,6 +4,12 @@ An operating system in Rust.
 
 This project is based on "The Adventures of OS: Making a RISC-V Operating System using Rust". In un-modified files, original licenses are preserved.
 
+## Build Instructions
+
+```bash
+make qemu
+```
+
 ## Roadmap
 
 The main goal of this project is to make a xv6-like operating system with the Rust programming language. And now it's in a very early stage. I'm still working on it.
@@ -13,8 +19,10 @@ The main goal of this project is to make a xv6-like operating system with the Ru
 - [x] Virtual Memory
 - [x] Load ELF files from memory
 - [ ] Process (Currently WIP)
+- [ ] Allocator and stdlib
 - [ ] System call
 - [ ] Persistence
+- [ ] Documentation
 - [ ] High-level abstractions (driver, vm, etc.)
 - [ ] Adapt to aarch64 and deploy on Raspi
 - [ ] Rewrite code from other sources
