@@ -2,9 +2,23 @@
 
 An operating system in Rust.
 
-This project is based on "The Adventures of OS: Making a RISC-V Operating System using Rust". Original license is preserved in files not modified by this project.
+This project is based on "The Adventures of OS: Making a RISC-V Operating System using Rust". In un-modified files, original licenses are preserved.
 
-## Progress
+## Roadmap
+
+The main goal of this project is to make a xv6-like operating system with the Rust programming language. And now it's in a very early stage. I'm still working on it.
+
+- [x] Adapt code from http://osblog.stephenmarz.com/
+- [x] UART drivers
+- [x] Virtual Memory
+- [x] Load ELF files from memory
+- [ ] Process (Currently WIP)
+- [ ] System call
+- [ ] Persistence
+- [ ] High-level abstractions (driver, vm, etc.)
+- [ ] Adapt to aarch64 and deploy on Raspi
+- [ ] Rewrite code from other sources
+- [ ] Security issues
 
 ## Reference
 
@@ -15,3 +29,5 @@ This project is based on "The Adventures of OS: Making a RISC-V Operating System
 [3] https://os.phil-opp.com/
 
 [4] http://osblog.stephenmarz.com/
+
+[5] https://github.com/mit-pdos/xv6-riscv/
