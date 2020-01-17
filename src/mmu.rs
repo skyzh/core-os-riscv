@@ -175,6 +175,18 @@ impl Table {
             memaddr += 1 << 12;
         }
     }
+
+    pub fn map_range(&mut self, start: usize, end: usize, vaddr_start: usize, bits: usize) {
+        let mut memaddr = start & !(alloc::PAGE_SIZE - 1);
+        let mut vaddr_start = vaddr_start & !(alloc::PAGE_SIZE - 1);
+        let num_kb_pages = (alloc::align_val(end, 12) - memaddr) / alloc::PAGE_SIZE;
+
+        for _ in 0..num_kb_pages {
+            self.map(vaddr_start, memaddr, bits, 0);
+            memaddr += 1 << 12;
+            vaddr_start += 1 << 12;
+        }
+    }
 }
 
 lazy_static! {

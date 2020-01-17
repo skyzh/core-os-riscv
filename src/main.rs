@@ -8,6 +8,7 @@
 #![feature(panic_info_message, asm)]
 #![feature(global_asm)]
 #![feature(format_args_nl)]
+#![feature(const_generics)]
 
 global_asm!(include_str!("asm/trap.S"));
 global_asm!(include_str!("asm/boot.S"));
@@ -17,6 +18,7 @@ mod alloc;
 mod arch;
 mod constant;
 mod cpu;
+mod elf;
 mod memory;
 mod mmu;
 mod nulllock;
@@ -188,18 +190,23 @@ pub fn wait_forever() -> ! {
 	}
 }
 
+static USER_PROGRAM: &'static [u8; 9104] = include_bytes!("../target/riscv64gc-unknown-none-elf/release/loop");
+
 #[no_mangle]
 extern "C" fn kmain() -> ! {
 	use constant::*;
 	use uart::*;
 	info!("Now in supervisor mode");
+	/*
 	unsafe {
 		let mtimecmp = 0x0200_4000 as *mut u64;
 		let mtime = 0x0200_bff8 as *const u64;
 		// The frequency given by QEMU is 10_000_000 Hz, so this sets
 		// the next interrupt to fire one second from now.
 		mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
-	}
+	}*/
+	info!("entering user program...");
+	elf::run_elf(USER_PROGRAM);
 	wait_forever();
 }
 

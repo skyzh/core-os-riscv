@@ -17,12 +17,14 @@ PHDRS
 SECTIONS
 {
   .text : {
+    . = ALIGN(4096);
     PROVIDE(__text_start = .);
     *(.text.init) *(.text .text.*)
     PROVIDE(__text_end = .);
   } >ram AT>ram :text
    PROVIDE(__global_pointer = .);
   .rodata : {
+    . = ALIGN(4096);
     PROVIDE(__rodata_start = .);
     *(.rodata .rodata.*)
     PROVIDE(__rodata_end = .);
