@@ -79,6 +79,7 @@ extern "C" fn m_trap(
             }
             // Page faults
             12 => {
+                loop {}
                 // Instruction page fault
                 println!(
                     "Instruction page fault CPU#{} -> 0x{:08x}: 0x{:08x}",

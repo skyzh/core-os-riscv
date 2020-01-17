@@ -1,6 +1,7 @@
 use crate::alloc;
 use crate::mmu;
 use crate::{info, print, println};
+use crate::cpu::TrapFrame;
 
 #[repr(C)]
 pub struct ELFHeader {
@@ -39,6 +40,10 @@ const ELF_PROG_FLAG_WRITE: u32 = 2;
 const ELF_PROG_FLAG_READ: u32 = 4;
 const ELF_MAGIC: u32 = 0x464C457F;
 
+extern "C" {
+    fn userret(tf: &mut TrapFrame, table: &mut mmu::Table) -> !;
+}
+
 pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
     /* TODO: Use something safer */
     // peek head of byte array to get ELF information
@@ -71,7 +76,6 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
             println!("{:X}", hdr.vaddr);
             panic!("bad elf: vaddr align")
         }
-        info!("mapping segment...");
         load_segment(
             &mut pagetable,
             hdr.vaddr as usize,
@@ -79,8 +83,15 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
             hdr.off as usize,
             hdr.filesz as usize,
         );
+        info!("map segment ELF 0x{:X}~0x{:X} -> MEM 0x{:X}", hdr.off, hdr.off + hdr.filesz, hdr.vaddr);
     }
     info!("elf loaded");
+    let mut tf = TrapFrame::zero();
+    pagetable.walk();
+    let root_ppn = &mut pagetable as *mut mmu::Table as usize;
+    let satp_val = crate::cpu::build_satp(8, 0, root_ppn);
+    unsafe { asm!("csrw satp, $0" :: "r"(satp_val)); }
+    unsafe { userret(&mut tf, &mut pagetable); }
 }
 
 fn load_segment<const N: usize>(
@@ -99,5 +110,7 @@ fn load_segment<const N: usize>(
             let src = src.add(offset + i * alloc::PAGE_SIZE);
             core::ptr::copy(src, seg, alloc::PAGE_SIZE);
         }
+        use mmu::EntryAttributes;
+        pagetable.map(vaddr + i * alloc::PAGE_SIZE, seg as usize, EntryAttributes::RX as usize, 0);
     }
 }

@@ -13,6 +13,7 @@
 global_asm!(include_str!("asm/trap.S"));
 global_asm!(include_str!("asm/boot.S"));
 global_asm!(include_str!("asm/symbols.S"));
+global_asm!(include_str!("asm/trampoline.S"));
 
 mod alloc;
 mod arch;
@@ -154,10 +155,6 @@ extern "C" fn kinit() {
 			asm!("csrw satp, $0" :: "r"(satp_val));
 			asm!("sfence.vma zero, zero");
 		}
-	}
-	unsafe {
-		let rval: usize;
-		asm!("csrr $0, satp" :"=r"(rval));
 	}
 	info!("Page table set up, switching to supervisor mode");
 }
