@@ -10,11 +10,13 @@ global_asm!(include_str!("asm/ld_symbols.S"));
 
 mod alloc;
 mod constant;
+mod cpu;
 mod init;
 mod memory;
 mod mmu;
 mod nulllock;
 mod print;
+mod trap;
 mod uart;
 
 use riscv::{asm, register::*};
@@ -46,7 +48,7 @@ extern "C" fn abort() -> ! {
 	}
 }
 #[no_mangle]
-extern "C" fn kinit() -> usize {
+extern "C" fn kinit() {
 	// memory::zero_volatile(constant::bss_range());
 	uart::UART.lock().init();
 
@@ -108,20 +110,62 @@ extern "C" fn kinit() -> usize {
 		unsafe { HEAP_START + HEAP_SIZE },
 		EntryAttributes::RW as usize,
 	);
+	// CLINT
+	//  -> MSIP
+	pgtable.id_map_range(0x0200_0000, 0x0200_ffff, EntryAttributes::RW as usize);
+	// PLIC
+	pgtable.id_map_range(0x0c00_0000, 0x0c00_2000, EntryAttributes::RW as usize);
+	pgtable.id_map_range(0x0c20_0000, 0x0c20_8000, EntryAttributes::RW as usize);
 	use uart::*;
 	/* TODO: use Rust primitives */
-	let root_ppn = (&mut *pgtable as *mut Table as usize) >> 12;
-	let satp_val = 8 << 60 | root_ppn;
-	satp_val
+	unsafe {
+		let root_ppn = &mut *pgtable as *mut Table as usize;
+		let satp_val = cpu::build_satp(8, 0, root_ppn);
+		mscratch::write(&mut cpu::KERNEL_TRAP_FRAME[0] as *mut cpu::TrapFrame as usize);
+		sscratch::write(mscratch::read());
+		cpu::KERNEL_TRAP_FRAME[0].satp = satp_val;
+		let stack_addr = alloc::ALLOC.lock().allocate(1);
+		cpu::KERNEL_TRAP_FRAME[0].trap_stack = stack_addr.add(alloc::PAGE_SIZE);
+		pgtable.id_map_range(
+			stack_addr as usize,
+			unsafe { stack_addr.add(alloc::PAGE_SIZE) } as usize,
+			EntryAttributes::RW as usize,
+		);
+
+		use cpu::TrapFrame;
+		let _sz = core::mem::size_of::<TrapFrame>();
+		pgtable.id_map_range(
+			mscratch::read(),
+			mscratch::read() + _sz,
+			EntryAttributes::RW as usize,
+		);
+		unsafe {
+			asm!("csrw satp, $0" :: "r"(satp_val));
+			asm!("sfence.vma zero, zero");
+		}
+	}
+	unsafe {
+		let rval: usize;
+		asm!("csrr $0, satp" :"=r"(rval));
+		println!("{:X}", rval);
+	}
 }
 
 #[no_mangle]
 extern "C" fn kmain() -> usize {
-	use uart::*;
 	use constant::*;
+	use uart::*;
 	println!("Now in supervisor mode!");
 	println!("Try writing to UART...");
-	
+	println!("Hello!");
+	loop {
+		unsafe {
+			asm::wfi();
+		}
+	}
+}
+
+pub fn test_alloc() {
 	let ptr = alloc::ALLOC.lock().allocate(64 * 4096);
 	let ptr = alloc::ALLOC.lock().allocate(1);
 	let ptr2 = alloc::ALLOC.lock().allocate(1);
@@ -131,7 +175,5 @@ extern "C" fn kmain() -> usize {
 	let ptr = alloc::ALLOC.lock().allocate(1);
 	let ptr = alloc::ALLOC.lock().allocate(1);
 	alloc::ALLOC.lock().deallocate(ptr2);
-	
 	alloc::ALLOC.lock().debug();
-	loop { unsafe { asm::wfi(); } }
 }
