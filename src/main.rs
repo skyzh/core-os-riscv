@@ -6,12 +6,12 @@
 
 global_asm!(include_str!("asm/trap.S"));
 global_asm!(include_str!("asm/boot.S"));
-global_asm!(include_str!("asm/ld_symbols.S"));
+global_asm!(include_str!("asm/symbols.S"));
 
 mod alloc;
+mod arch;
 mod constant;
 mod cpu;
-mod init;
 mod memory;
 mod mmu;
 mod nulllock;
@@ -51,10 +51,13 @@ extern "C" fn abort() -> ! {
 extern "C" fn kinit() {
 	// memory::zero_volatile(constant::bss_range());
 	uart::UART.lock().init();
-
-	println!("mhartid {}", mhartid::read());
+	info!("Booting core-os...");
+	info!("Drivers:");
+	info!("  UART intialized");
+	info!("Booting on hart {}", mhartid::read());
 
 	use constant::*;
+	/*
 	unsafe {
 		println!("TEXT:   0x{:x} -> 0x{:x}", TEXT_START, TEXT_END);
 		println!("RODATA: 0x{:x} -> 0x{:x}", RODATA_START, RODATA_END);
@@ -70,6 +73,7 @@ extern "C" fn kinit() {
 			HEAP_START + HEAP_SIZE
 		);
 	}
+	*/
 	use mmu::EntryAttributes;
 	use mmu::{Table, KERNEL_PGTABLE};
 	let mut pgtable = KERNEL_PGTABLE.lock();
@@ -147,34 +151,51 @@ extern "C" fn kinit() {
 	unsafe {
 		let rval: usize;
 		asm!("csrr $0, satp" :"=r"(rval));
-		println!("{:X}", rval);
+	}
+	info!("Page table set up, switching to supervisor mode");
+}
+
+#[no_mangle]
+extern "C" fn kinit_hart(hartid: usize) {
+	// All non-0 harts initialize here.
+	unsafe {
+		// We have to store the kernel's table. The tables will be moved
+		// back and forth between the kernel's table and user
+		// applicatons' tables.
+		mscratch::write(&mut cpu::KERNEL_TRAP_FRAME[hartid] as *mut cpu::TrapFrame as usize);
+		// Copy the same mscratch over to the supervisor version of the
+		// same register.
+		sscratch::write(mscratch::read());
+		cpu::KERNEL_TRAP_FRAME[hartid].hartid = hartid;
+		// We can't do the following until zalloc() is locked, but we
+		// don't have locks, yet :( cpu::KERNEL_TRAP_FRAME[hartid].satp
+		// = cpu::KERNEL_TRAP_FRAME[0].satp;
+		// cpu::KERNEL_TRAP_FRAME[hartid].trap_stack = page::zalloc(1);
+	}
+	// info!("{} initialized", hartid);
+}
+
+pub fn wait_forever() -> ! {
+	loop {
+		unsafe {
+			asm::wfi();
+		}
 	}
 }
 
 #[no_mangle]
-extern "C" fn kmain() -> usize {
+extern "C" fn kmain() -> ! {
 	use constant::*;
 	use uart::*;
-	println!("Now in supervisor mode!");
-	println!("Try writing to UART...");
-	println!("Hello!");
+	info!("Now in supervisor mode");
 	unsafe {
-		// Set the next machine timer to fire.
 		let mtimecmp = 0x0200_4000 as *mut u64;
 		let mtime = 0x0200_bff8 as *const u64;
 		// The frequency given by QEMU is 10_000_000 Hz, so this sets
 		// the next interrupt to fire one second from now.
-		mtimecmp.write_volatile(mtime.read_volatile() + 100000);
-	
-		// Let's cause a page fault and see what happens. This should trap
-		// to m_trap under trap.rs
-		let v = 0x0 as *mut u64;
-		v.write_volatile(0);
+		mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
 	}
-	loop {
-		unsafe {
-		}
-	}
+	wait_forever();
 }
 
 pub fn test_alloc() {
