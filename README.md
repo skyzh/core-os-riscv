@@ -2,7 +2,7 @@
 
 An operating system in Rust.
 
-This project is based on "The Adventures of OS: Making a RISC-V Operating System using Rust". In un-modified files, original licenses are preserved.
+This project is based on "The Adventures of OS: Making a RISC-V Operating System using Rust". In files not modified by this project, original licenses are preserved.
 
 ## Build Instructions
 

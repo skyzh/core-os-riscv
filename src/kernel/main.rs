@@ -122,7 +122,6 @@ extern "C" fn kinit() {
 		page::EntryAttributes::RX as usize,
 		0
 	);
-	pgtable.walk();
 	pgtable.id_map_range(
 		unsafe { HEAP_START },
 		unsafe { HEAP_START + HEAP_SIZE },
@@ -182,7 +181,7 @@ pub fn wait_forever() -> ! {
 	}
 }
 
-static USER_PROGRAM: &'static [u8; 9104] = include_bytes!("../target/riscv64gc-unknown-none-elf/release/loop");
+static USER_PROGRAM: &'static [u8; 9104] = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/loop");
 
 #[no_mangle]
 extern "C" fn kmain() -> ! {

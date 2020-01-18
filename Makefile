@@ -1,8 +1,8 @@
-LINKER_SCRIPT=-Tsrc/kernel.ld
+LINKER_SCRIPT=-Tsrc/kernel/kernel.ld
 RUSTFLAGS=-C link-arg=$(LINKER_SCRIPT)
 TARGET=riscv64gc-unknown-none-elf
 TYPE=release
-CARGO_OUTPUT=./target/$(TARGET)/$(TYPE)/core-os-riscv
+CARGO_OUTPUT=./target/$(TARGET)/$(TYPE)/kernel
 OUTPUT=kernel.img
 OBJCOPY_CMD = cargo objcopy \
 		-- \
@@ -35,9 +35,6 @@ qemudbg: $(CARGO_OUTPUT) $(QEMU_DRIVE)
 
 objdump: $(CARGO_OUTPUT)
 	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $(CARGO_OUTPUT)
-
-objdumpuser: $(CARGO_OUTPUT)
-	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex ./target/$(TARGET)/$(TYPE)/loop
 
 .PHONY: clean
 clean:
