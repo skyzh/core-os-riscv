@@ -48,7 +48,7 @@ const ELF_MAGIC: u32 = 0x464C457F;
 
 fn trampoline(tf: usize, satp_val: usize) {
     let fn_addr = unsafe { TRAMPOLINE_START as *const () };
-    let fn_addr: extern "C" fn(usize, usize) = unsafe { core::mem::transmute(fn_addr) };
+    let fn_addr: extern "C" fn(usize, usize) -> usize = unsafe { core::mem::transmute(fn_addr) };
     (fn_addr)(tf, satp_val);
 }
 
@@ -110,7 +110,7 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
     // map trapframe
     pgtable.map(
         TRAPFRAME_START,
-        &mut tf as *mut TrapFrame as usize,
+        &tf as *const _ as usize,
         page::EntryAttributes::RW as usize,
         0,
     );
@@ -125,7 +125,7 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
     );
     pgtable.walk();
 
-    tf.epc = 0x80000000;
+    tf.epc = 0x0000000080000000;
 
     unsafe {
         stvec::write(
@@ -142,12 +142,11 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
         asm!("csrw sstatus, zero");
     }
     sepc::write(tf.epc);
-    tf.regs[3] = stack_begin; // sp
+    tf.regs[2] = stack_begin + 0x1000; // sp
 
     use riscv::register::*;
     let root_ppn = &mut pgtable as *mut page::Table as usize;
     let satp_val = crate::cpu::build_satp(8, 0, root_ppn);
-
     println!("jumping to trampoline...");
     trampoline(TRAPFRAME_START, satp_val);
 }

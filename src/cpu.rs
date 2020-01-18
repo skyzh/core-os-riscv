@@ -5,6 +5,7 @@
 
 #[repr(C)]
 #[derive(Clone, Copy)]
+#[repr(align(4096))]
 pub struct TrapFrame {
     pub regs: [usize; 32],   // 0 - 255
     pub fregs: [usize; 32],  // 256 - 511

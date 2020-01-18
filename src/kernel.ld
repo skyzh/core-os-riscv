@@ -19,7 +19,7 @@ SECTIONS
   .text : {
     . = ALIGN(4096);
     PROVIDE(__text_start = .);
-    *(.text.init) *(.text .text.*)
+    *(.text.init *.text._start) *(.text .text.*)
     . = ALIGN(4096);
     PROVIDE(__trampoline_start = .);
     *(trampsec)
