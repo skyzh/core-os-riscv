@@ -18,7 +18,9 @@ The main goal of this project is to make a xv6-like operating system with the Ru
 - [x] UART drivers
 - [x] Virtual Memory
 - [x] Load ELF files from memory
-- [ ] Process (Currently WIP)
+- [ ] Process (Currently WIP, I fail to jump into user mode, maybe I'll implement process in supervisor mode)
+- [ ] User-mode process
+- [ ] Global Allocator
 - [ ] Allocator and stdlib
 - [ ] Multi-core support
 - [ ] System call

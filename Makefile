@@ -30,11 +30,14 @@ $(QEMU_DRIVE):
 qemu: $(CARGO_OUTPUT) $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM)  -nographic -serial mon:stdio -bios none -kernel $(CARGO_OUTPUT) -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo
 	
-qemuasm: $(CARGO_OUTPUT) $(QEMU_DRIVE)
-	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM)  -nographic -serial mon:stdio -bios none -kernel $(CARGO_OUTPUT) -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo -d in_asm
+qemudbg: $(CARGO_OUTPUT) $(QEMU_DRIVE)
+	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM)  -nographic -serial mon:stdio -bios none -kernel $(CARGO_OUTPUT) -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo -d int
 
 objdump: $(CARGO_OUTPUT)
 	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $(CARGO_OUTPUT)
+
+objdumpuser: $(CARGO_OUTPUT)
+	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex ./target/$(TARGET)/$(TYPE)/loop
 
 .PHONY: clean
 clean:

@@ -97,7 +97,9 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
 		unsafe { TRAMPOLINE_START },
 		page::EntryAttributes::RX as usize,
 		0
-	);
+    );
+    let seg = alloc::ALLOC.lock().allocate(alloc::PAGE_SIZE);
+    pgtable.map(0x80001000, seg as usize, page::EntryAttributes::RW as usize, 0);
     pgtable.walk();
     println!("jumping to trampoline...");
     let root_ppn = &mut pgtable as *mut page::Table as usize;
