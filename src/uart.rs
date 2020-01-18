@@ -1,5 +1,7 @@
-// uart.rs
-// UART routines and driver
+// Copyright (c) 2020 Alex Chi
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
 
 use core::convert::TryInto;
 use core::fmt::Write;
@@ -91,6 +93,11 @@ impl Uart {
 
 	pub fn put(&mut self, c: u8) {
 		let ptr = self.base_address as *mut u8;
+		loop {
+			if unsafe { ptr.add(4).read_volatile() } & 1 == 0 {
+				break;
+			}
+		}
 		unsafe {
 			ptr.add(0).write_volatile(c);
 		}
