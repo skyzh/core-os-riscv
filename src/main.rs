@@ -117,11 +117,12 @@ extern "C" fn kinit() {
 		0,
 	);
 	pgtable.map(
-		trampoline_start(),
-		unsafe { TRAMPOLINE_START },
+		TRAMPOLINE_START,
+		unsafe { TRAMPOLINE_TEXT_START },
 		page::EntryAttributes::RX as usize,
 		0
 	);
+	pgtable.walk();
 	pgtable.id_map_range(
 		unsafe { HEAP_START },
 		unsafe { HEAP_START + HEAP_SIZE },
@@ -139,21 +140,13 @@ extern "C" fn kinit() {
 		let root_ppn = &mut *pgtable as *mut Table as usize;
 		let satp_val = cpu::build_satp(8, 0, root_ppn);
 		mscratch::write(&mut cpu::KERNEL_TRAP_FRAME[0] as *mut cpu::TrapFrame as usize);
-		sscratch::write(mscratch::read());
 		cpu::KERNEL_TRAP_FRAME[0].satp = satp_val;
 		let stack_addr = alloc::ALLOC.lock().allocate(1);
-		cpu::KERNEL_TRAP_FRAME[0].trap_stack = stack_addr.add(alloc::PAGE_SIZE);
+		cpu::KERNEL_TRAP_FRAME[0].sp = stack_addr.add(alloc::PAGE_SIZE);
+		cpu::KERNEL_TRAP_FRAME[0].hartid = 0;
 		pgtable.id_map_range(
 			stack_addr as usize,
-			unsafe { stack_addr.add(alloc::PAGE_SIZE) } as usize,
-			EntryAttributes::RW as usize,
-		);
-
-		use cpu::TrapFrame;
-		let _sz = core::mem::size_of::<TrapFrame>();
-		pgtable.id_map_range(
-			mscratch::read(),
-			mscratch::read() + _sz,
+			stack_addr.add(alloc::PAGE_SIZE) as usize,
 			EntryAttributes::RW as usize,
 		);
 		unsafe {
@@ -172,9 +165,6 @@ extern "C" fn kinit_hart(hartid: usize) {
 		// back and forth between the kernel's table and user
 		// applicatons' tables.
 		mscratch::write(&mut cpu::KERNEL_TRAP_FRAME[hartid] as *mut cpu::TrapFrame as usize);
-		// Copy the same mscratch over to the supervisor version of the
-		// same register.
-		sscratch::write(mscratch::read());
 		cpu::KERNEL_TRAP_FRAME[hartid].hartid = hartid;
 		// We can't do the following until zalloc() is locked, but we
 		// don't have locks, yet :( cpu::KERNEL_TRAP_FRAME[hartid].satp

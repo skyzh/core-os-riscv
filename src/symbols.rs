@@ -18,15 +18,14 @@ extern "C" {
     pub static BSS_END: usize;
     pub static KERNEL_STACK_START: usize;
     pub static KERNEL_STACK_END: usize;
-    pub static TRAMPOLINE_START: usize;
+    pub static TRAMPOLINE_TEXT_START: usize;
+    pub fn uservec();
 }
 
 pub const PAGE_SIZE: usize = 1 << 12;
 pub const MAXVA: usize =  (1 << (9 + 9 + 9 + 12 - 1));
-
-pub const fn trampoline_start() -> usize {
-    MAXVA - PAGE_SIZE
-}
+pub const TRAMPOLINE_START : usize = MAXVA - PAGE_SIZE;
+pub const TRAPFRAME_START:usize = TRAMPOLINE_START - PAGE_SIZE;
 
 pub unsafe fn bss_range() -> Range<*mut usize> {
     extern "C" {

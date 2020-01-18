@@ -111,3 +111,7 @@ extern "C" fn m_trap(
     // Finally, return the updated program counter
     return_pc
 }
+
+pub extern "C" fn usertrap() {
+
+}

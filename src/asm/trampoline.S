@@ -1,19 +1,27 @@
 .section trampsec
+trampoline:
 .globl userret
 userret:
-        # userret(TRAPFRAME, pagetable)
-        # switch from kernel to user.
-        # usertrapret() calls here.
-        # a0: TRAPFRAME, in user page table.
-        # a1: user page table, for satp.
+	# userret(TRAPFRAME, pagetable)
+	# switch from kernel to user.
+	# usertrapret() calls here.
+	# a0: TRAPFRAME, in user page table.
+	# a1: user page table, for satp.
+	csrw    satp, a1
+	sfence.vma zero, zero
 
-        # switch to the user page table.
-        csrw    satp, a1
-        sfence.vma zero, zero
-        li t0, 0x80000000
-        csrw sepc, t0
-        li sp, 0x80002000
-        sret
+	# restore all user registers
+	mv t6, a0
+	.set 	i, 1
+	.rept	31
+		load_gp	%i
+		.set	i, i+1
+	.endr
+
+	sret
+
+.globl uservec
+uservec:
 1:
-        wfi
-        j 1b
+	wfi
+	j 1b

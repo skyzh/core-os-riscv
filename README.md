@@ -12,15 +12,15 @@ make qemu
 
 ## Roadmap
 
-The main goal of this project is to make a xv6-like operating system with the Rust programming language. And now it's in a very early stage. I'm still working on it.
+The main goal of this project is to make an xv6-like operating system with the Rust programming language. And now it's in a very early stage. I'm still working on it.
 
 - [x] Adapt code from http://osblog.stephenmarz.com/
 - [x] UART drivers
 - [x] Virtual Memory
 - [x] Load ELF files from memory
-- [ ] Process (Currently WIP, I fail to jump into user mode, maybe I'll implement process in supervisor mode)
-- [ ] User-mode process
-- [ ] Global Allocator
+- [x] Switch to User-mode
+- [ ] Process
+- [ ] Kernel Allocator
 - [ ] Allocator and stdlib
 - [ ] Multi-core support
 - [ ] System call
@@ -42,3 +42,5 @@ The main goal of this project is to make a xv6-like operating system with the Ru
 [4] http://osblog.stephenmarz.com/
 
 [5] https://github.com/mit-pdos/xv6-riscv/
+
+[6] https://pdos.csail.mit.edu/6.828/2012/labs

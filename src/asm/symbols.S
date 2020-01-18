@@ -28,5 +28,5 @@ BSS_END: .dword __bss_end
 KERNEL_STACK_START: .dword __stack_start
 .global KERNEL_STACK_END
 KERNEL_STACK_END: .dword __stack_end
-.global TRAMPOLINE_START
-TRAMPOLINE_START: .dword __trampoline_start
+.global TRAMPOLINE_TEXT_START
+TRAMPOLINE_TEXT_START: .dword __trampoline_start

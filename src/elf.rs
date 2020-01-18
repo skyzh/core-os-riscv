@@ -1,8 +1,13 @@
+// Copyright (c) 2020 Alex Chi
+//
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 use crate::alloc;
+use crate::cpu::{self, TrapFrame};
 use crate::page;
-use crate::{info, print, println};
-use crate::cpu::TrapFrame;
 use crate::symbols::*;
+use crate::{info, print, println};
 
 #[repr(C)]
 pub struct ELFHeader {
@@ -41,11 +46,9 @@ const ELF_PROG_FLAG_WRITE: u32 = 2;
 const ELF_PROG_FLAG_READ: u32 = 4;
 const ELF_MAGIC: u32 = 0x464C457F;
 
-fn trampoline(tf: &mut TrapFrame, satp_val: usize) {
-    let fn_addr = trampoline_start() as *const ();
-    let fn_addr : extern "C" fn(&mut TrapFrame, usize) = unsafe {
-        core::mem::transmute(fn_addr)
-    };
+fn trampoline(tf: usize, satp_val: usize) {
+    let fn_addr = unsafe { TRAMPOLINE_START as *const () };
+    let fn_addr: extern "C" fn(usize, usize) = unsafe { core::mem::transmute(fn_addr) };
     (fn_addr)(tf, satp_val);
 }
 
@@ -88,24 +91,65 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
             hdr.off as usize,
             hdr.filesz as usize,
         );
-        info!("map segment ELF 0x{:X}~0x{:X} -> MEM 0x{:X}", hdr.off, hdr.off + hdr.filesz, hdr.vaddr);
+        info!(
+            "map segment ELF 0x{:X}~0x{:X} -> MEM 0x{:X}",
+            hdr.off,
+            hdr.off + hdr.filesz,
+            hdr.vaddr
+        );
     }
     info!("elf loaded");
     let mut tf = TrapFrame::zero();
+    // map trampoline
     pgtable.map(
-		trampoline_start(),
-		unsafe { TRAMPOLINE_START },
-		page::EntryAttributes::RX as usize,
-		0
+        TRAMPOLINE_START,
+        unsafe { TRAMPOLINE_TEXT_START },
+        page::EntryAttributes::RX as usize,
+        0,
     );
+    // map trapframe
+    pgtable.map(
+        TRAPFRAME_START,
+        &mut tf as *mut TrapFrame as usize,
+        page::EntryAttributes::RW as usize,
+        0,
+    );
+    // map user stack
     let seg = alloc::ALLOC.lock().allocate(alloc::PAGE_SIZE);
-    pgtable.map(0x80001000, seg as usize, page::EntryAttributes::RW as usize, 0);
+    let stack_begin = 0x80001000;
+    pgtable.map(
+        stack_begin,
+        seg as usize,
+        page::EntryAttributes::URW as usize,
+        0,
+    );
     pgtable.walk();
-    println!("jumping to trampoline...");
+
+    tf.epc = 0x80000000;
+
+    unsafe {
+        stvec::write(
+            (uservec as usize - TRAMPOLINE_TEXT_START) + TRAMPOLINE_START,
+            stvec::TrapMode::Direct,
+        );
+    }
+    tf.satp = unsafe { cpu::KERNEL_TRAP_FRAME[0].satp };
+    tf.sp = unsafe { cpu::KERNEL_TRAP_FRAME[0].sp };
+    tf.trap = crate::trap::usertrap as usize;
+    tf.hartid = unsafe { cpu::KERNEL_TRAP_FRAME[0].hartid };
+
+    unsafe {
+        asm!("csrw sstatus, zero");
+    }
+    sepc::write(tf.epc);
+    tf.regs[3] = stack_begin; // sp
+
+    use riscv::register::*;
     let root_ppn = &mut pgtable as *mut page::Table as usize;
     let satp_val = crate::cpu::build_satp(8, 0, root_ppn);
-    trampoline(&mut tf, satp_val);
-    println!("come back.");
+
+    println!("jumping to trampoline...");
+    trampoline(TRAPFRAME_START, satp_val);
 }
 
 fn load_segment<const N: usize>(
@@ -125,7 +169,12 @@ fn load_segment<const N: usize>(
             core::ptr::copy(src, seg, alloc::PAGE_SIZE);
         }
         use page::EntryAttributes;
-        pgtable.map(vaddr + i * alloc::PAGE_SIZE, seg as usize, EntryAttributes::RX as usize, 0);
+        pgtable.map(
+            vaddr + i * alloc::PAGE_SIZE,
+            seg as usize,
+            EntryAttributes::URX as usize,
+            0,
+        );
         /*
         for i in 0..0x20 {
             unsafe { print!("{:X}", core::ptr::read(src.add(i))); }

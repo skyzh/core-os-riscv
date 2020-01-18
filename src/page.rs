@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Alex Chi
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
@@ -38,9 +38,11 @@ pub enum EntryAttributes {
     R = 1 << 1,
     V = 1 << 0,
     RW = 0b11 << 1,
-    RX = 0b101 << 1
+    RX = 0b101 << 1,
+    UR =  0b10010,
+    URW = 0b10110,
+    URX = 0b11010,
 }
-
 
 impl Entry {
     pub fn is_d(&self) -> bool {
@@ -152,7 +154,12 @@ impl Table {
                     print!(".");
                 }
                 if !v.is_leaf() {
-                    println!("{}: 0x{:X} -> 0x{:X}", i, (vpn << 9 | i) << (9 * level + 12), v.paddr().0);
+                    println!(
+                        "{}: 0x{:X} -> 0x{:X}",
+                        i,
+                        (vpn << 9 | i) << (9 * level + 12),
+                        v.paddr().0
+                    );
                     let table = v.paddr().0 as *const Table;
                     let table = unsafe { table.as_ref().unwrap() };
                     table._walk(level - 1, (vpn << 9) | i);
