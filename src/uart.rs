@@ -94,7 +94,7 @@ impl Uart {
 	pub fn put(&mut self, c: u8) {
 		let ptr = self.base_address as *mut u8;
 		loop {
-			if unsafe { ptr.add(4).read_volatile() } & 1 == 0 {
+			if unsafe { ptr.add(5).read_volatile() } & (1 << 5) != 0 {
 				break;
 			}
 		}
