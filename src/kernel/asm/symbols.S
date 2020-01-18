@@ -1,8 +1,3 @@
-// Copyright (c) 2020 Alex Chi
-// 
-// This software is released under the MIT License.
-// https://opensource.org/licenses/MIT
-
 .section .rodata
 .global HEAP_START
 HEAP_START: .dword __heap_start
@@ -25,8 +20,8 @@ BSS_START: .dword __bss_start
 .global BSS_END
 BSS_END: .dword __bss_end
 .global KERNEL_STACK_START
-KERNEL_STACK_START: .dword __stack_start
+KERNEL_STACK_START: .dword __kernel_stack_start
 .global KERNEL_STACK_END
-KERNEL_STACK_END: .dword __stack_end
+KERNEL_STACK_END: .dword __kernel_stack_end
 .global TRAMPOLINE_TEXT_START
-TRAMPOLINE_TEXT_START: .dword __trampoline_start
+TRAMPOLINE_TEXT_START: .dword __trampoline_text_start

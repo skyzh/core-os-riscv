@@ -18,6 +18,7 @@ global_asm!(include_str!("asm/trampoline.S"));
 mod alloc;
 mod arch;
 mod symbols;
+mod symbols_gen;
 mod cpu;
 mod elf;
 mod memory;

@@ -34,7 +34,7 @@ _start:
 	# csrw	mideleg, t5
 	# The stack grows from bottom to top, so we put the stack pointer
 	# to the very end of the stack range.
-	la		sp, __stack_end
+	la		sp, __kernel_stack_end
 	# Setting `mstatus` register:
 	# 0b11 << 11: Machine's previous protection mode is 3 (MPP=3).
 	li		t0, 0b11 << 11
@@ -70,7 +70,7 @@ _start:
 	# change.
 
 	# We divide up the stack so the harts aren't clobbering one another.
-	la		sp, __stack_end
+	la		sp, __kernel_stack_end
 	li		t0, 0x10000
 	csrr	a0, mhartid
 	mul		t0, t0, a0

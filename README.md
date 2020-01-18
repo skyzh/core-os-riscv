@@ -22,12 +22,13 @@ The main goal of this project is to make an xv6-like operating system with the R
 - [ ] Process
 - [ ] Kernel Allocator
 - [ ] Allocator and stdlib
-- [ ] Multi-core support
 - [ ] System call
+- [ ] Multi-core support
 - [ ] Persistence
+- [ ] Eliminate use of unsafe
 - [ ] Documentation
 - [ ] High-level abstractions (driver, vm, etc.)
-- [ ] Adapt to aarch64 and deploy on Raspi
+- [ ] Port to aarch64 and deploy on Raspi
 - [ ] Rewrite code from other sources
 - [ ] Security issues
 

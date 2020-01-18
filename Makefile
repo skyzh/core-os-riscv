@@ -18,11 +18,16 @@ QEMU_DRIVE=hdd.img
 
 all: $(CARGO_OUTPUT)
 
-$(CARGO_OUTPUT): FORCE
+$(CARGO_OUTPUT): src/kernel/asm/symbols.S src/kernel/symbols_gen.rs FORCE
 	RUSTFLAGS="$(RUSTFLAGS)" cargo xbuild --target=$(TARGET) --release
 
 # $(OUTPUT): $(CARGO_OUTPUT)
 #	$(OBJCOPY_CMD) $< ./$(OUTPUT)
+
+src/kernel/asm/symbols.S: utils/symbols.py utils/symbols.S.py
+	./utils/symbols.S.py > $@
+src/kernel/symbols_gen.rs: utils/symbols.py utils/symbols_gen.rs.py
+	./utils/symbols_gen.rs.py > $@
 
 $(QEMU_DRIVE):
 	dd if=/dev/zero of=$@ count=32 bs=1048576

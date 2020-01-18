@@ -21,7 +21,7 @@ SECTIONS
     PROVIDE(__text_start = .);
     *(.text.init *.text._start) *(.text .text.*)
     . = ALIGN(4096);
-    PROVIDE(__trampoline_start = .);
+    PROVIDE(__trampoline_text_start = .);
     *(trampsec)
     PROVIDE(__text_end = .);
   } >ram AT>ram :text
@@ -47,9 +47,9 @@ SECTIONS
   } >ram AT>ram :bss
 
   PROVIDE(__memory_start = ORIGIN(ram));
-  PROVIDE(__stack_start = __bss_end);
-  PROVIDE(__stack_end = __stack_start + 0x8000);
+  PROVIDE(__kernel_stack_start = __bss_end);
+  PROVIDE(__kernel_stack_end = __kernel_stack_start + 0x8000);
   PROVIDE(__memory_end = ORIGIN(ram) + LENGTH(ram));
-  PROVIDE(__heap_start = __stack_end);
-  PROVIDE(__heap_size = __memory_end - __stack_end);
+  PROVIDE(__heap_start = __kernel_stack_end);
+  PROVIDE(__heap_size = __memory_end - __kernel_stack_end);
 }
