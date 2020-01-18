@@ -1,4 +1,4 @@
-LINKER_SCRIPT=-Tsrc/virt.ld
+LINKER_SCRIPT=-Tsrc/kernel.ld
 RUSTFLAGS=-C link-arg=$(LINKER_SCRIPT)
 TARGET=riscv64gc-unknown-none-elf
 TYPE=release

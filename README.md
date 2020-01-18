@@ -20,6 +20,7 @@ The main goal of this project is to make a xv6-like operating system with the Ru
 - [x] Load ELF files from memory
 - [ ] Process (Currently WIP)
 - [ ] Allocator and stdlib
+- [ ] Multi-core support
 - [ ] System call
 - [ ] Persistence
 - [ ] Documentation

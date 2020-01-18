@@ -20,6 +20,9 @@ SECTIONS
     . = ALIGN(4096);
     PROVIDE(__text_start = .);
     *(.text.init) *(.text .text.*)
+    . = ALIGN(4096);
+    PROVIDE(__trampoline_start = .);
+    *(trampsec)
     PROVIDE(__text_end = .);
   } >ram AT>ram :text
    PROVIDE(__global_pointer = .);

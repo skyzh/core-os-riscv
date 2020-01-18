@@ -17,11 +17,11 @@ global_asm!(include_str!("asm/trampoline.S"));
 
 mod alloc;
 mod arch;
-mod constant;
+mod symbols;
 mod cpu;
 mod elf;
 mod memory;
-mod mmu;
+mod page;
 mod nulllock;
 mod print;
 mod trap;
@@ -57,14 +57,14 @@ extern "C" fn abort() -> ! {
 }
 #[no_mangle]
 extern "C" fn kinit() {
-	// memory::zero_volatile(constant::bss_range());
+	// memory::zero_volatile(symbols::bss_range());
 	uart::UART.lock().init();
 	info!("Booting core-os...");
 	info!("Drivers:");
 	info!("  UART intialized");
 	info!("Booting on hart {}", mhartid::read());
 
-	use constant::*;
+	use symbols::*;
 	/*
 	unsafe {
 		println!("TEXT:   0x{:x} -> 0x{:x}", TEXT_START, TEXT_END);
@@ -82,8 +82,8 @@ extern "C" fn kinit() {
 		);
 	}
 	*/
-	use mmu::EntryAttributes;
-	use mmu::{Table, KERNEL_PGTABLE};
+	use page::EntryAttributes;
+	use page::{Table, KERNEL_PGTABLE};
 	let mut pgtable = KERNEL_PGTABLE.lock();
 	pgtable.id_map_range(
 		unsafe { TEXT_START },
@@ -116,7 +116,12 @@ extern "C" fn kinit() {
 		EntryAttributes::RW as usize,
 		0,
 	);
-	// pgtable.walk();
+	pgtable.map(
+		trampoline_start(),
+		unsafe { TRAMPOLINE_START },
+		page::EntryAttributes::RX as usize,
+		0
+	);
 	pgtable.id_map_range(
 		unsafe { HEAP_START },
 		unsafe { HEAP_START + HEAP_SIZE },
@@ -191,7 +196,7 @@ static USER_PROGRAM: &'static [u8; 9104] = include_bytes!("../target/riscv64gc-u
 
 #[no_mangle]
 extern "C" fn kmain() -> ! {
-	use constant::*;
+	use symbols::*;
 	use uart::*;
 	info!("Now in supervisor mode");
 	/*

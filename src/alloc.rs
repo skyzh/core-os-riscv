@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-pub use crate::constant::*;
+pub use crate::symbols::*;
 
 pub const MAX_PAGE: usize = 128 * 1024 * 1024 / (1 << 12);
 
@@ -12,7 +12,6 @@ pub struct Allocator {
     pub page_allocated: [usize;MAX_PAGE]
 }
 
-pub const PAGE_SIZE: usize = 1 << 12;
 const PAGE_ORDER: usize = 12;
 
 pub const fn align_val(val: usize, order: usize) -> usize {

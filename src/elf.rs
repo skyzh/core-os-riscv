@@ -1,7 +1,8 @@
 use crate::alloc;
-use crate::mmu;
+use crate::page;
 use crate::{info, print, println};
 use crate::cpu::TrapFrame;
+use crate::symbols::*;
 
 #[repr(C)]
 pub struct ELFHeader {
@@ -40,14 +41,18 @@ const ELF_PROG_FLAG_WRITE: u32 = 2;
 const ELF_PROG_FLAG_READ: u32 = 4;
 const ELF_MAGIC: u32 = 0x464C457F;
 
-extern "C" {
-    fn userret(tf: &mut TrapFrame, table: &mut mmu::Table) -> !;
+fn trampoline(tf: &mut TrapFrame, satp_val: usize) {
+    let fn_addr = trampoline_start() as *const ();
+    let fn_addr : extern "C" fn(&mut TrapFrame, usize) = unsafe {
+        core::mem::transmute(fn_addr)
+    };
+    (fn_addr)(tf, satp_val);
 }
 
 pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
     /* TODO: Use something safer */
     // peek head of byte array to get ELF information
-    let mut pagetable = mmu::Table::new();
+    let mut pgtable = page::Table::new();
     let elfhdr = &unsafe { core::mem::transmute::<&[u8], &[ELFHeader]>(a) }[0];
     if elfhdr.magic != ELF_MAGIC {
         info!("wrong magic number");
@@ -77,7 +82,7 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
             panic!("bad elf: vaddr align")
         }
         load_segment(
-            &mut pagetable,
+            &mut pgtable,
             hdr.vaddr as usize,
             a,
             hdr.off as usize,
@@ -87,15 +92,22 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
     }
     info!("elf loaded");
     let mut tf = TrapFrame::zero();
-    pagetable.walk();
-    let root_ppn = &mut pagetable as *mut mmu::Table as usize;
+    pgtable.map(
+		trampoline_start(),
+		unsafe { TRAMPOLINE_START },
+		page::EntryAttributes::RX as usize,
+		0
+	);
+    pgtable.walk();
+    println!("jumping to trampoline...");
+    let root_ppn = &mut pgtable as *mut page::Table as usize;
     let satp_val = crate::cpu::build_satp(8, 0, root_ppn);
-    unsafe { asm!("csrw satp, $0" :: "r"(satp_val)); }
-    unsafe { userret(&mut tf, &mut pagetable); }
+    trampoline(&mut tf, satp_val);
+    println!("come back.");
 }
 
 fn load_segment<const N: usize>(
-    pagetable: &mut mmu::Table,
+    pgtable: &mut page::Table,
     vaddr: usize,
     elf: &'static [u8; N],
     offset: usize,
@@ -110,7 +122,12 @@ fn load_segment<const N: usize>(
             let src = src.add(offset + i * alloc::PAGE_SIZE);
             core::ptr::copy(src, seg, alloc::PAGE_SIZE);
         }
-        use mmu::EntryAttributes;
-        pagetable.map(vaddr + i * alloc::PAGE_SIZE, seg as usize, EntryAttributes::RX as usize, 0);
+        use page::EntryAttributes;
+        pgtable.map(vaddr + i * alloc::PAGE_SIZE, seg as usize, EntryAttributes::RX as usize, 0);
+        /*
+        for i in 0..0x20 {
+            unsafe { print!("{:X}", core::ptr::read(src.add(i))); }
+        }
+        println!(""); */
     }
 }
