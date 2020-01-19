@@ -27,3 +27,23 @@ pub unsafe fn bss_range() -> Range<*mut usize> {
         end: &mut __bss_end,
     }
 }
+
+use crate::println;
+
+pub fn print_map_symbols() {
+    unsafe {
+		println!("TEXT:   0x{:x} -> 0x{:x}", TEXT_START, TEXT_END);
+		println!("RODATA: 0x{:x} -> 0x{:x}", RODATA_START, RODATA_END);
+		println!("DATA:   0x{:x} -> 0x{:x}", DATA_START, DATA_END);
+		println!("BSS:    0x{:x} -> 0x{:x}", BSS_START, BSS_END);
+		println!(
+			"STACK:  0x{:x} -> 0x{:x}",
+			KERNEL_STACK_START, KERNEL_STACK_END
+		);
+		println!(
+			"HEAP:   0x{:x} -> 0x{:x}",
+			HEAP_START,
+			HEAP_START + HEAP_SIZE
+		);
+	}
+}

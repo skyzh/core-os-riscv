@@ -1,3 +1,7 @@
+TYPE=release
+RELEASE_FLAG=--release
+CFLAGS+=-O0 -g
+
 K=src/kernel
 U=src/user
 TARGET=riscv64gc-unknown-none-elf
@@ -11,10 +15,6 @@ LIB=-lkernel -lgcc
 LINKER_SCRIPT=$K/kernel.ld
 KERNEL_LIB=$(LIBS)/libkernel.rlib
 KERNEL_OUT=kernel.elf
-
-TYPE=debug
-RELEASE_FLAG=
-CFLAGS+=-O0 -g
 
 OBJCOPY_CMD = cargo objcopy \
 		-- \
