@@ -1,5 +1,10 @@
 .section trampsec
 trampoline:
+.globl uservec
+uservec:
+1:
+	wfi
+	j 1b
 .globl userret
 userret:
 	# userret(TRAPFRAME, pagetable)
@@ -19,9 +24,3 @@ userret:
 	.endr
 
 	sret
-
-.globl uservec
-uservec:
-1:
-	wfi
-	j 1b

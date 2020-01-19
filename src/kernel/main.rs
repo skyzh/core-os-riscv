@@ -182,12 +182,12 @@ pub fn wait_forever() -> ! {
 	}
 }
 
-static USER_PROGRAM: &'static [u8; 9104] = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/loop");
-
 #[no_mangle]
 extern "C" fn kmain() -> ! {
 	use symbols::*;
 	use uart::*;
+	let USER_PROGRAM = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/loop");
+
 	info!("Now in supervisor mode");
 	/*
 	unsafe {

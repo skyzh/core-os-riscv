@@ -12,6 +12,8 @@
 
 use core::{fmt, panic::PanicInfo};
 
+mod ulib;
+
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
     let mut i : u64 = 0;

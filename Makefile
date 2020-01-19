@@ -1,5 +1,5 @@
-LINKER_SCRIPT=-Tsrc/kernel/kernel.ld
-RUSTFLAGS=-C link-arg=$(LINKER_SCRIPT)
+LINKER_SCRIPT=src/kernel/kernel.ld
+RUSTFLAGS=-C link-arg=-T$(LINKER_SCRIPT)
 TARGET=riscv64gc-unknown-none-elf
 TYPE=release
 CARGO_OUTPUT=./target/$(TARGET)/$(TYPE)/kernel
@@ -18,7 +18,8 @@ QEMU_DRIVE=hdd.img
 
 all: $(CARGO_OUTPUT)
 
-$(CARGO_OUTPUT): src/kernel/asm/symbols.S src/kernel/symbols_gen.rs FORCE
+AUTOGEN_FILES = src/kernel/asm/symbols.S src/kernel/symbols_gen.rs src/user/usys.S
+$(CARGO_OUTPUT): $(AUTOGEN_FILES) $(LINKER_SCRIPT) FORCE
 	RUSTFLAGS="$(RUSTFLAGS)" cargo xbuild --target=$(TARGET) --release
 
 # $(OUTPUT): $(CARGO_OUTPUT)
@@ -28,6 +29,8 @@ src/kernel/asm/symbols.S: utils/symbols.py utils/symbols.S.py
 	./utils/symbols.S.py > $@
 src/kernel/symbols_gen.rs: utils/symbols.py utils/symbols_gen.rs.py
 	./utils/symbols_gen.rs.py > $@
+src/user/usys.S: utils/usys.S.py
+	./utils/usys.S.py > $@
 
 $(QEMU_DRIVE):
 	dd if=/dev/zero of=$@ count=32 bs=1048576

@@ -1,0 +1,23 @@
+syscalls = [
+    "fork",
+    "exit",
+    "wait",
+    "pipe",
+    "read",
+    "write",
+    "close",
+    "kill",
+    "exec",
+    "open",
+    "mknod",
+    "unlink",
+    "fstat",
+    "link",
+    "mkdir",
+    "chdir",
+    "dup",
+    "getpid",
+    "sbrk",
+    "sleep",
+    "uptime"
+]
