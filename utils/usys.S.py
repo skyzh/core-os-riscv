@@ -9,8 +9,8 @@ from syscall import syscalls
 
 for (idx, syscall) in enumerate(syscalls):
     print(f"""
-.global {syscall}
-{syscall}:
+.global __{syscall}
+__{syscall}:
 li a7, {idx}
 ecall
 ret""")

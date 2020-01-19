@@ -21,9 +21,9 @@ pub const fn align_val(val: usize, order: usize) -> usize {
 
 use crate::println;
 impl Allocator {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Allocator {
-            base_addr: align_val(unsafe { HEAP_START }, PAGE_ORDER),
+            base_addr: 0,
             page_allocated: [0;MAX_PAGE]
         }
     }
@@ -90,12 +90,17 @@ impl Allocator {
     }
 }
 
-use lazy_static::lazy_static;
+use core::mem::MaybeUninit;
 use crate::nulllock::Mutex;
+static mut __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new());
 
-lazy_static! {
-    pub static ref ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new());
+pub fn init() {
+    unsafe {
+        ALLOC().lock().base_addr = align_val(HEAP_START, PAGE_ORDER); 
+    }
 }
+
+pub fn ALLOC() -> &'static mut Mutex<Allocator> { unsafe { &mut __ALLOC } }
 
 pub fn test() {
     unsafe {

@@ -6,12 +6,8 @@ edition = "2018"
 
 [dependencies]
 riscv = "0.5.4"
-lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 
-[[bin]]
-name="kernel"
-path="src/kernel/main.rs"
-
-[[bin]]
-name="loop"
-path="src/user/loop.rs"
+[lib]
+name = "kernel"
+path = "src/kernel/lib.rs"
+crate-type = ["staticlib"]

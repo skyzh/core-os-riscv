@@ -6,7 +6,6 @@
 use crate::alloc::{self, ALLOC};
 use crate::nulllock::Mutex;
 use crate::{print, println};
-use lazy_static::lazy_static;
 use crate::symbols::*;
 
 const TABLE_ENTRY_CNT: usize = 512;
@@ -40,7 +39,7 @@ pub enum EntryAttributes {
     V = 1 << 0,
     RW = 0b11 << 1,
     RX = 0b101 << 1,
-    UR =  0b10010,
+    UR = 0b10010,
     URW = 0b10110,
     URX = 0b11010,
 }
@@ -76,7 +75,7 @@ impl Entry {
     pub fn paddr(&self) -> PPN {
         PPN((self.0 & !0x3ff) << 2)
     }
-    pub fn new(ppn: usize, flags: usize) -> Self {
+    pub const fn new(ppn: usize, flags: usize) -> Self {
         Self(((ppn & !0xfff) >> 2) | flags)
     }
 }
@@ -122,7 +121,7 @@ impl VPN {
 }
 
 impl Table {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Table {
             entries: [Entry(0); TABLE_ENTRY_CNT],
         }
@@ -133,7 +132,7 @@ impl Table {
     }
 
     pub fn map(&mut self, vaddr: usize, paddr: usize, flags: usize, level: usize) {
-        let mut Alloc = ALLOC.lock();
+        let mut alloc = ALLOC().lock();
         let vpn = VPN(vaddr);
         let mut v = &mut self.entries[vpn.vpn2()];
         if paddr % PAGE_SIZE != 0 {
@@ -144,7 +143,7 @@ impl Table {
         }
         for lvl in (level..2).rev() {
             if !v.is_v() {
-                let page = Alloc.allocate(1);
+                let page = alloc.allocate(1);
                 *v = Entry::new(page as usize, EntryAttributes::V as usize);
             }
             let entry = v.paddr().0 as *mut Entry;
@@ -203,6 +202,10 @@ impl Table {
     }
 }
 
-lazy_static! {
-    pub static ref KERNEL_PGTABLE: Mutex<Table> = Mutex::new(Table::new());
+use core::mem::MaybeUninit;
+static mut __KERNEL_PGTABLE: Mutex<Table> =  Mutex::new(Table::new());
+
+pub fn init() {
 }
+
+pub fn KERNEL_PGTABLE() -> &'static mut Mutex<Table> { unsafe { &mut __KERNEL_PGTABLE } }

@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use core::sync::atomic::{AtomicBool, Ordering, spin_loop_hint as cpu_relax};
+use core::sync::atomic::{Ordering, spin_loop_hint as cpu_relax};
 use core::cell::UnsafeCell;
 use core::marker::Sync;
 use core::ops::{Drop, Deref, DerefMut};
@@ -76,7 +76,7 @@ use core::default::Default;
 /// ```
 pub struct Mutex<T: ?Sized>
 {
-    lock: AtomicBool,
+    lock: bool,
     data: UnsafeCell<T>,
 }
 
@@ -86,7 +86,7 @@ pub struct Mutex<T: ?Sized>
 #[derive(Debug)]
 pub struct MutexGuard<'a, T: ?Sized + 'a>
 {
-    lock: &'a AtomicBool,
+    lock: &'a bool,
     data: &'a mut T,
 }
 
@@ -115,7 +115,7 @@ impl<T> Mutex<T>
     {
         Mutex
         {
-            lock: AtomicBool::new(false),
+            lock: false,
             data: UnsafeCell::new(user_data),
         }
     }
@@ -162,7 +162,7 @@ impl<T: ?Sized> Mutex<T>
     /// ```
     pub fn lock(&self) -> MutexGuard<T>
     {
-        self.obtain_lock();
+        // self.obtain_lock();
         MutexGuard
         {
             lock: &self.lock,
@@ -178,7 +178,7 @@ impl<T: ?Sized> Mutex<T>
     ///
     /// If the lock isn't held, this is a no-op.
     pub unsafe fn force_unlock(&self) {
-        self.lock.store(false, Ordering::Release);
+        // self.lock.store(false, Ordering::Release);
     }
 
     /// Tries to lock the mutex. If it is already locked, it will return None. Otherwise it returns
@@ -245,6 +245,6 @@ impl<'a, T: ?Sized> Drop for MutexGuard<'a, T>
     /// The dropping of the MutexGuard will release the lock it was created from.
     fn drop(&mut self)
     {
-        self.lock.store(false, Ordering::Release);
+        // self.lock.store(false, Ordering::Release);
     }
 }

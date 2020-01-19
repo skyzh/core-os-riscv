@@ -21,7 +21,7 @@ impl Write for Uart {
 }
 
 impl Uart {
-	pub fn new(base_address: usize) -> Self {
+	pub const fn new(base_address: usize) -> Self {
 		Uart {
 			base_address
 		}
@@ -118,10 +118,12 @@ impl Uart {
 	}
 }
 
-use lazy_static::lazy_static;
 use crate::nulllock::Mutex;
 pub const UART_BASE_ADDR : usize = 0x1000_0000;
+use core::mem::MaybeUninit;
+static mut __UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR));
 
-lazy_static! {
-    pub static ref UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR));
+pub fn init() {
 }
+
+pub fn UART() -> &'static mut Mutex<Uart> { unsafe { &mut __UART } }

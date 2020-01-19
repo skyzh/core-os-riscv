@@ -4,16 +4,10 @@
 // https://opensource.org/licenses/MIT
 
 #![no_std]
-#![no_main]
 #![feature(panic_info_message, asm)]
 #![feature(global_asm)]
 #![feature(format_args_nl)]
 #![feature(const_generics)]
-
-global_asm!(include_str!("asm/trap.S"));
-global_asm!(include_str!("asm/boot.S"));
-global_asm!(include_str!("asm/symbols.S"));
-global_asm!(include_str!("asm/trampoline.S"));
 
 mod alloc;
 mod arch;
@@ -35,38 +29,39 @@ extern "C" fn eh_personality() {}
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-	print!("Aborting: ");
+	panic_println!("Aborting: ");
 	if let Some(p) = info.location() {
-		println!(
+		panic_println!(
 			"line {}, file {}: {}",
 			p.line(),
 			p.file(),
 			info.message().unwrap()
 		);
 	} else {
-		println!("no information available.");
+		panic_println!("no information available.");
 	}
 	abort();
 }
+
 #[no_mangle]
 extern "C" fn abort() -> ! {
-	loop {
-		unsafe {
-			asm!("wfi"::::"volatile");
-		}
-	}
+	wait_forever();
 }
+
 #[no_mangle]
 extern "C" fn kinit() {
-	// memory::zero_volatile(symbols::bss_range());
-	uart::UART.lock().init();
+	unsafe { memory::zero_volatile(symbols::bss_range()); }
+	alloc::init();
+	uart::init();
+	page::init();
+	uart::UART().lock().init();
 	info!("Booting core-os...");
 	info!("Drivers:");
 	info!("  UART intialized");
 	info!("Booting on hart {}", mhartid::read());
 
 	use symbols::*;
-	/*
+	
 	unsafe {
 		println!("TEXT:   0x{:x} -> 0x{:x}", TEXT_START, TEXT_END);
 		println!("RODATA: 0x{:x} -> 0x{:x}", RODATA_START, RODATA_END);
@@ -82,15 +77,16 @@ extern "C" fn kinit() {
 			HEAP_START + HEAP_SIZE
 		);
 	}
-	*/
 	use page::EntryAttributes;
 	use page::{Table, KERNEL_PGTABLE};
-	let mut pgtable = KERNEL_PGTABLE.lock();
+	let mut pgtable = KERNEL_PGTABLE().lock();
+	
 	pgtable.id_map_range(
 		unsafe { TEXT_START },
 		unsafe { TEXT_END },
 		EntryAttributes::RX as usize,
 	);
+	
 	pgtable.id_map_range(
 		unsafe { RODATA_START },
 		unsafe { RODATA_END },
@@ -134,6 +130,7 @@ extern "C" fn kinit() {
 	// PLIC
 	pgtable.id_map_range(0x0c00_0000, 0x0c00_2000, EntryAttributes::RW as usize);
 	pgtable.id_map_range(0x0c20_0000, 0x0c20_8000, EntryAttributes::RW as usize);
+	
 	use uart::*;
 	/* TODO: use Rust primitives */
 	unsafe {
@@ -141,7 +138,7 @@ extern "C" fn kinit() {
 		let satp_val = cpu::build_satp(8, 0, root_ppn);
 		mscratch::write(&mut cpu::KERNEL_TRAP_FRAME[0] as *mut cpu::TrapFrame as usize);
 		cpu::KERNEL_TRAP_FRAME[0].satp = satp_val;
-		let stack_addr = alloc::ALLOC.lock().allocate(1);
+		let stack_addr = alloc::ALLOC().lock().allocate(1);
 		cpu::KERNEL_TRAP_FRAME[0].sp = stack_addr.add(alloc::PAGE_SIZE);
 		cpu::KERNEL_TRAP_FRAME[0].hartid = 0;
 		pgtable.id_map_range(
@@ -172,6 +169,7 @@ extern "C" fn kinit_hart(hartid: usize) {
 		// cpu::KERNEL_TRAP_FRAME[hartid].trap_stack = page::zalloc(1);
 	}
 	// info!("{} initialized", hartid);
+	wait_forever();
 }
 
 pub fn wait_forever() -> ! {
@@ -186,7 +184,7 @@ pub fn wait_forever() -> ! {
 extern "C" fn kmain() -> ! {
 	use symbols::*;
 	use uart::*;
-	let USER_PROGRAM = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/loop");
+	// let USER_PROGRAM = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/loop");
 
 	info!("Now in supervisor mode");
 	/*
@@ -198,19 +196,19 @@ extern "C" fn kmain() -> ! {
 		mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
 	}*/
 	info!("entering user program...");
-	elf::run_elf(USER_PROGRAM);
+	// elf::run_elf(USER_PROGRAM);
 	wait_forever();
 }
 
 pub fn test_alloc() {
-	let ptr = alloc::ALLOC.lock().allocate(64 * 4096);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	let ptr2 = alloc::ALLOC.lock().allocate(1);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	alloc::ALLOC.lock().deallocate(ptr);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	let ptr = alloc::ALLOC.lock().allocate(1);
-	alloc::ALLOC.lock().deallocate(ptr2);
-	alloc::ALLOC.lock().debug();
+	let ptr = alloc::ALLOC().lock().allocate(64 * 4096);
+	let ptr = alloc::ALLOC().lock().allocate(1);
+	let ptr2 = alloc::ALLOC().lock().allocate(1);
+	let ptr = alloc::ALLOC().lock().allocate(1);
+	alloc::ALLOC().lock().deallocate(ptr);
+	let ptr = alloc::ALLOC().lock().allocate(1);
+	let ptr = alloc::ALLOC().lock().allocate(1);
+	let ptr = alloc::ALLOC().lock().allocate(1);
+	alloc::ALLOC().lock().deallocate(ptr2);
+	alloc::ALLOC().lock().debug();
 }

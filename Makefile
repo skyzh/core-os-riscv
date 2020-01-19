@@ -1,9 +1,21 @@
-LINKER_SCRIPT=src/kernel/kernel.ld
-RUSTFLAGS=-C link-arg=-T$(LINKER_SCRIPT)
+K=src/kernel
+U=src/user
 TARGET=riscv64gc-unknown-none-elf
-TYPE=release
-CARGO_OUTPUT=./target/$(TARGET)/$(TYPE)/kernel
-OUTPUT=kernel.img
+CC=riscv64-unknown-elf-gcc
+CFLAGS=-Wall -Wextra -pedantic
+CFLAGS+=-static -ffreestanding -nostdlib -fno-rtti -fno-exceptions
+CFLAGS+=-march=rv64gc -mabi=lp64
+-Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector -fno-pie -no-pie
+LIBS=./target/$(TARGET)/$(TYPE)
+LIB=-lkernel -lgcc
+LINKER_SCRIPT=$K/kernel.ld
+KERNEL_LIB=$(LIBS)/libkernel.rlib
+KERNEL_OUT=kernel.elf
+
+TYPE=debug
+RELEASE_FLAG=
+CFLAGS+=-O0 -g
+
 OBJCOPY_CMD = cargo objcopy \
 		-- \
 		--strip-all \
@@ -16,36 +28,59 @@ CPUS=4
 MEM=128M
 QEMU_DRIVE=hdd.img
 
-all: $(CARGO_OUTPUT)
+all: $(KERNEL_OUT)
 
-AUTOGEN_FILES = src/kernel/asm/symbols.S src/kernel/symbols_gen.rs src/user/usys.S
-$(CARGO_OUTPUT): $(AUTOGEN_FILES) $(LINKER_SCRIPT) FORCE
-	RUSTFLAGS="$(RUSTFLAGS)" cargo xbuild --target=$(TARGET) --release
+AUTOGEN_FILES = $K/asm/symbols.S $K/symbols_gen.rs \
+				$U/usys.S
 
-# $(OUTPUT): $(CARGO_OUTPUT)
+ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
+				 $K/asm/trampoline.S $K/asm/symbols.S
+
+$(KERNEL_LIB): $(AUTOGEN_FILES) FORCE
+	cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
+
+$(KERNEL_OUT): $(KERNEL_LIB) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)
+	$(CC) $(CFLAGS) -T$(LINKER_SCRIPT) -o $@ $(ASSEMBLY_FILES) -L$(LIBS) $(LIB)
+
+# $(OUTPUT): $(KERNEL_OUT)
 #	$(OBJCOPY_CMD) $< ./$(OUTPUT)
 
-src/kernel/asm/symbols.S: utils/symbols.py utils/symbols.S.py
+$K/asm/symbols.S: utils/symbols.py utils/symbols.S.py
 	./utils/symbols.S.py > $@
-src/kernel/symbols_gen.rs: utils/symbols.py utils/symbols_gen.rs.py
+$K/symbols_gen.rs: utils/symbols.py utils/symbols_gen.rs.py
 	./utils/symbols_gen.rs.py > $@
-src/user/usys.S: utils/usys.S.py
+$U/usys.S: utils/usys.S.py
 	./utils/usys.S.py > $@
+
+user: $U/loop.rs
+	cargo rustc $< --target=$(TARGET) $(RELEASE_FLAG)
 
 $(QEMU_DRIVE):
 	dd if=/dev/zero of=$@ count=32 bs=1048576
 
-qemu: $(CARGO_OUTPUT) $(QEMU_DRIVE)
-	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM)  -nographic -serial mon:stdio -bios none -kernel $(CARGO_OUTPUT) -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo
+qemu: $(KERNEL_OUT) $(QEMU_DRIVE)
+	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM)  -nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo -d int
 	
-qemudbg: $(CARGO_OUTPUT) $(QEMU_DRIVE)
-	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM)  -nographic -serial mon:stdio -bios none -kernel $(CARGO_OUTPUT) -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo -d int -d in_asm
+qemudbg: $(KERNEL_OUT) $(QEMU_DRIVE)
+	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM)  -nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo -d int -d in_asm
 
-objdump: $(CARGO_OUTPUT)
-	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $(CARGO_OUTPUT)
+objdump: $(KERNEL_OUT)
+	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $(KERNEL_OUT)
+
+readelf: $(KERNEL_OUT)
+	readelf -a $<
+
+USERPROG = ./target/$(TARGET)/$(TYPE)/loop
+
+userobjdump: $(USERPROG)
+	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $<
+
+userreadelf: $(USERPROG)
+	readelf -a $<
 
 .PHONY: clean
 clean:
 	cargo clean
-	rm -f $(CARGO_OUTPUT) $(OUTPUT)
+	rm -f $(KERNEL_OUT) $(OUTPUT)
+	rm -f $(AUTOGEN_FILES)
 FORCE:

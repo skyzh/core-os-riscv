@@ -115,7 +115,7 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
         0,
     );
     // map user stack
-    let seg = alloc::ALLOC.lock().allocate(alloc::PAGE_SIZE);
+    let seg = alloc::ALLOC().lock().allocate(alloc::PAGE_SIZE);
     let stack_begin = 0x80001000;
     pgtable.map(
         stack_begin,
@@ -159,7 +159,7 @@ fn load_segment<const N: usize>(
     sz: usize,
 ) {
     let num_pages = sz / alloc::PAGE_SIZE;
-    let mut alc = alloc::ALLOC.lock();
+    let mut alc = alloc::ALLOC().lock();
     for i in 0..num_pages {
         let seg = alc.allocate(alloc::PAGE_SIZE);
         let src = elf as *const u8;
