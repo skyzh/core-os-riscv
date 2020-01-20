@@ -1,7 +1,7 @@
 #![no_std]
 #![feature(global_asm)]
 
-use core::{fmt, panic::PanicInfo};
+use core::panic::PanicInfo;
 
 global_asm!(include_str!("usys.S"));
 
@@ -10,7 +10,7 @@ extern "C" {
 }
 
 #[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
+fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 

@@ -159,16 +159,12 @@ extern "C" fn kinit_hart(hartid: usize) {
 
 pub fn wait_forever() -> ! {
 	loop {
-		unsafe {
-			asm::wfi();
-		}
+		unsafe { asm::wfi(); }
 	}
 }
 
 #[no_mangle]
 extern "C" fn kmain() -> ! {
-	use symbols::*;
-	use uart::*;
 	let USER_PROGRAM = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/loop");
 
 	info!("Now in supervisor mode");

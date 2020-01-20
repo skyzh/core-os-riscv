@@ -120,7 +120,6 @@ impl Uart {
 
 use crate::nulllock::Mutex;
 pub const UART_BASE_ADDR : usize = 0x1000_0000;
-use core::mem::MaybeUninit;
 static mut __UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR));
 
 pub fn init() {

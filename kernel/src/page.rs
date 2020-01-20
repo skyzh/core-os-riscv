@@ -202,7 +202,6 @@ impl Table {
     }
 }
 
-use core::mem::MaybeUninit;
 static mut __KERNEL_PGTABLE: Mutex<Table> =  Mutex::new(Table::new());
 
 pub fn init() {

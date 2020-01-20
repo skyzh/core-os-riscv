@@ -88,7 +88,6 @@ impl Allocator {
     }
 }
 
-use core::mem::MaybeUninit;
 use crate::nulllock::Mutex;
 static mut __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new());
 
@@ -99,9 +98,3 @@ pub fn init() {
 }
 
 pub fn ALLOC() -> &'static mut Mutex<Allocator> { unsafe { &mut __ALLOC } }
-
-pub fn test() {
-    unsafe {
-        println!("{} {}", HEAP_START, HEAP_SIZE);
-    }
-}

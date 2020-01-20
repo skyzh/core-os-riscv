@@ -3,7 +3,6 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use core::sync::atomic::{Ordering, spin_loop_hint as cpu_relax};
 use core::cell::UnsafeCell;
 use core::marker::Sync;
 use core::ops::{Drop, Deref, DerefMut};

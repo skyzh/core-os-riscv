@@ -79,7 +79,6 @@ extern "C" fn m_trap(
             }
             // Page faults
             12 => {
-                loop {}
                 // Instruction page fault
                 println!(
                     "Instruction page fault CPU#{} -> 0x{:08x}: 0x{:08x}",
@@ -112,6 +111,9 @@ extern "C" fn m_trap(
     return_pc
 }
 
+#[no_mangle]
 pub extern "C" fn usertrap() {
-
+    unsafe { crate::cpu::intr_on(); }
+    info!("user trap.");
+    crate::wait_forever();
 }

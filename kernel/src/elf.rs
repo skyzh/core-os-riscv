@@ -7,7 +7,7 @@ use crate::alloc;
 use crate::cpu::{self, TrapFrame};
 use crate::page;
 use crate::symbols::*;
-use crate::{info, print, println};
+use crate::{info, println};
 
 #[repr(C)]
 pub struct ELFHeader {

@@ -17,7 +17,7 @@ pub unsafe extern "C" fn _start() -> ! {
     let mut i : u64 = 0;
     let ptr = &mut i as *mut u64;
     // core::ptr::write_volatile(0x8000 as *mut u8, 0);
-    for i in 0..100 {
+    for _ in 0..100 {
         core::ptr::write_volatile(ptr, core::ptr::read_volatile(ptr) + 1);
     }
     user::__write(0, "233333".as_bytes().as_ptr() as *const u8, 6);

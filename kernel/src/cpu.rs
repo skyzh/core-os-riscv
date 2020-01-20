@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use riscv::{register::*, asm};
+use riscv::register::*;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -14,11 +14,11 @@ pub struct TrapFrame {
     pub satp: usize,         // 512 - 519
     pub sp: *mut u8,         // 520
     pub hartid: usize,       // 528
-    pub trap: usize,         // 536
+    pub trap: usize,         // 536 Address of usertrap
     pub epc: usize           // 544
 }
 
-use core::ptr::{null_mut, null};
+use core::ptr::null_mut;
 
 impl TrapFrame {
     pub const fn zero() -> Self {
