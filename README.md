@@ -45,8 +45,10 @@ The main goal of this project is to make an xv6-like operating system with the R
 - [x] Load ELF files from memory
 - [x] Switch to User-mode
 - [x] Process
-- [ ] System call
-- [ ] Scheduling
+- [x] System call
+- [x] Scheduling
+- [ ] Test multiple process scheduling
+- [ ] More system call
 - [ ] Kernel Allocator
 - [ ] Allocator and stdlib
 - [ ] Real spinlock instead of nulllock
@@ -81,3 +83,4 @@ The main goal of this project is to make an xv6-like operating system with the R
 
 * `swtch` takes one context, return another context, thus eliminating borrowing issues.
 * `Process` takes full ownership of pagetable, context and trapframe.
+* Issue of `!`: function of `!` return type may interfere with RAII (objects won't be dropped). If function of return type `!` is called, there may be possible memory leak. Rust should drop all objects before calling these functions (instead of stack rewinding)
