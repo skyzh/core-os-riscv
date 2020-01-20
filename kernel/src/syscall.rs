@@ -1,3 +1,8 @@
+// Copyright (c) 2020 Alex Chi
+//
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 use crate::process::{TrapFrame, Register};
 use crate::trap::my_proc;
 use crate::{info, panic, print, println};

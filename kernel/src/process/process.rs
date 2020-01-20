@@ -1,3 +1,8 @@
+// Copyright (c) 2020 Alex Chi
+//
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 use super::{TrapFrame, Context, Register, ContextRegisters};
 use crate::{page, panic, info};
 use crate::symbols::*;

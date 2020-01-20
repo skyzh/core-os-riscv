@@ -1,3 +1,8 @@
+// Copyright (c) 2020 Alex Chi
+//
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 use crate::syscall_internal::{__exit, __fork, __write};
 
 pub fn exit(code: i32) -> ! {
