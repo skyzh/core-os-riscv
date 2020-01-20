@@ -23,4 +23,3 @@ pub unsafe extern "C" fn _start() -> ! {
     user::__write(0, "233333".as_bytes().as_ptr() as *const u8, 6);
     loop {}
 }
-

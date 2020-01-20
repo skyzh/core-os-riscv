@@ -4,10 +4,12 @@
 // https://opensource.org/licenses/MIT
 
 use crate::alloc;
-use crate::cpu::{self, TrapFrame};
+use crate::cpu;
 use crate::page;
+use crate::process;
 use crate::symbols::*;
 use crate::{info, println};
+use crate::process::TrapFrame;
 
 #[repr(C)]
 pub struct ELFHeader {
@@ -134,10 +136,16 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
             stvec::TrapMode::Direct,
         );
     }
-    tf.satp = unsafe { cpu::KERNEL_TRAP_FRAME[0].satp };
-    tf.sp = unsafe { cpu::KERNEL_TRAP_FRAME[0].sp };
-    tf.trap = crate::trap::usertrap as usize;
-    tf.hartid = unsafe { cpu::KERNEL_TRAP_FRAME[0].hartid };
+
+    {
+        let cpu = process::CPUS[cpu::hart_id()].lock();
+        let trapframe = &cpu.kernel_trapframe;
+        tf.satp = trapframe.satp;
+        tf.sp = trapframe.sp;
+        tf.trap = crate::trap::usertrap as usize;
+        tf.hartid = trapframe.hartid;
+    }
+
 
     sepc::write(tf.epc);
     tf.regs[2] = stack_begin + 0x1000; // sp

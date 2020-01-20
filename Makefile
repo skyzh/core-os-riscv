@@ -1,6 +1,5 @@
-TYPE=release
-RELEASE_FLAG=--release
-CFLAGS+=-O0 -g
+TYPE=debug
+RELEASE_FLAG=#--release
 K=kernel/src
 U=user/src
 TARGET=riscv64gc-unknown-none-elf
@@ -9,7 +8,8 @@ CFLAGS=-Wall -Wextra -pedantic
 CFLAGS+=-static -ffreestanding -nostdlib -fno-rtti -fno-exceptions
 CFLAGS+=-march=rv64gc -mabi=lp64
 -Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector -fno-pie -no-pie
-KERNEL_LIBS=./target/$(TARGET)/$(TYPE)
+TARGET_PATH=./target/$(TARGET)/$(TYPE)
+KERNEL_LIBS=$(TARGET_PATH)
 KERNEL_LIB=-lkernel -lgcc
 KERNEL_LINKER_SCRIPT=$K/kernel.ld
 KERNEL_LIB_OUT=$(LIBS)/libkernel.a
@@ -29,7 +29,7 @@ CPUS=4
 MEM=128M
 QEMU_DRIVE=hdd.img
 
-all: $(KERNEL_OUT) user
+all: $(KERNEL_OUT) $(USER_LIB_OUT)
 
 K_AUTOGEN_FILES = $K/asm/symbols.S $K/symbols_gen.rs
 U_AUTOGEN_FILES = $U/usys.S
@@ -37,7 +37,7 @@ U_AUTOGEN_FILES = $U/usys.S
 ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S
 
-$(KERNEL_LIB_OUT): user $(K_AUTOGEN_FILES) FORCE
+$(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) $(USER_LIB_OUT) $(TARGET_PATH)/init FORCE
 	cd kernel && cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
 $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)
@@ -45,10 +45,6 @@ $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)
 
 $(USER_LIB_OUT): $(U_AUTOGEN_FILES) FORCE
 	cd user && RUSTFLAGS="-C link-arg=-T$(USER_LINKER_SCRIPT)" cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
-
-user: $(USER_LIB_OUT)
-# $(OUTPUT): $(KERNEL_OUT)
-#	$(OBJCOPY_CMD) $< ./$(OUTPUT)
 
 $K/asm/symbols.S: utils/symbols.py utils/symbols.S.py
 	./utils/symbols.S.py > $@

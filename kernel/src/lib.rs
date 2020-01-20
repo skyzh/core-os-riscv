@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Alex Chi
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
@@ -8,17 +8,19 @@
 #![feature(global_asm)]
 #![feature(format_args_nl)]
 #![feature(const_generics)]
+#![feature(const_in_array_repeat_expressions)]
 
 mod alloc;
 mod arch;
-mod symbols;
-mod symbols_gen;
 mod cpu;
 mod elf;
 mod memory;
-mod page;
 mod nulllock;
+mod page;
 mod print;
+mod process;
+mod symbols;
+mod symbols_gen;
 mod trap;
 mod uart;
 
@@ -65,13 +67,11 @@ extern "C" fn kinit() {
 	use page::EntryAttributes;
 	use page::{Table, KERNEL_PGTABLE};
 	let mut pgtable = KERNEL_PGTABLE().lock();
-	
 	pgtable.id_map_range(
 		unsafe { TEXT_START },
 		unsafe { TEXT_END },
 		EntryAttributes::RX as usize,
 	);
-	
 	pgtable.id_map_range(
 		unsafe { RODATA_START },
 		unsafe { RODATA_END },
@@ -102,7 +102,7 @@ extern "C" fn kinit() {
 		TRAMPOLINE_START,
 		unsafe { TRAMPOLINE_TEXT_START },
 		page::EntryAttributes::RX as usize,
-		0
+		0,
 	);
 	pgtable.id_map_range(
 		unsafe { HEAP_START },
@@ -115,58 +115,61 @@ extern "C" fn kinit() {
 	// PLIC
 	pgtable.id_map_range(0x0c00_0000, 0x0c00_2000, EntryAttributes::RW as usize);
 	pgtable.id_map_range(0x0c20_0000, 0x0c20_8000, EntryAttributes::RW as usize);
-	
 	use uart::*;
 	/* TODO: use Rust primitives */
+	use process::TrapFrame;
+	let mut cpu = process::CPUS[0].lock();
+	let kernel_trapframe = &mut cpu.kernel_trapframe;
+
+	let root_ppn = &mut *pgtable as *mut Table as usize;
+	let satp_val = cpu::build_satp(8, 0, root_ppn);
 	unsafe {
-		let root_ppn = &mut *pgtable as *mut Table as usize;
-		let satp_val = cpu::build_satp(8, 0, root_ppn);
-		mscratch::write(&mut cpu::KERNEL_TRAP_FRAME[0] as *mut cpu::TrapFrame as usize);
-		cpu::KERNEL_TRAP_FRAME[0].satp = satp_val;
-		let stack_addr = alloc::ALLOC().lock().allocate(1);
-		cpu::KERNEL_TRAP_FRAME[0].sp = stack_addr.add(alloc::PAGE_SIZE);
-		cpu::KERNEL_TRAP_FRAME[0].hartid = 0;
-		pgtable.id_map_range(
-			stack_addr as usize,
-			stack_addr.add(alloc::PAGE_SIZE) as usize,
-			EntryAttributes::RW as usize,
-		);
-		unsafe {
-			asm!("csrw satp, $0" :: "r"(satp_val));
-			asm!("sfence.vma zero, zero");
-		}
+		mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
+	}
+	kernel_trapframe.satp = satp_val;
+	let stack_addr = alloc::ALLOC().lock().allocate(1);
+	kernel_trapframe.sp = stack_addr as usize + alloc::PAGE_SIZE;
+	kernel_trapframe.hartid = 0;
+	pgtable.id_map_range(
+		stack_addr as usize,
+		stack_addr as usize + alloc::PAGE_SIZE,
+		EntryAttributes::RW as usize,
+	);
+	unsafe {
+		asm!("csrw satp, $0" :: "r"(satp_val));
+		asm!("sfence.vma zero, zero");
 	}
 	info!("Page table set up, switching to supervisor mode");
 }
 
 #[no_mangle]
 extern "C" fn kinit_hart(hartid: usize) {
-	// All non-0 harts initialize here.
+	wait_forever();
+	use process::TrapFrame;
+	let mut cpu = process::CPUS[hartid].lock();
+	let kernel_trapframe = &mut cpu.kernel_trapframe;
 	unsafe {
-		// We have to store the kernel's table. The tables will be moved
-		// back and forth between the kernel's table and user
-		// applicatons' tables.
-		mscratch::write(&mut cpu::KERNEL_TRAP_FRAME[hartid] as *mut cpu::TrapFrame as usize);
-		cpu::KERNEL_TRAP_FRAME[hartid].hartid = hartid;
+		mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
 		// We can't do the following until zalloc() is locked, but we
 		// don't have locks, yet :( cpu::KERNEL_TRAP_FRAME[hartid].satp
 		// = cpu::KERNEL_TRAP_FRAME[0].satp;
 		// cpu::KERNEL_TRAP_FRAME[hartid].trap_stack = page::zalloc(1);
 	}
-	// info!("{} initialized", hartid);
+	kernel_trapframe.hartid = hartid;
+	info!("{} initialized", hartid);
 	wait_forever();
 }
 
 pub fn wait_forever() -> ! {
 	loop {
-		unsafe { asm::wfi(); }
+		unsafe {
+			asm::wfi();
+		}
 	}
 }
 
 #[no_mangle]
 extern "C" fn kmain() -> ! {
-	let USER_PROGRAM = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/loop");
-
 	info!("Now in supervisor mode");
 	/*
 	unsafe {
@@ -176,8 +179,10 @@ extern "C" fn kmain() -> ! {
 		// the next interrupt to fire one second from now.
 		mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
 	}*/
-	info!("entering user program...");
-	elf::run_elf(USER_PROGRAM);
+	info!("running init program...");
+	elf::run_elf(include_bytes!(
+		"../../target/riscv64gc-unknown-none-elf/release/init"
+	));
 	wait_forever();
 }
 

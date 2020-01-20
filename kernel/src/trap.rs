@@ -1,10 +1,10 @@
-// trap.rs
-// Trap routines
-// Stephen Marz
-// 10 October 2019
+// Copyright (c) 2020 Alex Chi
+//
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
 
-use crate::cpu::TrapFrame;
 use crate::{println, info};
+use crate::process::TrapFrame;
 
 #[no_mangle]
 extern "C" fn m_trap(

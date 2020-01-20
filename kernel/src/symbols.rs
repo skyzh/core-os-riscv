@@ -16,6 +16,7 @@ pub const PAGE_SIZE: usize = 1 << PAGE_ORDER;
 pub const MAXVA: usize = (1 << (9 + 9 + 9 + 12 - 1));
 pub const TRAMPOLINE_START: usize = MAXVA - PAGE_SIZE;
 pub const TRAPFRAME_START: usize = TRAMPOLINE_START - PAGE_SIZE;
+pub const NCPUS : usize = 8;
 
 pub unsafe fn bss_range() -> Range<*mut usize> {
     extern "C" {

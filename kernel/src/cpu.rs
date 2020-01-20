@@ -5,39 +5,6 @@
 
 use riscv::register::*;
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-#[repr(align(4096))]
-pub struct TrapFrame {
-    pub regs: [usize; 32],   // 0 - 255
-    pub fregs: [usize; 32],  // 256 - 511
-    pub satp: usize,         // 512 - 519
-    pub sp: *mut u8,         // 520
-    pub hartid: usize,       // 528
-    pub trap: usize,         // 536 Address of usertrap
-    pub epc: usize           // 544
-}
-
-use core::ptr::null_mut;
-
-impl TrapFrame {
-    pub const fn zero() -> Self {
-        TrapFrame {
-            regs: [0; 32],
-            fregs: [0; 32],
-            satp: 0,
-            sp: null_mut(),
-            hartid: 0,
-            trap: 0,
-            epc: 0
-        }
-    }
-}
-
-pub const NCPUS : usize = 8;
-
-pub static mut KERNEL_TRAP_FRAME: [TrapFrame; NCPUS] = [TrapFrame::zero(); NCPUS];
-
 pub const fn build_satp(mode: usize, asid: usize, addr: usize) -> usize {
     (mode as usize) << 60 | (asid & 0xffff) << 44 | (addr >> 12) & 0xff_ffff_ffff
 }
@@ -51,4 +18,11 @@ pub unsafe fn intr_on() {
 
 pub unsafe fn intr_off() {
     sstatus::clear_sie();
+}
+
+#[inline(always)]
+pub fn hart_id() -> usize {
+    let hart_id: usize = 0;
+    unsafe { asm!("mv $0, tp" :: "r"(hart_id)); }
+    hart_id
 }

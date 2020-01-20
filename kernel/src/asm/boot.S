@@ -1,7 +1,7 @@
-# boot.S
-# bootloader for SoS
-# Stephen Marz
-# 8 February 2019
+# Copyright (c) 2020 Alex Chi
+#
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
 
 # Define a .text.init section.
 .section .text.init
@@ -12,6 +12,8 @@ _start:
 	# Any hardware threads (hart) that are not bootstrapping
 	# need to wait for an IPI
 	csrr	t0, mhartid
+	# Save hartid to tp
+	mv      tp, t0
 	bnez	t0, 3f
 	# SATP should be zero, but let's make sure
 	csrw	satp, zero
@@ -44,9 +46,6 @@ _start:
 	# Machine's exception program counter (MEPC) is set to `kinit`.
 	la		t1, kinit
 	csrw	mepc, t1
-	# Save hartid to tp
-	csrr	t0, mhartid
-	mv      tp, t0
 	# Set the return address to get us into supervisor mode
 	la		ra, 2f
 	# We use mret here so that the mstatus register is properly updated.
