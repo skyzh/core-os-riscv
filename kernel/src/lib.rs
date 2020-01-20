@@ -181,7 +181,6 @@ extern "C" fn kmain() -> ! {
 		mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
 	}*/
 	process::init_proc();
-	process::CPUS[cpu::hart_id()].lock().process_id = 0;
 	process::scheduler()
 }
 

@@ -1,10 +1,12 @@
-use super::{TrapFrame, Context, Register};
-use crate::page;
+use super::{TrapFrame, Context, Register, ContextRegisters};
+use crate::{page, panic, info};
 use crate::symbols::*;
 use crate::alloc;
 use crate::cpu;
 use crate::println;
+use crate::trap::usertrapret;
 
+#[derive(PartialEq)]
 pub enum ProcessState {
     UNUSED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE
 }
@@ -15,7 +17,8 @@ pub struct Process {
     pub pgtable: page::Table,
     pub trapframe: TrapFrame,
     pub context: Context,
-    pub state: ProcessState
+    pub state: ProcessState,
+    pub kstack: usize
 }
 
 impl Process {
@@ -24,7 +27,8 @@ impl Process {
             trapframe: TrapFrame::zero(),
             context: Context::zero(),
             pgtable: page::Table::new(),
-            state: ProcessState::UNUSED
+            state: ProcessState::UNUSED,
+            kstack: 0
         }
     }
 
@@ -32,30 +36,39 @@ impl Process {
         if pid < 0 {
             panic!("invalid pid");
         }
-        let mut process = crate::process::PROCS[pid as usize].lock();
-        *process = Self {
+        let mut p = crate::process::PROCS[pid as usize].lock();
+        let kstack = alloc::ALLOC().lock().allocate(1);
+        *p = Self {
             trapframe: TrapFrame::zero(),
             context: Context::zero(),
             pgtable: page::Table::new(),
-            state: ProcessState::UNUSED
+            state: ProcessState::UNUSED,
+            kstack: kstack as usize
         };
 
         // map trampoline
-        process.pgtable.map(
+        p.pgtable.map(
             TRAMPOLINE_START,
             unsafe { TRAMPOLINE_TEXT_START },
             page::EntryAttributes::RX as usize,
             0,
         );
-        let trapframe = &process.trapframe as *const _ as usize;
+        let trapframe = &p.trapframe as *const _ as usize;
         // map trapframe
-        process.pgtable.map(
+        p.pgtable.map(
             TRAPFRAME_START,
             trapframe,
             page::EntryAttributes::RW as usize,
             0,
         );
+        p.context.regs[ContextRegisters::ra as usize] = forkret as usize;
+        p.context.regs[ContextRegisters::sp as usize] = p.kstack + PAGE_SIZE;
     }
+}
+
+#[no_mangle]
+pub extern "C" fn forkret() {
+    usertrapret();
 }
 
 pub fn init_proc() {
