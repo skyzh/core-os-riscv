@@ -1,9 +1,8 @@
 TYPE=release
 RELEASE_FLAG=--release
 CFLAGS+=-O0 -g
-
 K=kernel/src
-U=src/user
+U=user/src
 TARGET=riscv64gc-unknown-none-elf
 CC=riscv64-unknown-elf-gcc
 CFLAGS=-Wall -Wextra -pedantic
@@ -12,10 +11,11 @@ CFLAGS+=-march=rv64gc -mabi=lp64
 -Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector -fno-pie -no-pie
 KERNEL_LIBS=./kernel/target/$(TARGET)/$(TYPE)
 KERNEL_LIB=-lkernel -lgcc
-LINKER_SCRIPT=$K/kernel.ld
-RUSTFLAGS=-C link-arg=-T$(LINKER_SCRIPT)
+KERNEL_LINKER_SCRIPT=$K/kernel.ld
 KERNEL_LIB_OUT=$(LIBS)/libkernel.a
 KERNEL_OUT=kernel.elf
+USER_LIB_OUT=$(LIBS)/libuser.rlib
+USER_LINKER_SCRIPT=src/user.ld
 
 OBJCOPY_CMD = cargo objcopy \
 		-- \
@@ -29,20 +29,24 @@ CPUS=4
 MEM=128M
 QEMU_DRIVE=hdd.img
 
-all: $(KERNEL_OUT)
+all: $(KERNEL_OUT) user
 
-AUTOGEN_FILES = $K/asm/symbols.S $K/symbols_gen.rs \
-				$U/usys.S
+K_AUTOGEN_FILES = $K/asm/symbols.S $K/symbols_gen.rs
+U_AUTOGEN_FILES = $U/usys.S
 
 ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S
 
-$(KERNEL_LIB_OUT): $(AUTOGEN_FILES) FORCE
-	cd kernel && RUSTFLAGS="$(RUSTFLAGS)" cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
+$(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) FORCE
+	cd kernel && cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
 $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)
-	$(CC) $(CFLAGS) -T$(LINKER_SCRIPT) -o $@ $(ASSEMBLY_FILES) -L$(KERNEL_LIBS) $(KERNEL_LIB)
+	$(CC) $(CFLAGS) -T$(KERNEL_LINKER_SCRIPT) -o $@ $(ASSEMBLY_FILES) -L$(KERNEL_LIBS) $(KERNEL_LIB)
 
+$(USER_LIB_OUT): $(U_AUTOGEN_FILES) FORCE
+	cd user && RUSTFLAGS="-C link-arg=-T$(USER_LINKER_SCRIPT)" cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
+
+user: $(USER_LIB_OUT)
 # $(OUTPUT): $(KERNEL_OUT)
 #	$(OBJCOPY_CMD) $< ./$(OUTPUT)
 
@@ -68,7 +72,7 @@ objdump: $(KERNEL_OUT)
 readelf: $(KERNEL_OUT)
 	readelf -a $<
 
-USERPROG = ./target/$(TARGET)/$(TYPE)/loop
+USERPROG = ./user/target/$(TARGET)/$(TYPE)/loop
 
 userobjdump: $(USERPROG)
 	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $<
@@ -78,7 +82,8 @@ userreadelf: $(USERPROG)
 
 .PHONY: clean
 clean:
-	cargo clean
+	cd user && cargo clean
+	cd kernel && cargo clean
 	rm -f $(KERNEL_OUT) $(OUTPUT)
-	rm -f $(AUTOGEN_FILES)
+	rm -f $(K_AUTOGEN_FILES) $(U_AUTOGEN_FILES)
 FORCE:

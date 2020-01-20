@@ -12,8 +12,6 @@ pub struct Allocator {
     pub page_allocated: [usize;MAX_PAGE]
 }
 
-const PAGE_ORDER: usize = 12;
-
 pub const fn align_val(val: usize, order: usize) -> usize {
 	let o = (1usize << order) - 1;
 	(val + o) & !o

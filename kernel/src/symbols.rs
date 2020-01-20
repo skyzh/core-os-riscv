@@ -11,7 +11,8 @@ extern "C" {
 	pub fn userret();
 }
 
-pub const PAGE_SIZE: usize = 1 << 12;
+pub const PAGE_ORDER: usize = 12;
+pub const PAGE_SIZE: usize = 1 << PAGE_ORDER;
 pub const MAXVA: usize = (1 << (9 + 9 + 9 + 12 - 1));
 pub const TRAMPOLINE_START: usize = MAXVA - PAGE_SIZE;
 pub const TRAPFRAME_START: usize = TRAMPOLINE_START - PAGE_SIZE;

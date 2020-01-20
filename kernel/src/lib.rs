@@ -169,7 +169,7 @@ pub fn wait_forever() -> ! {
 extern "C" fn kmain() -> ! {
 	use symbols::*;
 	use uart::*;
-	// let USER_PROGRAM = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/loop");
+	let USER_PROGRAM = include_bytes!("../../user/target/riscv64gc-unknown-none-elf/release/loop");
 
 	info!("Now in supervisor mode");
 	/*
@@ -181,7 +181,7 @@ extern "C" fn kmain() -> ! {
 		mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
 	}*/
 	info!("entering user program...");
-	// elf::run_elf(USER_PROGRAM);
+	elf::run_elf(USER_PROGRAM);
 	wait_forever();
 }
 

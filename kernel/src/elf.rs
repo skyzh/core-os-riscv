@@ -159,7 +159,7 @@ fn load_segment<const N: usize>(
     offset: usize,
     sz: usize,
 ) {
-    let num_pages = sz / alloc::PAGE_SIZE;
+    let num_pages = alloc::align_val(sz, PAGE_ORDER) / PAGE_SIZE;
     let mut alc = alloc::ALLOC().lock();
     for i in 0..num_pages {
         let seg = alc.allocate(alloc::PAGE_SIZE);

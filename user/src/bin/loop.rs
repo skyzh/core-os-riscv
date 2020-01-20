@@ -10,9 +10,7 @@
 #![feature(format_args_nl)]
 #![feature(const_generics)]
 
-use core::{fmt, panic::PanicInfo};
-
-mod user;
+extern crate user;
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
@@ -22,17 +20,7 @@ pub unsafe extern "C" fn _start() -> ! {
     for i in 0..100 {
         core::ptr::write_volatile(ptr, core::ptr::read_volatile(ptr) + 1);
     }
-    user::__write(0, "233333", 6);
+    user::__write(0, "233333".as_bytes().as_ptr() as *const u8, 6);
     loop {}
 }
 
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    loop {}
-}
-
-#[no_mangle]
-extern "C" fn abort() -> ! {
-	loop {
-	}
-}
