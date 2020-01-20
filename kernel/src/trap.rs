@@ -133,11 +133,10 @@ pub extern "C" fn usertrap() {
         panic!("not from user mode");
     }
     // stvec::write()
-    let mut p = my_proc().lock();
-    p.trapframe.epc = sepc::read();
+    my_proc().lock().trapframe.epc = sepc::read();
 
     if scause::read().bits() == 8 {
-        p.trapframe.epc += 4;
+        my_proc().lock().trapframe.epc += 4;
         cpu::intr_on();
         syscall::syscall();
     } else {

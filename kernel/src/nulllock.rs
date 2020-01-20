@@ -9,6 +9,7 @@ use core::ops::{Drop, Deref, DerefMut};
 use core::fmt;
 use core::option::Option::{self, None, Some};
 use core::default::Default;
+use crate::{panic, println, panic_println};
 
 /// This type provides MUTual EXclusion based on spinning.
 ///
@@ -75,7 +76,8 @@ use core::default::Default;
 /// ```
 pub struct Mutex<T: ?Sized>
 {
-    lock: bool,
+    name: &'static str,
+    lock: UnsafeCell<bool>,
     data: UnsafeCell<T>,
 }
 
@@ -85,12 +87,14 @@ pub struct Mutex<T: ?Sized>
 #[derive(Debug)]
 pub struct MutexGuard<'a, T: ?Sized + 'a>
 {
-    lock: &'a bool,
+    name: &'static str,
+    lock: &'a UnsafeCell<bool>,
     data: &'a mut T,
 }
 
 // Same unsafe impls as `std::sync::Mutex`
 unsafe impl<T: ?Sized + Send> Sync for Mutex<T> {}
+
 unsafe impl<T: ?Sized + Send> Send for Mutex<T> {}
 
 impl<T> Mutex<T>
@@ -110,13 +114,14 @@ impl<T> Mutex<T>
     ///     drop(lock);
     /// }
     /// ```
-    pub const fn new(user_data: T) -> Mutex<T>
+    pub const fn new(user_data: T, name: &'static str) -> Mutex<T>
     {
         Mutex
-        {
-            lock: false,
-            data: UnsafeCell::new(user_data),
-        }
+            {
+                lock: UnsafeCell::new(false),
+                data: UnsafeCell::new(user_data),
+                name
+            }
     }
 
     /// Consumes this mutex, returning the underlying data.
@@ -142,6 +147,12 @@ impl<T: ?Sized> Mutex<T>
             }
         }
         */
+        unsafe {
+            if *self.lock.get() == true {
+                panic!("{} already locked!", self.name);
+            }
+            *self.lock.get() = true;
+        }
     }
 
     /// Locks the spinlock and returns a guard.
@@ -161,9 +172,10 @@ impl<T: ?Sized> Mutex<T>
     /// ```
     pub fn lock(&self) -> MutexGuard<T>
     {
-        // self.obtain_lock();
-        MutexGuard
-        {
+        self.obtain_lock();
+        // panic_println!("{} locked", self.name);
+        MutexGuard {
+            name: self.name,
             lock: &self.lock,
             data: unsafe { &mut *self.data.get() },
         }
@@ -184,27 +196,17 @@ impl<T: ?Sized> Mutex<T>
     /// a guard within Some.
     pub fn try_lock(&self) -> Option<MutexGuard<T>>
     {
-        /*
-        if self.lock.compare_and_swap(false, true, Ordering::Acquire) == false
-        {
+        if unsafe { *self.lock.get() } == false {
             Some(
                 MutexGuard {
+                    name: self.name,
                     lock: &self.lock,
                     data: unsafe { &mut *self.data.get() },
                 }
             )
-        }
-        else
-        {
+        } else {
             None
         }
-        */
-        Some(
-            MutexGuard {
-                lock: &self.lock,
-                data: unsafe { &mut *self.data.get() },
-            }
-        )
     }
 }
 
@@ -213,18 +215,18 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for Mutex<T>
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
     {
         match self.try_lock()
-        {
-            Some(guard) => write!(f, "Mutex {{ data: ")
-				.and_then(|()| (&*guard).fmt(f))
-				.and_then(|()| write!(f, "}}")),
-            None => write!(f, "Mutex {{ <locked> }}"),
-        }
+            {
+                Some(guard) => write!(f, "Mutex {{ data: ")
+                    .and_then(|()| (&*guard).fmt(f))
+                    .and_then(|()| write!(f, "}}")),
+                None => write!(f, "Mutex {{ <locked> }}"),
+            }
     }
 }
 
 impl<T: ?Sized + Default> Default for Mutex<T> {
     fn default() -> Mutex<T> {
-        Mutex::new(Default::default())
+        Mutex::new(Default::default(), "default")
     }
 }
 
@@ -244,6 +246,13 @@ impl<'a, T: ?Sized> Drop for MutexGuard<'a, T>
     /// The dropping of the MutexGuard will release the lock it was created from.
     fn drop(&mut self)
     {
+        unsafe {
+            if !*self.lock.get() {
+                panic!("{} not locked!", self.name);
+            }
+            // panic_println!("{} dropped", self.name);
+            *self.lock.get() = false;
+        }
         // self.lock.store(false, Ordering::Release);
     }
 }

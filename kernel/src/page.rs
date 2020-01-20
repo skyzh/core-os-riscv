@@ -218,9 +218,9 @@ impl Table {
     }
 }
 
-static mut __KERNEL_PGTABLE: Mutex<Table> =  Mutex::new(Table::new());
+static __KERNEL_PGTABLE: Mutex<Table> =  Mutex::new(Table::new(), "kernel_pgtable");
 
 pub fn init() {
 }
 
-pub fn KERNEL_PGTABLE() -> &'static mut Mutex<Table> { unsafe { &mut __KERNEL_PGTABLE } }
+pub fn KERNEL_PGTABLE() -> &'static Mutex<Table> { & __KERNEL_PGTABLE }

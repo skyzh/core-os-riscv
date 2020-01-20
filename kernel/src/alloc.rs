@@ -25,7 +25,7 @@ pub const fn page_down(val: usize) -> usize {
     align_val_down(val, PAGE_ORDER)
 }
 
-use crate::println;
+use crate::{println, panic};
 impl Allocator {
     pub const fn new() -> Self {
         Allocator {
@@ -97,7 +97,7 @@ impl Allocator {
 }
 
 use crate::nulllock::Mutex;
-static mut __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new());
+static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new(), "alloc");
 
 pub fn init() {
     unsafe {
@@ -105,4 +105,4 @@ pub fn init() {
     }
 }
 
-pub fn ALLOC() -> &'static mut Mutex<Allocator> { unsafe { &mut __ALLOC } }
+pub fn ALLOC() -> &'static Mutex<Allocator> { &__ALLOC }

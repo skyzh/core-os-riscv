@@ -50,7 +50,7 @@ fn sys_write() {
         content = argptr(&p.pgtable, &p.trapframe, 1, sz);
         println!("fd={}, sz={}, content=0x{:x}", fd, sz, content as usize);
     }
-    for i in 0..(sz - 1) {
+    for i in 0..sz {
         print!("{}", unsafe { *content.add(i) } as char);
     }
 }

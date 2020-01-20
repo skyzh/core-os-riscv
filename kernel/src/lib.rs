@@ -56,9 +56,9 @@ extern "C" fn abort() -> ! {
 #[no_mangle]
 extern "C" fn kinit() {
 	// unsafe { memory::zero_volatile(symbols::bss_range()); }
+	page::init();
 	alloc::init();
 	uart::init();
-	page::init();
 	uart::UART().lock().init();
 	info!("Booting core-os...");
 	info!("Drivers:");
@@ -180,9 +180,8 @@ extern "C" fn kmain() -> ! {
 		// the next interrupt to fire one second from now.
 		mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
 	}*/
-	let mut cpu = process::CPUS[cpu::hart_id()].lock();
 	process::init_proc();
-	cpu.process_id = 0;
+	process::CPUS[cpu::hart_id()].lock().process_id = 0;
 	process::scheduler()
 }
 

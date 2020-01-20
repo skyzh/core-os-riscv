@@ -65,7 +65,6 @@ pub fn init_proc() {
         include_bytes!("../../../target/riscv64gc-unknown-none-elf/release/init"),
         &mut process.pgtable
     );
-
     // map user stack
     let seg = alloc::ALLOC().lock().allocate(alloc::PAGE_SIZE);
     let stack_begin = 0x80001000;

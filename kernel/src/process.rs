@@ -16,5 +16,5 @@ pub use schedule::*;
 use crate::symbols::*;
 use crate::nulllock::Mutex;
 
-pub static CPUS: [Mutex<CPU>; NCPUS] = [Mutex::new(CPU::zero()); NCPUS];
-pub static PROCS: [Mutex<Process>; NMAXPROCS] = [Mutex::new(Process::zero()); NMAXPROCS];
+pub static CPUS: [Mutex<CPU>; NCPUS] = [Mutex::new(CPU::zero(), "cpu"); NCPUS];
+pub static PROCS: [Mutex<Process>; NMAXPROCS] = [Mutex::new(Process::zero(), "proc"); NMAXPROCS];

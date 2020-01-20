@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crate::alloc;
+use crate::{alloc, panic};
 use crate::cpu;
 use crate::page;
 use crate::process;
@@ -103,9 +103,8 @@ fn load_segment<const N: usize>(
     sz: usize,
 ) {
     let num_pages = alloc::align_val(sz, PAGE_ORDER) / PAGE_SIZE;
-    let mut alc = alloc::ALLOC().lock();
     for i in 0..num_pages {
-        let seg = alc.allocate(alloc::PAGE_SIZE);
+        let seg = alloc::ALLOC().lock().allocate(alloc::PAGE_SIZE);
         let src = elf as *const u8;
         unsafe {
             let src = src.add(offset + i * alloc::PAGE_SIZE);
