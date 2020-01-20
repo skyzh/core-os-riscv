@@ -47,7 +47,7 @@ const ELF_PROG_FLAG_WRITE: u32 = 2;
 const ELF_PROG_FLAG_READ: u32 = 4;
 const ELF_MAGIC: u32 = 0x464C457F;
 
-pub fn parse_elf<const N: usize>(a: &'static [u8; N], pgtable: &mut page::Table) {
+pub fn parse_elf<const N: usize>(a: &'static [u8; N], pgtable: &mut page::Table) -> u64 {
     /* TODO: Use something safer */
     // peek head of byte array to get ELF information
     let elfhdr = &unsafe { core::mem::transmute::<&[u8], &[ELFHeader]>(a) }[0];
@@ -92,6 +92,7 @@ pub fn parse_elf<const N: usize>(a: &'static [u8; N], pgtable: &mut page::Table)
         );
     }
     info!("elf loaded");
+    elfhdr.entry
 }
 
 fn load_segment<const N: usize>(

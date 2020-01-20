@@ -47,8 +47,6 @@ impl Process {
             page::EntryAttributes::RX as usize,
             0,
         );
-
-        println!("in new: {:x}", &process.trapframe as *const _ as usize);
         let trapframe = &process.trapframe as *const _ as usize;
         // map trapframe
         process.pgtable.map(
@@ -63,7 +61,7 @@ impl Process {
 pub fn init_proc() {
     Process::init(0);
     let mut process = crate::process::PROCS[0].lock();
-    crate::elf::parse_elf(
+    let entry = crate::elf::parse_elf(
         include_bytes!("../../../target/riscv64gc-unknown-none-elf/release/init"),
         &mut process.pgtable
     );
@@ -77,9 +75,8 @@ pub fn init_proc() {
         page::EntryAttributes::URW as usize,
         0,
     );
-    process.trapframe.epc = 0x0000000080000000;
+    process.trapframe.epc = entry as usize;
     process.trapframe.regs[2] = stack_begin + 0x1000; // sp
     process.state = ProcessState::RUNNABLE;
     process.pgtable.walk();
-    println!("in init_proc: {:x}", &process.trapframe as *const _ as usize);
 }
