@@ -51,6 +51,7 @@ The main goal of this project is to make an xv6-like operating system with the R
 - [ ] Allocator and stdlib
 - [ ] Real spinlock instead of nulllock
 - [ ] Multi-core support
+- [ ] Use Option instead of panic!
 - [ ] Timer Interrupt and scheduling
 - [ ] Persistence
 - [ ] Eliminate use of unsafe

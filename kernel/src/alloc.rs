@@ -13,8 +13,16 @@ pub struct Allocator {
 }
 
 pub const fn align_val(val: usize, order: usize) -> usize {
-	let o = (1usize << order) - 1;
-	(val + o) & !o
+    let o = (1usize << order) - 1;
+    (val + o) & !o
+}
+
+pub const fn align_val_down(val: usize, order: usize) -> usize {
+    val & !((1usize << order) - 1)
+}
+
+pub const fn page_down(val: usize) -> usize {
+    align_val_down(val, PAGE_ORDER)
 }
 
 use crate::println;

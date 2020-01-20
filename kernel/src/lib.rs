@@ -9,6 +9,7 @@
 #![feature(format_args_nl)]
 #![feature(const_generics)]
 #![feature(const_in_array_repeat_expressions)]
+#![allow(dead_code)]
 
 mod alloc;
 mod arch;
@@ -150,13 +151,11 @@ extern "C" fn kinit_hart(hartid: usize) {
 	use process::TrapFrame;
 	let mut cpu = process::CPUS[hartid].lock();
 	let kernel_trapframe = &mut cpu.kernel_trapframe;
-	unsafe {
-		mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
-		// We can't do the following until zalloc() is locked, but we
-		// don't have locks, yet :( cpu::KERNEL_TRAP_FRAME[hartid].satp
-		// = cpu::KERNEL_TRAP_FRAME[0].satp;
-		// cpu::KERNEL_TRAP_FRAME[hartid].trap_stack = page::zalloc(1);
-	}
+	mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
+	// We can't do the following until zalloc() is locked, but we
+	// don't have locks, yet :( cpu::KERNEL_TRAP_FRAME[hartid].satp
+	// = cpu::KERNEL_TRAP_FRAME[0].satp;
+	// cpu::KERNEL_TRAP_FRAME[hartid].trap_stack = page::zalloc(1);
 	kernel_trapframe.hartid = hartid;
 	info!("{} initialized", hartid);
 	wait_forever();
@@ -187,6 +186,7 @@ extern "C" fn kmain() -> ! {
 	process::scheduler()
 }
 
+/*
 pub fn test_alloc() {
 	let ptr = alloc::ALLOC().lock().allocate(64 * 4096);
 	let ptr = alloc::ALLOC().lock().allocate(1);
@@ -199,3 +199,4 @@ pub fn test_alloc() {
 	alloc::ALLOC().lock().deallocate(ptr2);
 	alloc::ALLOC().lock().debug();
 }
+*/

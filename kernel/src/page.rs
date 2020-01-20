@@ -5,7 +5,7 @@
 
 use crate::alloc::{self, ALLOC};
 use crate::nulllock::Mutex;
-use crate::{print, println};
+use crate::{print, println, panic};
 use crate::symbols::*;
 
 const TABLE_ENTRY_CNT: usize = 512;
@@ -132,15 +132,15 @@ impl Table {
     }
 
     pub fn map(&mut self, vaddr: usize, paddr: usize, flags: usize, level: usize) {
-        let mut alloc = ALLOC().lock();
-        let vpn = VPN(vaddr);
-        let mut v = &mut self.entries[vpn.vpn2()];
         if paddr % PAGE_SIZE != 0 {
             panic!("paddr {:x} not aligned", paddr);
         }
         if vaddr % PAGE_SIZE != 0 {
             panic!("vaddr {:x} not aligned", vaddr);
         }
+        let mut alloc = ALLOC().lock();
+        let vpn = VPN(vaddr);
+        let mut v = &mut self.entries[vpn.vpn2()];
         for lvl in (level..2).rev() {
             if !v.is_v() {
                 let page = alloc.allocate(1);
@@ -150,6 +150,22 @@ impl Table {
             v = unsafe { entry.add(vpn.idx(lvl)).as_mut().unwrap() };
         }
         *v = Entry::new(paddr, flags | EntryAttributes::V as usize)
+    }
+
+    pub fn paddr_of(&self, vaddr: usize) -> Option<usize> {
+        let vpn = VPN(vaddr);
+        let mut v = &self.entries[vpn.vpn2()];
+        if vaddr % PAGE_SIZE != 0 {
+            panic!("vaddr {:x} not aligned", vaddr);
+        }
+        for lvl in (0..2).rev() {
+            if !v.is_v() {
+                return None;
+            }
+            let entry = v.paddr().0 as *mut Entry;
+            v = unsafe { entry.add(vpn.idx(lvl)).as_mut().unwrap() };
+        }
+        Some(v.paddr().0)
     }
 
     fn _walk(&self, level: usize, vpn: usize) {

@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crate::{println, info};
+use crate::{println, info, panic};
 use crate::process::{TrapFrame, self, Process, CPU};
 use crate::cpu;
 use crate::symbols::*;
@@ -17,8 +17,8 @@ extern "C" fn m_trap(
     tval: usize,
     cause: usize,
     hart: usize,
-    status: usize,
-    frame: &mut TrapFrame,
+    _status: usize,
+    _frame: &mut TrapFrame,
 ) -> usize {
     // We're going to handle all traps in machine mode. RISC-V lets
     // us delegate to supervisor mode, but switching out SATP (virtual memory)
@@ -157,7 +157,6 @@ pub fn trampoline_userret(tf: usize, satp_val: usize) -> ! {
 }
 
 pub fn usertrapret() -> ! {
-    let trap_frame_addr: usize;
     let satp_val: usize;
     {
         use riscv::register::*;
@@ -174,7 +173,7 @@ pub fn usertrapret() -> ! {
         // set up trapframe values that uservec will need when
         // the process next re-enters the kernel.
         let mut p = my_proc().lock();
-        let mut c = my_cpu().lock();
+        let c = my_cpu().lock();
         p.trapframe.satp = c.kernel_trapframe.satp;
         p.trapframe.sp = c.kernel_trapframe.sp;
         p.trapframe.trap = crate::trap::usertrap as usize;
@@ -194,8 +193,6 @@ pub fn usertrapret() -> ! {
         // tell trampoline.S the user page table to switch to.
         let root_ppn = &mut p.pgtable as *mut page::Table as usize;
         satp_val = crate::cpu::build_satp(8, 0, root_ppn);
-
-        trap_frame_addr = &p.trapframe as *const _ as usize;
     }
 
     // jump to trampoline.S at the top of memory, which 
