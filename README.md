@@ -76,3 +76,8 @@ The main goal of this project is to make an xv6-like operating system with the R
 [6] https://pdos.csail.mit.edu/6.828/2012/labs
 
 [7] https://gist.github.com/cb372/5f6bf16ca0682541260ae52fc11ea3bb
+
+## Highlights of Rust-specific Implementations
+
+* `swtch` takes one context, return another context, thus eliminating borrowing issues.
+* `Process` takes full ownership of pagetable, context and trapframe.
