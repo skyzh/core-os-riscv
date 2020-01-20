@@ -47,7 +47,8 @@ const ELF_PROG_FLAG_READ: u32 = 4;
 const ELF_MAGIC: u32 = 0x464C457F;
 
 fn trampoline(tf: usize, satp_val: usize) {
-    let fn_addr = unsafe { TRAMPOLINE_START as *const () };
+    let uservec_offset = userret as usize - unsafe { TRAMPOLINE_TEXT_START };
+    let fn_addr = unsafe { (TRAMPOLINE_START + uservec_offset) as *const () };
     let fn_addr: extern "C" fn(usize, usize) -> usize = unsafe { core::mem::transmute(fn_addr) };
     (fn_addr)(tf, satp_val);
 }

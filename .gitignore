@@ -1,4 +1,4 @@
-/target
+kernel/target
 **/*.rs.bk
 Cargo.lock
 kernel.img

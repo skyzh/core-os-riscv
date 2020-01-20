@@ -8,11 +8,13 @@
 .section trampsec
 trampoline:
 .globl uservec
+.align 4
 uservec:
 1:
 	wfi
 	j 1b
 .globl userret
+.align 4
 userret:
 	# userret(TRAPFRAME, pagetable)
 	# switch from kernel to user.

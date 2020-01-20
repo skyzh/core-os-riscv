@@ -7,7 +7,8 @@ pub use crate::symbols_gen::*;
 use core::ops::Range;
 
 extern "C" {
-    pub fn uservec();
+	pub fn uservec();
+	pub fn userret();
 }
 
 pub const PAGE_SIZE: usize = 1 << 12;

@@ -9,5 +9,5 @@ riscv = "0.5.4"
 
 [lib]
 name = "kernel"
-path = "src/kernel/lib.rs"
+path = "src/lib.rs"
 crate-type = ["staticlib"]

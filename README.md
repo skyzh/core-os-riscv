@@ -45,3 +45,5 @@ The main goal of this project is to make an xv6-like operating system with the R
 [5] https://github.com/mit-pdos/xv6-riscv/
 
 [6] https://pdos.csail.mit.edu/6.828/2012/labs
+
+[7] https://gist.github.com/cb372/5f6bf16ca0682541260ae52fc11ea3bb

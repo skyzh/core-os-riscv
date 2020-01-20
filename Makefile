@@ -2,7 +2,7 @@ TYPE=release
 RELEASE_FLAG=--release
 CFLAGS+=-O0 -g
 
-K=src/kernel
+K=kernel/src
 U=src/user
 TARGET=riscv64gc-unknown-none-elf
 CC=riscv64-unknown-elf-gcc
@@ -10,10 +10,11 @@ CFLAGS=-Wall -Wextra -pedantic
 CFLAGS+=-static -ffreestanding -nostdlib -fno-rtti -fno-exceptions
 CFLAGS+=-march=rv64gc -mabi=lp64
 -Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector -fno-pie -no-pie
-LIBS=./target/$(TARGET)/$(TYPE)
-LIB=-lkernel -lgcc
+KERNEL_LIBS=./kernel/target/$(TARGET)/$(TYPE)
+KERNEL_LIB=-lkernel -lgcc
 LINKER_SCRIPT=$K/kernel.ld
-KERNEL_LIB=$(LIBS)/libkernel.rlib
+RUSTFLAGS=-C link-arg=-T$(LINKER_SCRIPT)
+KERNEL_LIB_OUT=$(LIBS)/libkernel.a
 KERNEL_OUT=kernel.elf
 
 OBJCOPY_CMD = cargo objcopy \
@@ -36,11 +37,11 @@ AUTOGEN_FILES = $K/asm/symbols.S $K/symbols_gen.rs \
 ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S
 
-$(KERNEL_LIB): $(AUTOGEN_FILES) FORCE
-	cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
+$(KERNEL_LIB_OUT): $(AUTOGEN_FILES) FORCE
+	cd kernel && RUSTFLAGS="$(RUSTFLAGS)" cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
-$(KERNEL_OUT): $(KERNEL_LIB) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)
-	$(CC) $(CFLAGS) -T$(LINKER_SCRIPT) -o $@ $(ASSEMBLY_FILES) -L$(LIBS) $(LIB)
+$(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)
+	$(CC) $(CFLAGS) -T$(LINKER_SCRIPT) -o $@ $(ASSEMBLY_FILES) -L$(KERNEL_LIBS) $(KERNEL_LIB)
 
 # $(OUTPUT): $(KERNEL_OUT)
 #	$(OBJCOPY_CMD) $< ./$(OUTPUT)
@@ -51,9 +52,6 @@ $K/symbols_gen.rs: utils/symbols.py utils/symbols_gen.rs.py
 	./utils/symbols_gen.rs.py > $@
 $U/usys.S: utils/usys.S.py
 	./utils/usys.S.py > $@
-
-user: $U/loop.rs
-	cargo rustc $< --target=$(TARGET) $(RELEASE_FLAG)
 
 $(QEMU_DRIVE):
 	dd if=/dev/zero of=$@ count=32 bs=1048576
