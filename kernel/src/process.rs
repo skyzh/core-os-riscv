@@ -10,7 +10,11 @@ pub use process::*;
 mod context;
 pub use context::*;
 
-use crate::symbols::NCPUS;
+mod schedule;
+pub use schedule::*;
+
+use crate::symbols::*;
 use crate::nulllock::Mutex;
 
 pub static CPUS: [Mutex<CPU>; NCPUS] = [Mutex::new(CPU::zero()); NCPUS];
+pub static PROCS: [Mutex<Process>; NMAXPROCS] = [Mutex::new(Process::zero()); NMAXPROCS];

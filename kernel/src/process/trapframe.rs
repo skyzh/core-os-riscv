@@ -1,7 +1,6 @@
 use core::ptr::null_mut;
 
 #[repr(C)]
-#[derive(Clone, Copy)]
 #[repr(align(4096))]
 pub struct TrapFrame {
     pub regs: [usize; 32],   // 0 - 255

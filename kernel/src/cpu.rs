@@ -4,20 +4,28 @@
 // https://opensource.org/licenses/MIT
 
 use riscv::register::*;
+use crate::symbols::*;
 
-pub const fn build_satp(mode: usize, asid: usize, addr: usize) -> usize {
+pub fn build_satp(mode: usize, asid: usize, addr: usize) -> usize {
+    if addr % PAGE_SIZE != 0 {
+        panic!("satp not aligned!");
+    }
     (mode as usize) << 60 | (asid & 0xffff) << 44 | (addr >> 12) & 0xff_ffff_ffff
 }
 
-pub unsafe fn intr_on() {
-    sie::set_sext();
-    sie::set_ssoft();
-    sie::set_stimer();
-    sstatus::set_sie();
+pub fn intr_on() {
+    unsafe {
+        sie::set_sext();
+        sie::set_ssoft();
+        sie::set_stimer();
+        sstatus::set_sie();
+    }
 }
 
-pub unsafe fn intr_off() {
-    sstatus::clear_sie();
+pub fn intr_off() {
+    unsafe {
+        sstatus::clear_sie();
+    }
 }
 
 #[inline(always)]

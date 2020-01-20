@@ -179,11 +179,10 @@ extern "C" fn kmain() -> ! {
 		// the next interrupt to fire one second from now.
 		mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
 	}*/
-	info!("running init program...");
-	elf::run_elf(include_bytes!(
-		"../../target/riscv64gc-unknown-none-elf/release/init"
-	));
-	wait_forever();
+	let mut cpu = process::CPUS[cpu::hart_id()].lock();
+	process::init_proc();
+	cpu.process_id = 0;
+	process::scheduler()
 }
 
 pub fn test_alloc() {
