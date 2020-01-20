@@ -29,9 +29,9 @@ _start:
 2:
 	# Control registers, set the stack, mstatus, mepc,
 	# and mtvec to return to the main function.
-	# li		t5, 0xffff;
-	# csrw	medeleg, t5
-	# csrw	mideleg, t5
+	li		t5, 0xffff;
+	csrw	medeleg, t5
+	csrw	mideleg, t5
 	# The stack grows from bottom to top, so we put the stack pointer
 	# to the very end of the stack range.
 	la		sp, __kernel_stack_end
@@ -44,6 +44,9 @@ _start:
 	# Machine's exception program counter (MEPC) is set to `kinit`.
 	la		t1, kinit
 	csrw	mepc, t1
+	# Save hartid to tp
+	csrr	t0, mhartid
+	mv      tp, t0
 	# Set the return address to get us into supervisor mode
 	la		ra, 2f
 	# We use mret here so that the mstatus register is properly updated.

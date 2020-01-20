@@ -139,13 +139,15 @@ pub fn run_elf<const N: usize>(a: &'static [u8; N]) {
     tf.trap = crate::trap::usertrap as usize;
     tf.hartid = unsafe { cpu::KERNEL_TRAP_FRAME[0].hartid };
 
-    unsafe {
-        asm!("csrw sstatus, zero");
-    }
     sepc::write(tf.epc);
     tf.regs[2] = stack_begin + 0x1000; // sp
-
+    unsafe { cpu::intr_off(); }
     use riscv::register::*;
+    unsafe {
+        sstatus::set_spie();
+        sstatus::set_spp(sstatus::SPP::User);
+    }
+
     let root_ppn = &mut pgtable as *mut page::Table as usize;
     let satp_val = crate::cpu::build_satp(8, 0, root_ppn);
     println!("jumping to trampoline...");

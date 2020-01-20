@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+use riscv::{register::*, asm};
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 #[repr(align(4096))]
@@ -38,4 +40,15 @@ pub static mut KERNEL_TRAP_FRAME: [TrapFrame; NCPUS] = [TrapFrame::zero(); NCPUS
 
 pub const fn build_satp(mode: usize, asid: usize, addr: usize) -> usize {
     (mode as usize) << 60 | (asid & 0xffff) << 44 | (addr >> 12) & 0xff_ffff_ffff
+}
+
+pub unsafe fn intr_on() {
+    sie::set_sext();
+    sie::set_ssoft();
+    sie::set_stimer();
+    sstatus::set_sie();
+}
+
+pub unsafe fn intr_off() {
+    sstatus::clear_sie();
 }

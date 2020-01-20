@@ -50,7 +50,7 @@ extern "C" fn abort() -> ! {
 
 #[no_mangle]
 extern "C" fn kinit() {
-	unsafe { memory::zero_volatile(symbols::bss_range()); }
+	// unsafe { memory::zero_volatile(symbols::bss_range()); }
 	alloc::init();
 	uart::init();
 	page::init();
@@ -169,7 +169,7 @@ pub fn wait_forever() -> ! {
 extern "C" fn kmain() -> ! {
 	use symbols::*;
 	use uart::*;
-	let USER_PROGRAM = include_bytes!("../../user/target/riscv64gc-unknown-none-elf/release/loop");
+	let USER_PROGRAM = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/loop");
 
 	info!("Now in supervisor mode");
 	/*

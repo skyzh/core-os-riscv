@@ -9,13 +9,13 @@ CFLAGS=-Wall -Wextra -pedantic
 CFLAGS+=-static -ffreestanding -nostdlib -fno-rtti -fno-exceptions
 CFLAGS+=-march=rv64gc -mabi=lp64
 -Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector -fno-pie -no-pie
-KERNEL_LIBS=./kernel/target/$(TARGET)/$(TYPE)
+KERNEL_LIBS=./target/$(TARGET)/$(TYPE)
 KERNEL_LIB=-lkernel -lgcc
 KERNEL_LINKER_SCRIPT=$K/kernel.ld
 KERNEL_LIB_OUT=$(LIBS)/libkernel.a
 KERNEL_OUT=kernel.elf
 USER_LIB_OUT=$(LIBS)/libuser.rlib
-USER_LINKER_SCRIPT=src/user.ld
+USER_LINKER_SCRIPT=$U/user.ld
 
 OBJCOPY_CMD = cargo objcopy \
 		-- \
@@ -37,7 +37,7 @@ U_AUTOGEN_FILES = $U/usys.S
 ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S
 
-$(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) FORCE
+$(KERNEL_LIB_OUT): user $(K_AUTOGEN_FILES) FORCE
 	cd kernel && cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
 $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)
@@ -60,10 +60,10 @@ $U/usys.S: utils/usys.S.py
 $(QEMU_DRIVE):
 	dd if=/dev/zero of=$@ count=32 bs=1048576
 
-qemu: $(KERNEL_OUT) $(QEMU_DRIVE)
+qemu: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM)  -nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo -d int
 	
-qemudbg: $(KERNEL_OUT) $(QEMU_DRIVE)
+qemudbg: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM)  -nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo -d int -d in_asm
 
 objdump: $(KERNEL_OUT)
@@ -72,7 +72,7 @@ objdump: $(KERNEL_OUT)
 readelf: $(KERNEL_OUT)
 	readelf -a $<
 
-USERPROG = ./user/target/$(TARGET)/$(TYPE)/loop
+USERPROG = ./target/$(TARGET)/$(TYPE)/loop
 
 userobjdump: $(USERPROG)
 	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $<
@@ -82,8 +82,7 @@ userreadelf: $(USERPROG)
 
 .PHONY: clean
 clean:
-	cd user && cargo clean
-	cd kernel && cargo clean
+	cargo clean
 	rm -f $(KERNEL_OUT) $(OUTPUT)
 	rm -f $(K_AUTOGEN_FILES) $(U_AUTOGEN_FILES)
 FORCE:
