@@ -10,7 +10,8 @@
 #![feature(format_args_nl)]
 #![feature(const_generics)]
 
-extern crate user;
+use user::println;
+use user::syscall::{fork, exit};
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
@@ -20,6 +21,7 @@ pub unsafe extern "C" fn _start() -> ! {
     for _ in 0..100 {
         core::ptr::write_volatile(ptr, core::ptr::read_volatile(ptr) + 1);
     }
-        user::__write(0, "233333".as_bytes().as_ptr() as *const u8, 6);
-    loop{}
+    println!("init program running...");
+    fork();
+    exit(0);
 }

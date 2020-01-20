@@ -1,13 +1,13 @@
 #![no_std]
 #![feature(global_asm)]
 
+pub mod print;
+pub mod syscall;
+mod syscall_internal;
+
 use core::panic::PanicInfo;
 
 global_asm!(include_str!("usys.S"));
-
-extern "C" {
-    pub fn __write(fd: i32, content: *const u8, size: i32) -> i32;
-}
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
