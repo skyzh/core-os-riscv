@@ -1,4 +1,4 @@
-use super::{TrapFrame, Context};
+use super::{TrapFrame, Context, Register};
 use crate::page;
 use crate::symbols::*;
 use crate::alloc;
@@ -76,7 +76,7 @@ pub fn init_proc() {
         0,
     );
     process.trapframe.epc = entry as usize;
-    process.trapframe.regs[2] = stack_begin + 0x1000; // sp
+    process.trapframe.regs[Register::sp as usize] = stack_begin + 0x1000; // sp
     process.state = ProcessState::RUNNABLE;
-    process.pgtable.walk();
+    // process.pgtable.walk();
 }

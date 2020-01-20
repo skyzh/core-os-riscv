@@ -1,1 +1,1 @@
-make qemu
+make qemunostdio

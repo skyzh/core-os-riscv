@@ -25,3 +25,24 @@ impl TrapFrame {
         }
     }
 }
+
+pub enum Register {
+    zero = 0,
+    ra = 1,
+    sp = 2,
+    gp = 3,
+    tp = 4,
+    t0 = 5,
+    t1 = 6,
+    t2 = 7,
+    s0 = 8,
+    s1 = 9,
+    a0 = 10,
+    a1 = 11,
+    a2 = 12,
+    a3 = 13,
+    a4 = 14,
+    a5 = 15,
+    a6 = 16,
+    a7 = 17
+}

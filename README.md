@@ -2,13 +2,38 @@
 
 An operating system in Rust.
 
-This project is based on "The Adventures of OS: Making a RISC-V Operating System using Rust". In files not modified by this project, original licenses are preserved.
+This project is based on "The Adventures of OS: Making a RISC-V Operating System using Rust".
+In files not modified by this project, original licenses are preserved.
 
 ## Build Instructions
+
+First of all, install GNU RISC-V tools and QEMU. Python3 is also required to generate some files automatically.
+
+```bash
+brew tap riscv/riscv
+brew install riscv-tools
+brew test riscv-tools
+brew install qemu
+```
+
+Don't forget to add riscv-tools to PATH.
+
+Then, install Rust and related components.
+
+```bash
+cargo default nightly
+cargo install cargo-xbuild cargo-binutils
+rustup component add rust-src llvm-tools-preview rustfmt rls rust-analysis
+rustup target add riscv64gc-unknown-none-elf
+```
+
+Finally you may build and run this project.
 
 ```bash
 make qemu
 ```
+
+If you want to use readelf tools, etc., you may install pwntools on macOS.
 
 ## Roadmap
 
@@ -19,11 +44,14 @@ The main goal of this project is to make an xv6-like operating system with the R
 - [x] Virtual Memory
 - [x] Load ELF files from memory
 - [x] Switch to User-mode
-- [ ] Process
+- [x] Process
+- [ ] System call
+- [ ] Scheduling
 - [ ] Kernel Allocator
 - [ ] Allocator and stdlib
-- [ ] System call
+- [ ] Real spinlock instead of nulllock
 - [ ] Multi-core support
+- [ ] Timer Interrupt and scheduling
 - [ ] Persistence
 - [ ] Eliminate use of unsafe
 - [ ] Documentation

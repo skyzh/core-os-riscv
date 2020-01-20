@@ -31,7 +31,7 @@ QEMU_DRIVE=hdd.img
 
 all: $(KERNEL_OUT) $(USER_LIB_OUT)
 
-K_AUTOGEN_FILES = $K/asm/symbols.S $K/symbols_gen.rs
+K_AUTOGEN_FILES = $K/asm/symbols.S $K/symbols_gen.rs $K/syscall_gen.rs
 U_AUTOGEN_FILES = $U/usys.S
 
 ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
@@ -46,12 +46,14 @@ $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)
 $(USER_LIB_OUT): $(U_AUTOGEN_FILES) FORCE
 	cd user && RUSTFLAGS="-C link-arg=-T$(USER_LINKER_SCRIPT)" cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
-$K/asm/symbols.S: utils/symbols.py utils/symbols.S.py
-	./utils/symbols.S.py > $@
-$K/symbols_gen.rs: utils/symbols.py utils/symbols_gen.rs.py
-	./utils/symbols_gen.rs.py > $@
-$U/usys.S: utils/usys.S.py
-	./utils/usys.S.py > $@
+$K/asm/symbols.S: utils/symbols.S.py utils/symbols.py
+	$< > $@
+$K/symbols_gen.rs: utils/symbols_gen.rs.py utils/symbols.py
+	$< > $@
+$K/syscall_gen.rs: utils/syscall_gen.rs.py utils/syscall.py
+	$< > $@
+$U/usys.S: utils/usys.S.py utils/syscall.py
+	$< > $@
 
 $(QEMU_DRIVE):
 	dd if=/dev/zero of=$@ count=32 bs=1048576
@@ -60,7 +62,11 @@ qemu: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
 		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
 		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo
-	
+qemunostdio: all $(QEMU_DRIVE)
+    $(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
+            -nographic -serial stdio -bios none -kernel $(KERNEL_OUT) \
+            -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo
+
 qemudbg: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
 		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \

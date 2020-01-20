@@ -23,6 +23,8 @@ mod symbols;
 mod symbols_gen;
 mod trap;
 mod uart;
+mod syscall;
+mod syscall_gen;
 
 use riscv::{asm, register::*};
 

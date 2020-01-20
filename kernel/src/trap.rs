@@ -4,10 +4,12 @@
 // https://opensource.org/licenses/MIT
 
 use crate::{println, info};
-use crate::process::{TrapFrame, self};
+use crate::process::{TrapFrame, self, Process, CPU};
 use crate::cpu;
 use crate::symbols::*;
 use crate::page;
+use crate::nulllock::Mutex;
+use crate::syscall;
 
 #[no_mangle]
 extern "C" fn m_trap(
@@ -114,11 +116,35 @@ extern "C" fn m_trap(
     return_pc
 }
 
+pub fn my_cpu() -> &'static Mutex<CPU> {
+    &process::CPUS[cpu::hart_id()]
+}
+
+pub fn my_proc() -> &'static Mutex<Process> {
+    let proc_cpu = my_cpu().lock();
+    &process::PROCS[proc_cpu.process_id as usize]
+}
+
 #[no_mangle]
 pub extern "C" fn usertrap() {
-    // unsafe { crate::cpu::intr_on(); }
-    info!("user trap.");
-    crate::wait_forever();
+    // info!("user trap");
+    use riscv::register::*;
+    if sstatus::read().spp() != sstatus::SPP::User {
+        panic!("not from user mode");
+    }
+    // stvec::write()
+    let mut p = my_proc().lock();
+    p.trapframe.epc = sepc::read();
+
+    if scause::read().bits() == 8 {
+        p.trapframe.epc += 4;
+        cpu::intr_on();
+        syscall::syscall();
+    } else {
+        panic!("unexpected scause");
+    }
+
+    usertrapret();
 }
 
 #[inline]
@@ -131,49 +157,50 @@ pub fn trampoline_userret(tf: usize, satp_val: usize) -> ! {
 }
 
 pub fn usertrapret() -> ! {
-    use riscv::register::*;
-
-    let mut proc_cpu = process::CPUS[cpu::hart_id()].lock();
-    cpu::intr_off();
-
-    // send syscalls, interrupts, and exceptions to trampoline.S
-    unsafe {
-        stvec::write(
-            (uservec as usize - TRAMPOLINE_TEXT_START) + TRAMPOLINE_START,
-            stvec::TrapMode::Direct,
-        );
-    }
-
-    // set up trapframe values that uservec will need when
-    // the process next re-enters the kernel.
-    let mut process = process::PROCS[proc_cpu.process_id as usize].lock();
-    process.trapframe.satp = proc_cpu.kernel_trapframe.satp;
-    process.trapframe.sp = proc_cpu.kernel_trapframe.sp;
-    process.trapframe.trap = crate::trap::usertrap as usize;
-    process.trapframe.hartid = proc_cpu.kernel_trapframe.hartid;
-
-    // println!("trap 0x{:x}", proc_cpu.process.trapframe.trap);
-    
-    // set S Previous Privilege mode to User.
-    unsafe {
-        sstatus::set_spie();
-        sstatus::set_spp(sstatus::SPP::User);
-    }
-
-    // set S Exception Program Counter to the saved user pc.
-    sepc::write(process.trapframe.epc);
-
-    // tell trampoline.S the user page table to switch to.
-    let satp_val;
+    let trap_frame_addr: usize;
+    let satp_val: usize;
     {
-        let root_ppn = &mut process.pgtable as *mut page::Table as usize;
+        use riscv::register::*;
+        cpu::intr_off();
+
+        // send syscalls, interrupts, and exceptions to trampoline.S
+        unsafe {
+            stvec::write(
+                (uservec as usize - TRAMPOLINE_TEXT_START) + TRAMPOLINE_START,
+                stvec::TrapMode::Direct,
+            );
+        }
+
+        // set up trapframe values that uservec will need when
+        // the process next re-enters the kernel.
+        let mut p = my_proc().lock();
+        let mut c = my_cpu().lock();
+        p.trapframe.satp = c.kernel_trapframe.satp;
+        p.trapframe.sp = c.kernel_trapframe.sp;
+        p.trapframe.trap = crate::trap::usertrap as usize;
+        p.trapframe.hartid = c.kernel_trapframe.hartid;
+
+        // println!("trap 0x{:x}", proc_cpu.process.trapframe.trap);
+
+        // set S Previous Privilege mode to User.
+        unsafe {
+            sstatus::set_spie();
+            sstatus::set_spp(sstatus::SPP::User);
+        }
+
+        // set S Exception Program Counter to the saved user pc.
+        sepc::write(p.trapframe.epc);
+
+        // tell trampoline.S the user page table to switch to.
+        let root_ppn = &mut p.pgtable as *mut page::Table as usize;
         satp_val = crate::cpu::build_satp(8, 0, root_ppn);
+
+        trap_frame_addr = &p.trapframe as *const _ as usize;
     }
 
     // jump to trampoline.S at the top of memory, which 
     // switches to the user page table, restores user registers,
     // and switches to user mode with sret.
-
-    println!("jumping to trampoline 0x{:x} 0x{:x}...", &process.trapframe as *const _ as usize, TRAPFRAME_START);
+    // println!("jumping to trampoline 0x{:x} 0x{:x}...", trap_frame_addr , TRAPFRAME_START);
     trampoline_userret(TRAPFRAME_START, satp_val)
 }
