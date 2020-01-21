@@ -81,6 +81,6 @@ The main goal of this project is to make an xv6-like operating system with the R
 
 ## Highlights of Rust-specific Implementations
 
-* `swtch` takes one context, return another context, thus eliminating borrowing issues.
+* `swtch_and_drop` drops a process owning the context, thus preserving Rust ownership constraints.
 * `Process` takes full ownership of pagetable, context and trapframe.
 * Issue of `!`: function of `!` return type may interfere with RAII (objects won't be dropped). If function of return type `!` is called, there may be possible memory leak. Rust should drop all objects before calling these functions (instead of stack rewinding)

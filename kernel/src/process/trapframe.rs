@@ -5,6 +5,7 @@
 
 use core::ptr::null_mut;
 
+// Trapframe should be aligned because it will be mapped to high address
 #[repr(C)]
 #[repr(align(4096))]
 pub struct TrapFrame {

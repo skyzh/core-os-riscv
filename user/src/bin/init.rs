@@ -21,7 +21,9 @@ pub unsafe extern "C" fn _start() -> ! {
     for _ in 0..100 {
         core::ptr::write_volatile(ptr, core::ptr::read_volatile(ptr) + 1);
     }
-    println!("running init...");
+    for _ in 0..100 {
+        println!("running init...");
+    }
     fork();
     exit(0);
 }

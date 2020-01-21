@@ -6,11 +6,10 @@
 use super::{Process, TrapFrame, Context};
 
 #[repr(C)]
-#[repr(align(4096))]
 pub struct CPU {
-    pub process_id: i64,
     pub kernel_trapframe: TrapFrame,
-    pub scheduler_context: Context
+    pub scheduler_context: Context,
+    pub process_id: i64
 }
 
 impl CPU {

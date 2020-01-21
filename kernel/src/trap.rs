@@ -4,8 +4,8 @@
 // https://opensource.org/licenses/MIT
 
 use crate::{println, info, panic};
-use crate::process::{TrapFrame, self, Process, CPU};
-use crate::cpu;
+use crate::process::{TrapFrame, self, Process, CPU, my_proc, my_cpu, yield_cpu};
+use crate::arch;
 use crate::symbols::*;
 use crate::page;
 use crate::nulllock::Mutex;
@@ -116,15 +116,6 @@ extern "C" fn m_trap(
     return_pc
 }
 
-pub fn my_cpu() -> &'static Mutex<CPU> {
-    &process::CPUS[cpu::hart_id()]
-}
-
-pub fn my_proc() -> &'static Mutex<Process> {
-    let proc_cpu = my_cpu().lock();
-    &process::PROCS[proc_cpu.process_id as usize]
-}
-
 #[no_mangle]
 pub extern "C" fn usertrap() {
     // info!("user trap");
@@ -137,8 +128,9 @@ pub extern "C" fn usertrap() {
 
     if scause::read().bits() == 8 {
         my_proc().lock().trapframe.epc += 4;
-        cpu::intr_on();
+        arch::intr_on();
         syscall::syscall();
+        yield_cpu();
     } else {
         panic!("unexpected scause");
     }
@@ -159,7 +151,7 @@ pub fn usertrapret() -> ! {
     let satp_val: usize;
     {
         use riscv::register::*;
-        cpu::intr_off();
+        arch::intr_off();
 
         // send syscalls, interrupts, and exceptions to trampoline.S
         unsafe {
@@ -172,7 +164,7 @@ pub fn usertrapret() -> ! {
         // set up trapframe values that uservec will need when
         // the process next re-enters the kernel.
         let mut p = my_proc().lock();
-        let c = my_cpu().lock();
+        let c = my_cpu();
         p.trapframe.satp = c.kernel_trapframe.satp;
         p.trapframe.sp = c.kernel_trapframe.sp;
         p.trapframe.trap = crate::trap::usertrap as usize;
@@ -191,7 +183,7 @@ pub fn usertrapret() -> ! {
 
         // tell trampoline.S the user page table to switch to.
         let root_ppn = &mut p.pgtable as *mut page::Table as usize;
-        satp_val = crate::cpu::build_satp(8, 0, root_ppn);
+        satp_val = crate::arch::build_satp(8, 0, root_ppn);
     }
 
     // jump to trampoline.S at the top of memory, which 

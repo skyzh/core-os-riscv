@@ -7,7 +7,7 @@ use super::{TrapFrame, Context, Register, ContextRegisters};
 use crate::{page, panic, info};
 use crate::symbols::*;
 use crate::alloc;
-use crate::cpu;
+use crate::arch;
 use crate::println;
 use crate::trap::usertrapret;
 

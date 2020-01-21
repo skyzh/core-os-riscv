@@ -3,8 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crate::process::{TrapFrame, Register};
-use crate::trap::my_proc;
+use crate::process::{TrapFrame, Register, my_proc};
 use crate::{info, panic, print, println};
 use crate::page;
 pub use crate::syscall_gen::*;

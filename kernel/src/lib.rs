@@ -13,7 +13,6 @@
 
 mod alloc;
 mod arch;
-mod cpu;
 mod elf;
 mod memory;
 mod nulllock;
@@ -28,6 +27,7 @@ mod syscall;
 mod syscall_gen;
 
 use riscv::{asm, register::*};
+use crate::process::my_cpu;
 
 #[no_mangle]
 extern "C" fn eh_personality() {}
@@ -121,11 +121,11 @@ extern "C" fn kinit() {
 	use uart::*;
 	/* TODO: use Rust primitives */
 	use process::TrapFrame;
-	let mut cpu = process::CPUS[0].lock();
+	let cpu = my_cpu();
 	let kernel_trapframe = &mut cpu.kernel_trapframe;
 
 	let root_ppn = &mut *pgtable as *mut Table as usize;
-	let satp_val = cpu::build_satp(8, 0, root_ppn);
+	let satp_val = arch::build_satp(8, 0, root_ppn);
 	unsafe {
 		mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
 	}
@@ -149,7 +149,7 @@ extern "C" fn kinit() {
 extern "C" fn kinit_hart(hartid: usize) {
 	wait_forever();
 	use process::TrapFrame;
-	let mut cpu = process::CPUS[hartid].lock();
+	let mut cpu = my_cpu();
 	let kernel_trapframe = &mut cpu.kernel_trapframe;
 	mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
 	// We can't do the following until zalloc() is locked, but we

@@ -4,7 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 use crate::{alloc, panic};
-use crate::cpu;
+use crate::arch;
 use crate::page;
 use crate::process;
 use crate::symbols::*;

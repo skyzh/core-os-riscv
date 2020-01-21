@@ -20,6 +20,16 @@ pub use schedule::*;
 
 use crate::symbols::*;
 use crate::nulllock::Mutex;
+use crate::arch;
 
-pub static CPUS: [Mutex<CPU>; NCPUS] = [Mutex::new(CPU::zero(), "cpu"); NCPUS];
+static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
 pub static PROCS: [Mutex<Process>; NMAXPROCS] = [Mutex::new(Process::zero(), "proc"); NMAXPROCS];
+
+pub fn my_cpu() -> &'static mut CPU {
+    unsafe { &mut CPUS[arch::hart_id()] }
+}
+
+pub fn my_proc() -> &'static Mutex<Process> {
+    let proc_cpu = my_cpu();
+    &PROCS[proc_cpu.process_id as usize]
+}

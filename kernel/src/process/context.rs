@@ -4,6 +4,8 @@
 // https://opensource.org/licenses/MIT
 
 use crate::println;
+use crate::process::{my_cpu, my_proc, Process, ProcessState};
+use crate::nulllock::MutexGuard;
 
 #[repr(C)]
 pub struct Context {
@@ -25,11 +27,26 @@ pub enum ContextRegisters {
 }
 
 extern "C" {
-    fn __swtch(current: &mut Context, to: &mut Context);
+    fn __swtch(current: &mut Context, to: &Context);
 }
 
-pub fn swtch(mut to: Context) -> Context {
-    let mut context = Context::zero();
-    unsafe { __swtch(&mut context, &mut to); }
-    context
+pub fn swtch(current: &mut Context, next: Context) {
+    unsafe { __swtch(current, &next); }
+}
+
+pub fn swtch_and_drop(mut p: MutexGuard<Process>, next: Context) {
+    let ctx;
+    unsafe {
+        ctx = &mut p.context as *mut Context;
+        drop(p);
+    }
+    unsafe { __swtch(&mut *ctx, &next); }
+}
+
+pub fn yield_cpu() {
+    let c = my_cpu();
+    let mut p = my_proc().lock();
+    let ctx = core::mem::replace(&mut c.scheduler_context, Context::zero());
+    p.state = ProcessState::RUNNABLE;
+    swtch_and_drop(p, ctx);
 }
