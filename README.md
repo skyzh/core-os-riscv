@@ -49,7 +49,8 @@ The main goal of this project is to make an xv6-like operating system with the R
 - [x] Scheduling
 - [ ] Test multiple process scheduling
 - [ ] More system call
-- [ ] Kernel Allocator
+- [x] Kernel Allocator
+- [ ] Remove direct call to allocator
 - [ ] Allocator and stdlib
 - [ ] Real spinlock instead of nulllock
 - [ ] Multi-core support
