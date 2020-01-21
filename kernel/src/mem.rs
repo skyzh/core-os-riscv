@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+use core::ops::Range;
+
 pub use crate::symbols::*;
 
 pub const MAX_PAGE: usize = 128 * 1024 * 1024 / (1 << 12);
@@ -101,8 +103,46 @@ static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new(), "alloc");
 
 pub fn init() {
     unsafe {
-        ALLOC().lock().base_addr = align_val(HEAP_START, PAGE_ORDER); 
+        ALLOC().lock().base_addr = align_val(HEAP_START, PAGE_ORDER);
     }
 }
 
 pub fn ALLOC() -> &'static Mutex<Allocator> { &__ALLOC }
+
+use core::alloc::{GlobalAlloc, Layout};
+
+struct OsAllocator {}
+
+unsafe impl GlobalAlloc for OsAllocator {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        ALLOC().lock().allocate(layout.size())
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
+        ALLOC().lock().deallocate(ptr);
+    }
+}
+
+#[global_allocator]
+static GA: OsAllocator = OsAllocator {};
+
+#[alloc_error_handler]
+pub fn alloc_error(l: Layout) -> ! {
+    panic!(
+        "Allocator failed to allocate {} bytes with {}-byte alignment.",
+        l.size(),
+        l.align()
+    );
+}
+
+pub unsafe fn zero_volatile<T>(range: Range<*mut T>)
+where
+    T: From<u8>,
+{
+    let mut ptr = range.start;
+
+    while ptr < range.end {
+        core::ptr::write_volatile(ptr, T::from(0));
+        ptr = ptr.offset(1);
+    }
+}

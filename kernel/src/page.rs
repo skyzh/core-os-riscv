@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crate::alloc::{self, ALLOC};
+use crate::mem::{self, ALLOC};
 use crate::nulllock::Mutex;
 use crate::{print, println, panic};
 use crate::symbols::*;
@@ -197,7 +197,7 @@ impl Table {
 
     pub fn id_map_range(&mut self, start: usize, end: usize, bits: usize) {
         let mut memaddr = start & !(PAGE_SIZE - 1);
-        let num_kb_pages = (alloc::align_val(end, 12) - memaddr) / PAGE_SIZE;
+        let num_kb_pages = (mem::align_val(end, 12) - memaddr) / PAGE_SIZE;
 
         for _ in 0..num_kb_pages {
             self.map(memaddr, memaddr, bits, 0);
@@ -208,7 +208,7 @@ impl Table {
     pub fn map_range(&mut self, start: usize, end: usize, vaddr_start: usize, bits: usize) {
         let mut memaddr = start & !(PAGE_SIZE - 1);
         let mut vaddr_start = vaddr_start & !(PAGE_SIZE - 1);
-        let num_kb_pages = (alloc::align_val(end, 12) - memaddr) / PAGE_SIZE;
+        let num_kb_pages = (mem::align_val(end, 12) - memaddr) / PAGE_SIZE;
 
         for _ in 0..num_kb_pages {
             self.map(vaddr_start, memaddr, bits, 0);

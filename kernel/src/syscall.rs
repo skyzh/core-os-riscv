@@ -7,7 +7,7 @@ use crate::process::{TrapFrame, Register, my_proc};
 use crate::{info, panic, print, println};
 use crate::page;
 pub use crate::syscall_gen::*;
-use crate::alloc::{align_val, page_down};
+use crate::mem::{align_val, page_down};
 use crate::symbols::{PAGE_ORDER, PAGE_SIZE};
 
 pub fn argraw(tf: &TrapFrame, pos: usize) -> usize {
@@ -48,11 +48,11 @@ fn sys_write() {
     let content;
     let sz;
     {
-        let p = my_proc().lock();
+        let p = my_proc();
         fd = argint(&p.trapframe, 0);
         sz = arguint(&p.trapframe, 2);
         content = argptr(&p.pgtable, &p.trapframe, 1, sz);
-        println!("fd={}, sz={}, content=0x{:x}", fd, sz, content as usize);
+        // println!("fd={}, sz={}, content=0x{:x}", fd, sz, content as usize);
     }
     for i in 0..sz {
         print!("{}", unsafe { *content.add(i) } as char);
@@ -62,7 +62,7 @@ fn sys_write() {
 pub fn syscall() {
     let syscall_id;
     {
-        let p = my_proc().lock();
+        let p = my_proc();
         let tf = &p.trapframe;
         syscall_id = tf.regs[Register::a7 as usize] as i64;
     }

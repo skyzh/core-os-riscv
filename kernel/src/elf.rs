@@ -3,7 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crate::{alloc, panic};
+use crate::panic;
+use crate::mem;
 use crate::arch;
 use crate::page;
 use crate::process;
@@ -73,7 +74,7 @@ pub fn parse_elf<const N: usize>(a: &'static [u8; N], pgtable: &mut page::Table)
         if hdr.vaddr + hdr.memsz < hdr.vaddr {
             panic!("bad elf: vaddr");
         }
-        if hdr.vaddr as usize % alloc::PAGE_SIZE != 0 {
+        if hdr.vaddr as usize % mem::PAGE_SIZE != 0 {
             println!("{:X}", hdr.vaddr);
             panic!("bad elf: vaddr align")
         }
@@ -102,17 +103,17 @@ fn load_segment<const N: usize>(
     offset: usize,
     sz: usize,
 ) {
-    let num_pages = alloc::align_val(sz, PAGE_ORDER) / PAGE_SIZE;
+    let num_pages = mem::align_val(sz, PAGE_ORDER) / PAGE_SIZE;
     for i in 0..num_pages {
-        let seg = alloc::ALLOC().lock().allocate(alloc::PAGE_SIZE);
+        let seg = mem::ALLOC().lock().allocate(mem::PAGE_SIZE);
         let src = elf as *const u8;
         unsafe {
-            let src = src.add(offset + i * alloc::PAGE_SIZE);
-            core::ptr::copy(src, seg, alloc::PAGE_SIZE);
+            let src = src.add(offset + i * mem::PAGE_SIZE);
+            core::ptr::copy(src, seg, mem::PAGE_SIZE);
         }
         use page::EntryAttributes;
         pgtable.map(
-            vaddr + i * alloc::PAGE_SIZE,
+            vaddr + i * mem::PAGE_SIZE,
             seg as usize,
             EntryAttributes::URX as usize,
             0,

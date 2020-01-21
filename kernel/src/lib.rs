@@ -9,12 +9,22 @@
 #![feature(format_args_nl)]
 #![feature(const_generics)]
 #![feature(const_in_array_repeat_expressions)]
+#![feature(alloc_error_handler)]
+#![feature(box_syntax)]
+#![feature(alloc_prelude)]
+#![feature(new_uninit)]
+#![feature(maybe_uninit_uninit_array)]
+#![feature(maybe_uninit_ref)]
 #![allow(dead_code)]
 
-mod alloc;
+#[macro_use]
+extern crate alloc;
+// This is experimental and requires alloc_prelude as a feature
+use alloc::prelude::v1::*;
+
 mod arch;
 mod elf;
-mod memory;
+mod mem;
 mod nulllock;
 mod page;
 mod print;
@@ -57,7 +67,7 @@ extern "C" fn abort() -> ! {
 extern "C" fn kinit() {
 	// unsafe { memory::zero_volatile(symbols::bss_range()); }
 	page::init();
-	alloc::init();
+	mem::init();
 	uart::init();
 	uart::UART().lock().init();
 	info!("Booting core-os...");
@@ -130,12 +140,12 @@ extern "C" fn kinit() {
 		mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
 	}
 	kernel_trapframe.satp = satp_val;
-	let stack_addr = alloc::ALLOC().lock().allocate(1);
-	kernel_trapframe.sp = stack_addr as usize + alloc::PAGE_SIZE;
+	let stack_addr = mem::ALLOC().lock().allocate(1);
+	kernel_trapframe.sp = stack_addr as usize + mem::PAGE_SIZE;
 	kernel_trapframe.hartid = 0;
 	pgtable.id_map_range(
 		stack_addr as usize,
-		stack_addr as usize + alloc::PAGE_SIZE,
+		stack_addr as usize + mem::PAGE_SIZE,
 		EntryAttributes::RW as usize,
 	);
 	unsafe {

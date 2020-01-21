@@ -124,10 +124,12 @@ pub extern "C" fn usertrap() {
         panic!("not from user mode");
     }
     // stvec::write()
-    my_proc().lock().trapframe.epc = sepc::read();
+
+    let p = my_proc();
+    p.trapframe.epc = sepc::read();
 
     if scause::read().bits() == 8 {
-        my_proc().lock().trapframe.epc += 4;
+        p.trapframe.epc += 4;
         arch::intr_on();
         syscall::syscall();
         yield_cpu();
@@ -163,7 +165,7 @@ pub fn usertrapret() -> ! {
 
         // set up trapframe values that uservec will need when
         // the process next re-enters the kernel.
-        let mut p = my_proc().lock();
+        let mut p = my_proc();
         let c = my_cpu();
         p.trapframe.satp = c.kernel_trapframe.satp;
         p.trapframe.sp = c.kernel_trapframe.sp;

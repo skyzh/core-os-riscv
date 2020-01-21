@@ -21,15 +21,17 @@ pub use schedule::*;
 use crate::symbols::*;
 use crate::nulllock::Mutex;
 use crate::arch;
+use alloc::boxed::Box;
+use core::mem::MaybeUninit;
 
 static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
-pub static PROCS: [Mutex<Process>; NMAXPROCS] = [Mutex::new(Process::zero(), "proc"); NMAXPROCS];
+pub static PROCS_POOL: Mutex<[(bool, MaybeUninit<Box<Process>>); NMAXPROCS]> = Mutex::new([(false, MaybeUninit::uninit()); NMAXPROCS], "proc");
 
 pub fn my_cpu() -> &'static mut CPU {
     unsafe { &mut CPUS[arch::hart_id()] }
 }
 
-pub fn my_proc() -> &'static Mutex<Process> {
+pub fn my_proc() -> &'static mut Box<Process> {
     let proc_cpu = my_cpu();
-    &PROCS[proc_cpu.process_id as usize]
+    unsafe { proc_cpu.process.get_mut() }
 }

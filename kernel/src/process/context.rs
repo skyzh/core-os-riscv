@@ -34,19 +34,10 @@ pub fn swtch(current: &mut Context, next: Context) {
     unsafe { __swtch(current, &next); }
 }
 
-pub fn swtch_and_drop(mut p: MutexGuard<Process>, next: Context) {
-    let ctx;
-    unsafe {
-        ctx = &mut p.context as *mut Context;
-        drop(p);
-    }
-    unsafe { __swtch(&mut *ctx, &next); }
-}
-
 pub fn yield_cpu() {
     let c = my_cpu();
-    let mut p = my_proc().lock();
+    let mut p = my_proc();
     let ctx = core::mem::replace(&mut c.scheduler_context, Context::zero());
     p.state = ProcessState::RUNNABLE;
-    swtch_and_drop(p, ctx);
+    swtch(&mut p.context, ctx);
 }
