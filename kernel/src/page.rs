@@ -222,7 +222,12 @@ impl Table {
                     let table = unsafe { table.as_ref().unwrap() };
                     table._walk(level - 1, (vpn << 9) | i);
                 } else {
-                    println!("{}: 0x{:X} -> 0x{:X}", i, (vpn << 9 | i) << 12, v.paddr().0);
+                    let u_flag = if v.is_u() { "U" } else { "" };
+                    let r_flag = if v.is_r() { "R" } else { "" };
+                    let w_flag = if v.is_w() { "W" } else { "" };
+                    let x_flag = if v.is_x() { "X" } else { "" };
+
+                    println!("{}: 0x{:X} -> 0x{:X}  {}{}{}{}", i, (vpn << 9 | i) << 12, v.paddr().0, u_flag, r_flag, w_flag, x_flag);
                 }
             }
         }

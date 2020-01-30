@@ -14,9 +14,9 @@ use alloc::boxed::Box;
 use core::borrow::BorrowMut;
 use core::mem::MaybeUninit;
 
-fn find_next_runnable_proc() -> Option<Box<Process>> {
+fn find_next_runnable_proc(from_pid: usize) -> Option<Box<Process>> {
     let mut pool = PROCS_POOL.lock();
-    for pid in 0..NMAXPROCS {
+    for pid in from_pid..NMAXPROCS {
         let p = &mut pool[pid];
         if let (occupied, Some(_p)) = p {
             if !*occupied {
@@ -43,9 +43,10 @@ pub fn put_back_proc(p: Box<Process>) {
 
 pub fn scheduler() -> ! {
     let c = my_cpu();
+    let mut lst_pid = 0;
     loop {
         arch::intr_on();
-        if let Some(p) = find_next_runnable_proc() {
+        if let Some(p) = find_next_runnable_proc(lst_pid) {
             c.process = Some(p);
             let p = c.process.as_mut().unwrap();
             // info!("scheduler: switching to {}", p.pid);
@@ -55,7 +56,14 @@ pub fn scheduler() -> ! {
             swtch(&mut c.scheduler_context, *ctx);
             // info!("come back");
             let p = core::mem::replace(&mut c.process, None).unwrap();
+            lst_pid = p.pid as usize + 1;
+            if lst_pid >= NMAXPROCS {
+                lst_pid = 0;
+            }
             put_back_proc(p);
+        } else {
+            // info!("no proc available");
+            lst_pid = 0;
         }
     }
 }

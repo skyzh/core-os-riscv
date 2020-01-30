@@ -128,14 +128,14 @@ pub extern "C" fn usertrap() {
 
     let p = my_proc();
     p.trapframe.epc = sepc::read();
-
-    if scause::read().bits() == 8 {
+    let scause = scause::read().bits();
+    if scause == 8 {
         p.trapframe.epc += 4;
         arch::intr_on();
         p.trapframe.regs[a0 as usize] = syscall::syscall() as usize;
         yield_cpu();
     } else {
-        panic!("unexpected scause");
+        panic!("unexpected scause {}", scause);
     }
 
     usertrapret();
@@ -185,7 +185,7 @@ pub fn usertrapret() -> ! {
         sepc::write(p.trapframe.epc);
 
         // tell trampoline.S the user page table to switch to.
-        let root_ppn = &mut p.pgtable as *mut page::Table as usize;
+        let root_ppn = &mut *p.pgtable as *mut page::Table as usize;
         satp_val = crate::arch::build_satp(8, 0, root_ppn);
     }
 

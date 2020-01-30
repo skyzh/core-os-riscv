@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crate::process::{TrapFrame, Register, my_proc};
+use crate::process::{TrapFrame, Register, my_proc, fork};
 use crate::{info, panic, print, println};
 use crate::page;
 pub use crate::syscall_gen::*;
@@ -61,15 +61,15 @@ fn sys_write() -> i32 {
 }
 
 fn sys_fork() -> i32 {
-    0
+    fork()
 }
 
 fn sys_exec() -> i32 {
-    0
+    unimplemented!()
 }
 
 fn sys_exit() -> i32 {
-    0
+    unimplemented!()
 }
 
 pub fn syscall() -> i32 {
