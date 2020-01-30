@@ -18,10 +18,13 @@ fn find_next_runnable_proc() -> Option<Box<Process>> {
     let mut pool = PROCS_POOL.lock();
     for pid in 0..NMAXPROCS {
         let p = &mut pool[pid];
-        if let Some(_p) = p {
+        if let (occupied, Some(_p)) = p {
+            if !*occupied {
+                continue;
+            }
             if _p.state == ProcessState::RUNNABLE {
-                let p = core::mem::replace(p, None);
-                return p;
+                let p = core::mem::replace(p, (true, None));
+                return p.1;
             }
         }
     }
@@ -30,14 +33,12 @@ fn find_next_runnable_proc() -> Option<Box<Process>> {
 
 pub fn put_back_proc(p: Box<Process>) {
     let mut pool = PROCS_POOL.lock();
-    for pid in 0..NMAXPROCS {
-        let p_in_pool = &mut pool[pid];
-        if p_in_pool.is_none() {
-            *p_in_pool = Some(p);
-            return;
-        }
+    let p_in_pool = &mut pool[p.pid as usize];
+    if p_in_pool.1.is_none() {
+        *p_in_pool = (true, Some(p));
+        return;
     }
-    panic!("no available pool");
+    panic!("pid {} already occupied", p.pid);
 }
 
 pub fn scheduler() -> ! {

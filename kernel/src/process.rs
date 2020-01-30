@@ -26,7 +26,7 @@ use core::mem::MaybeUninit;
 use core::borrow::BorrowMut;
 
 static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
-pub static PROCS_POOL: Mutex<[Option<Box<Process>>; NMAXPROCS]> = Mutex::new([None; NMAXPROCS], "proc");
+pub static PROCS_POOL: Mutex<[(bool, Option<Box<Process>>); NMAXPROCS]> = Mutex::new([(false, None); NMAXPROCS], "proc");
 
 pub fn my_cpu() -> &'static mut CPU {
     unsafe { &mut CPUS[arch::hart_id()] }
