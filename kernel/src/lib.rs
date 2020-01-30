@@ -38,6 +38,7 @@ mod syscall_gen;
 
 use riscv::{asm, register::*};
 use crate::process::my_cpu;
+use crate::page::Page;
 
 #[no_mangle]
 extern "C" fn eh_personality() {}
@@ -135,7 +136,7 @@ extern "C" fn kinit() {
 		mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
 	}
 	kernel_trapframe.satp = satp_val;
-	let stack_addr = mem::ALLOC().lock().allocate(1);
+	let stack_addr = Box::into_raw(Page::new());
 	kernel_trapframe.sp = stack_addr as usize + mem::PAGE_SIZE;
 	kernel_trapframe.hartid = 0;
 	pgtable.id_map_range(

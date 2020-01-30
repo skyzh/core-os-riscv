@@ -16,6 +16,9 @@ use core::ptr::null;
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
+    for i in 0..100 {
+        println!("init {}", i);
+    }
     fork();
     exec("sh", null());
     exit(0);

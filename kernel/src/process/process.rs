@@ -12,6 +12,7 @@ use crate::println;
 use crate::trap::usertrapret;
 use alloc::boxed::Box;
 use crate::process::put_back_proc;
+use crate::page::Page;
 
 #[derive(PartialEq)]
 pub enum ProcessState {
@@ -34,13 +35,14 @@ impl Process {
         if pid < 0 {
             panic!("invalid pid");
         }
-        let kstack = mem::ALLOC().lock().allocate(1);
+        let kstack = Page::new();
+
         let mut p = Self {
             trapframe: box TrapFrame::zero(),
             context: box Context::zero(),
             pgtable: page::Table::new(),
             state: ProcessState::UNUSED,
-            kstack: kstack as usize,
+            kstack: Box::into_raw(kstack) as usize,
             pid
         };
 
@@ -62,6 +64,12 @@ impl Process {
         p.context.regs[ContextRegisters::sp as usize] = p.kstack + PAGE_SIZE;
 
         p
+    }
+}
+
+impl Drop for Process {
+    fn drop(&mut self) {
+        let kstack = unsafe { Box::from_raw(self.kstack as *mut Page) };
     }
 }
 
