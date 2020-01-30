@@ -18,12 +18,10 @@ fn find_next_runnable_proc() -> Option<Box<Process>> {
     let mut pool = PROCS_POOL.lock();
     for pid in 0..NMAXPROCS {
         let p = &mut pool[pid];
-        if p.0 {
-            let _p = unsafe { p.1.get_mut() };
+        if let Some(_p) = p {
             if _p.state == ProcessState::RUNNABLE {
-                drop(_p);
-                let p = core::mem::replace(p, (false, MaybeUninit::uninit()));
-                return Some(unsafe { p.1.assume_init() });
+                let p = core::mem::replace(p, None);
+                return p;
             }
         }
     }
@@ -34,8 +32,8 @@ pub fn put_back_proc(p: Box<Process>) {
     let mut pool = PROCS_POOL.lock();
     for pid in 0..NMAXPROCS {
         let p_in_pool = &mut pool[pid];
-        if !p_in_pool.0 {
-            *p_in_pool = (true, MaybeUninit::new(p));
+        if p_in_pool.is_none() {
+            *p_in_pool = Some(p);
             return;
         }
     }
@@ -47,16 +45,16 @@ pub fn scheduler() -> ! {
     loop {
         arch::intr_on();
         if let Some(p) = find_next_runnable_proc() {
-            c.process = MaybeUninit::new(p);
-            let p = unsafe { c.process.get_mut() };
+            c.process = Some(p);
+            let p = c.process.as_mut().unwrap();
             info!("scheduler: switching to {}", p.pid);
             p.state = ProcessState::RUNNING;
             let ctx = core::mem::replace(&mut p.context, box Context::zero());
             info!("swtch to proc");
             swtch(&mut c.scheduler_context, *ctx);
             info!("come back");
-            let p = core::mem::replace(&mut c.process, MaybeUninit::uninit());
-            put_back_proc(unsafe { p.assume_init() });
+            let p = core::mem::replace(&mut c.process, None).unwrap();
+            put_back_proc(p);
         }
     }
 }

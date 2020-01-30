@@ -23,9 +23,10 @@ use crate::nulllock::Mutex;
 use crate::arch;
 use alloc::boxed::Box;
 use core::mem::MaybeUninit;
+use core::borrow::BorrowMut;
 
 static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
-pub static PROCS_POOL: Mutex<[(bool, MaybeUninit<Box<Process>>); NMAXPROCS]> = Mutex::new([(false, MaybeUninit::uninit()); NMAXPROCS], "proc");
+pub static PROCS_POOL: Mutex<[Option<Box<Process>>; NMAXPROCS]> = Mutex::new([None; NMAXPROCS], "proc");
 
 pub fn my_cpu() -> &'static mut CPU {
     unsafe { &mut CPUS[arch::hart_id()] }
@@ -33,5 +34,5 @@ pub fn my_cpu() -> &'static mut CPU {
 
 pub fn my_proc() -> &'static mut Box<Process> {
     let proc_cpu = my_cpu();
-    unsafe { proc_cpu.process.get_mut() }
+    proc_cpu.process.as_mut().unwrap()
 }

@@ -11,13 +11,13 @@ use core::mem::MaybeUninit;
 pub struct CPU {
     pub kernel_trapframe: TrapFrame,
     pub scheduler_context: Context,
-    pub process: MaybeUninit<Box<Process>>
+    pub process: Option<Box<Process>>
 }
 
 impl CPU {
     pub const fn zero() -> Self {
         Self {
-            process: MaybeUninit::uninit(),
+            process: None,
             kernel_trapframe: TrapFrame::zero(),
             scheduler_context: Context::zero()
         }
