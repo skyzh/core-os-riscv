@@ -220,7 +220,4 @@ impl Table {
 
 static __KERNEL_PGTABLE: Mutex<Table> =  Mutex::new(Table::new(), "kernel_pgtable");
 
-pub fn init() {
-}
-
 pub fn KERNEL_PGTABLE() -> &'static Mutex<Table> { & __KERNEL_PGTABLE }

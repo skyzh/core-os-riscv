@@ -4,14 +4,14 @@
 // https://opensource.org/licenses/MIT
 
 use core::ops::Range;
-
+use crate::info;
 pub use crate::symbols::*;
 
 pub const MAX_PAGE: usize = 128 * 1024 * 1024 / (1 << 12);
 
 pub struct Allocator {
+    pub page_allocated: [usize; MAX_PAGE],
     pub base_addr: usize,
-    pub page_allocated: [usize;MAX_PAGE]
 }
 
 pub const fn align_val(val: usize, order: usize) -> usize {
@@ -28,11 +28,12 @@ pub const fn page_down(val: usize) -> usize {
 }
 
 use crate::{println, panic};
+
 impl Allocator {
     pub const fn new() -> Self {
         Allocator {
             base_addr: 0,
-            page_allocated: [0;MAX_PAGE]
+            page_allocated: [0; MAX_PAGE],
         }
     }
 
@@ -83,10 +84,12 @@ impl Allocator {
         let mut j = 0;
         loop {
             let size = self.page_allocated[j];
+            let addr = &self.page_allocated as *const usize;
+            let addr = unsafe { addr.add(j) };
             if size != 0 {
                 let from = self.offset_addr_of(j);
                 let to = self.offset_addr_of(j + size);
-                println!("{:X}-{:X} (pages: {})", from, to, size);
+                println!("{} {:X} {:X}-{:X} (pages: {:X})", j, addr as usize, from, to, size);
                 j += size;
             } else {
                 j += 1;
@@ -99,11 +102,17 @@ impl Allocator {
 }
 
 use crate::nulllock::Mutex;
+
 static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new(), "alloc");
 
 pub fn init() {
     unsafe {
         ALLOC().lock().base_addr = align_val(HEAP_START, PAGE_ORDER);
+    }
+    // workaround for non-zero data region
+    let mut alloc = ALLOC().lock();
+    for i in 0..MAX_PAGE {
+        alloc.page_allocated[i] = 0;
     }
 }
 
@@ -115,6 +124,7 @@ struct OsAllocator {}
 
 unsafe impl GlobalAlloc for OsAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        info!("{}", layout.size());
         ALLOC().lock().allocate(layout.size())
     }
 
@@ -136,13 +146,25 @@ pub fn alloc_error(l: Layout) -> ! {
 }
 
 pub unsafe fn zero_volatile<T>(range: Range<*mut T>)
-where
-    T: From<u8>,
+    where
+        T: From<u8>,
 {
     let mut ptr = range.start;
 
     while ptr < range.end {
         core::ptr::write_volatile(ptr, T::from(0));
         ptr = ptr.offset(1);
+    }
+}
+
+pub fn debug() {
+    for i in 0x8004f000 as u64..0x80093058 {
+        let d = unsafe { core::ptr::read(i as *const u8) };
+        if d != 0 {
+            println!("0x{:x}: {:x}", i, d);
+        }
+        if i % 0x100000 == 0 {
+            println!("{:x}", i);
+        }
     }
 }

@@ -65,16 +65,13 @@ extern "C" fn abort() -> ! {
 
 #[no_mangle]
 extern "C" fn kinit() {
-	// unsafe { memory::zero_volatile(symbols::bss_range()); }
-	page::init();
+	// unsafe { mem::zero_volatile(symbols::bss_range()); }
 	mem::init();
-	uart::init();
 	uart::UART().lock().init();
 	info!("Booting core-os...");
 	info!("Drivers:");
 	info!("  UART intialized");
 	info!("Booting on hart {}", mhartid::read());
-
 	use symbols::*;
 	print_map_symbols();
 	use page::EntryAttributes;

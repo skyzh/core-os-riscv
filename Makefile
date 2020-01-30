@@ -1,5 +1,5 @@
-TYPE=release
-RELEASE_FLAG=--release
+TYPE=debug
+RELEASE_FLAG=
 K=kernel/src
 U=user/src
 TARGET=riscv64gc-unknown-none-elf
@@ -16,11 +16,6 @@ KERNEL_LIB_OUT=$(LIBS)/libkernel.a
 KERNEL_OUT=kernel.elf
 USER_LIB_OUT=$(LIBS)/libuser.rlib
 USER_LINKER_SCRIPT=$U/user.ld
-
-OBJCOPY_CMD = cargo objcopy \
-		-- \
-		--strip-all \
-		-O binary
 
 QEMU_BINARY=qemu-system-riscv64
 MACH=virt
@@ -63,6 +58,7 @@ qemu: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
 		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
 		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo
+
 qemunostdio: all $(QEMU_DRIVE)
     $(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
             -nographic -serial stdio -bios none -kernel $(KERNEL_OUT) \
@@ -73,6 +69,12 @@ qemudbg: all $(QEMU_DRIVE)
 		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
 		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo \
 		-d int -d in_asm
+
+qemugdb: all $(QEMU_DRIVE)
+	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
+		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
+		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo \
+		-s
 
 objdump: $(KERNEL_OUT)
 	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $(KERNEL_OUT)

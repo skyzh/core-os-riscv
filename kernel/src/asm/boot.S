@@ -9,17 +9,14 @@
 # Execution starts here.
 .global _start
 _start:
+    # SATP should be zero, but let's make sure
+	csrw	satp, zero
 	# Any hardware threads (hart) that are not bootstrapping
 	# need to wait for an IPI
 	csrr	t0, mhartid
 	# Save hartid to tp
 	mv      tp, t0
 	bnez	t0, 3f
-	# SATP should be zero, but let's make sure
-	csrw	satp, zero
-	
-	# Disable linker instruction relaxation for the `la` instruction below.
-	# This disallows the assembler from assuming that `gp` is already initialized.
 	# Set all bytes in the BSS section to zero.
 	la 		a0, __bss_start
 	la		a1, __bss_end
@@ -31,10 +28,10 @@ _start:
 2:
 	# Control registers, set the stack, mstatus, mepc,
 	# and mtvec to return to the main function.
-	li		t5, 0xffff;
+	li		t5, 0xffff
 	csrw	medeleg, t5
 	csrw	mideleg, t5
-	# The stack grows from bottom to top, so we put the stack pointer
+	# The stack grows from top to bottom, so we put the stack pointer
 	# to the very end of the stack range.
 	la		sp, __kernel_stack_end
 	# Setting `mstatus` register:

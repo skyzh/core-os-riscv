@@ -122,6 +122,4 @@ use crate::nulllock::Mutex;
 pub const UART_BASE_ADDR: usize = 0x1000_0000;
 static __UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR), "uart");
 
-pub fn init() {}
-
 pub fn UART() -> &'static Mutex<Uart> { &__UART }
