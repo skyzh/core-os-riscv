@@ -43,7 +43,7 @@ pub fn argptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *
     unsafe { (paddr as *const u8).add(ptr - pg_begin) }
 }
 
-fn sys_write() {
+fn sys_write() -> i32 {
     let fd;
     let content;
     let sz;
@@ -57,9 +57,22 @@ fn sys_write() {
     for i in 0..sz {
         print!("{}", unsafe { *content.add(i) } as char);
     }
+    0
 }
 
-pub fn syscall() {
+fn sys_fork() -> i32 {
+    0
+}
+
+fn sys_exec() -> i32 {
+    0
+}
+
+fn sys_exit() -> i32 {
+    0
+}
+
+pub fn syscall() -> i32 {
     let syscall_id;
     {
         let p = my_proc();
@@ -68,6 +81,9 @@ pub fn syscall() {
     }
     match syscall_id {
         SYS_WRITE => sys_write(),
+        SYS_FORK => sys_fork(),
+        SYS_EXEC => sys_exec(),
+        SYS_EXIT => sys_exit(),
         _ => unreachable!()
     }
 }

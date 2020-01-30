@@ -7,6 +7,7 @@ use crate::mem::{self, ALLOC};
 use crate::nulllock::Mutex;
 use crate::{print, println, panic};
 use crate::symbols::*;
+use alloc::boxed::Box;
 
 const TABLE_ENTRY_CNT: usize = 512;
 
@@ -14,6 +15,20 @@ const TABLE_ENTRY_CNT: usize = 512;
 #[repr(align(4096))]
 pub struct Table {
     pub entries: [Entry; TABLE_ENTRY_CNT],
+}
+
+#[repr(C)]
+#[repr(align(4096))]
+pub struct Page {
+    pub data: [u8; PAGE_SIZE]
+}
+
+impl Page {
+    pub fn new() -> Box<Self> {
+        Box::new(Self {
+            data: [0; PAGE_SIZE]
+        })
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -131,20 +146,33 @@ impl Table {
         TABLE_ENTRY_CNT
     }
 
-    pub fn map(&mut self, vaddr: usize, paddr: usize, flags: usize, level: usize) {
+    pub fn map(&mut self, vaddr: usize, pg: Box<Page>, flags: usize) {
+        if flags & EntryAttributes::U as usize == 0 {
+            panic!("you may only map user page");
+        }
+        self.map_addr(vaddr, Box::into_raw(pg) as usize, flags, 0);
+    }
+
+    pub fn kernel_map(&mut self, vaddr: usize, paddr: usize, flags: usize) {
+        if flags & EntryAttributes::U as usize != 0 {
+            panic!("you may only map kernel page");
+        }
+        self.map_addr(vaddr, paddr, flags, 0);
+    }
+
+    fn map_addr(&mut self, vaddr: usize, paddr: usize, flags: usize, level: usize) {
         if paddr % PAGE_SIZE != 0 {
             panic!("paddr {:x} not aligned", paddr);
         }
         if vaddr % PAGE_SIZE != 0 {
             panic!("vaddr {:x} not aligned", vaddr);
         }
-        let mut alloc = ALLOC().lock();
         let vpn = VPN(vaddr);
         let mut v = &mut self.entries[vpn.vpn2()];
         for lvl in (level..2).rev() {
             if !v.is_v() {
-                let page = alloc.allocate(1);
-                *v = Entry::new(page as usize, EntryAttributes::V as usize);
+                let page = box Table::new();
+                *v = Entry::new(Box::into_raw(page) as usize, EntryAttributes::V as usize);
             }
             let entry = v.paddr().0 as *mut Entry;
             v = unsafe { entry.add(vpn.idx(lvl)).as_mut().unwrap() };
@@ -191,6 +219,7 @@ impl Table {
             }
         }
     }
+
     pub fn walk(&self) {
         self._walk(2, 0);
     }
@@ -200,7 +229,7 @@ impl Table {
         let num_kb_pages = (mem::align_val(end, 12) - memaddr) / PAGE_SIZE;
 
         for _ in 0..num_kb_pages {
-            self.map(memaddr, memaddr, bits, 0);
+            self.map_addr(memaddr, memaddr, bits, 0);
             memaddr += 1 << 12;
         }
     }
@@ -211,13 +240,41 @@ impl Table {
         let num_kb_pages = (mem::align_val(end, 12) - memaddr) / PAGE_SIZE;
 
         for _ in 0..num_kb_pages {
-            self.map(vaddr_start, memaddr, bits, 0);
+            self.map_addr(vaddr_start, memaddr, bits, 0);
             memaddr += 1 << 12;
             vaddr_start += 1 << 12;
         }
     }
+
+    /* TODO: use same function for drop_walk and walk */
+
+    fn drop_walk(&mut self, level: usize) {
+        for i in 0..self.len() {
+            let v = &self.entries[i];
+            if v.is_v() {
+                if v.is_leaf() {
+                    if v.is_u() {
+                        // drop user page
+                        let pg = unsafe { Box::from_raw(v.paddr().0 as *mut Page) };
+                        core::mem::drop(pg);
+                    }
+                } else {
+                    // drop page table
+                    let mut table = unsafe { Box::from_raw(v.paddr().0 as *mut Table) };
+                    table.drop_walk(level - 1);
+                    drop(table);
+                }
+            }
+        }
+    }
 }
 
-static __KERNEL_PGTABLE: Mutex<Table> =  Mutex::new(Table::new(), "kernel_pgtable");
+impl Drop for Table {
+    fn drop(&mut self) {
+        self.drop_walk(2);
+    }
+}
 
-pub fn KERNEL_PGTABLE() -> &'static Mutex<Table> { & __KERNEL_PGTABLE }
+static __KERNEL_PGTABLE: Mutex<Table> = Mutex::new(Table::new(), "kernel_pgtable");
+
+pub fn KERNEL_PGTABLE() -> &'static Mutex<Table> { &__KERNEL_PGTABLE }

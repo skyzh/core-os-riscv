@@ -124,7 +124,6 @@ struct OsAllocator {}
 
 unsafe impl GlobalAlloc for OsAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        info!("{}", layout.size());
         ALLOC().lock().allocate(layout.size())
     }
 

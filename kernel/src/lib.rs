@@ -102,17 +102,15 @@ extern "C" fn kinit() {
 		unsafe { KERNEL_STACK_END },
 		EntryAttributes::RW as usize,
 	);
-	pgtable.map(
+	pgtable.kernel_map(
 		UART_BASE_ADDR,
 		UART_BASE_ADDR,
-		EntryAttributes::RW as usize,
-		0,
+		EntryAttributes::RW as usize
 	);
-	pgtable.map(
+	pgtable.kernel_map(
 		TRAMPOLINE_START,
 		unsafe { TRAMPOLINE_TEXT_START },
-		page::EntryAttributes::RX as usize,
-		0,
+		page::EntryAttributes::RX as usize
 	);
 	pgtable.id_map_range(
 		unsafe { HEAP_START },

@@ -10,6 +10,7 @@ use crate::symbols::*;
 use crate::page;
 use crate::nulllock::Mutex;
 use crate::syscall;
+use crate::process::Register::a0;
 
 #[no_mangle]
 extern "C" fn m_trap(
@@ -131,7 +132,7 @@ pub extern "C" fn usertrap() {
     if scause::read().bits() == 8 {
         p.trapframe.epc += 4;
         arch::intr_on();
-        syscall::syscall();
+        p.trapframe.regs[a0 as usize] = syscall::syscall() as usize;
         yield_cpu();
     } else {
         panic!("unexpected scause");

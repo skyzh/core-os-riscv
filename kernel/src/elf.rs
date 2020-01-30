@@ -85,14 +85,14 @@ pub fn parse_elf<const N: usize>(a: &'static [u8; N], pgtable: &mut page::Table)
             hdr.off as usize,
             hdr.filesz as usize,
         );
-        info!(
+        /* info!(
             "map segment ELF 0x{:X}~0x{:X} -> MEM 0x{:X}",
             hdr.off,
             hdr.off + hdr.filesz,
             hdr.vaddr
-        );
+        ); */
     }
-    info!("elf loaded");
+    // info!("elf loaded");
     elfhdr.entry
 }
 
@@ -105,18 +105,17 @@ fn load_segment<const N: usize>(
 ) {
     let num_pages = mem::align_val(sz, PAGE_ORDER) / PAGE_SIZE;
     for i in 0..num_pages {
-        let seg = mem::ALLOC().lock().allocate(mem::PAGE_SIZE);
+        let mut seg = page::Page::new();
         let src = elf as *const u8;
         unsafe {
             let src = src.add(offset + i * mem::PAGE_SIZE);
-            core::ptr::copy(src, seg, mem::PAGE_SIZE);
+            core::ptr::copy(src, seg.data.as_mut_ptr(), mem::PAGE_SIZE);
         }
         use page::EntryAttributes;
         pgtable.map(
             vaddr + i * mem::PAGE_SIZE,
-            seg as usize,
-            EntryAttributes::URX as usize,
-            0,
+            seg,
+            EntryAttributes::URX as usize
         );
     }
 }

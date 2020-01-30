@@ -45,20 +45,18 @@ impl Process {
         };
 
         // map trampoline
-        p.pgtable.map(
+        p.pgtable.kernel_map(
             TRAMPOLINE_START,
             unsafe { TRAMPOLINE_TEXT_START },
-            page::EntryAttributes::RX as usize,
-            0,
+            page::EntryAttributes::RX as usize
         );
 
         let trapframe = &*p.trapframe as *const _ as usize;
         // map trapframe
-        p.pgtable.map(
+        p.pgtable.kernel_map(
             TRAPFRAME_START,
             trapframe,
-            page::EntryAttributes::RW as usize,
-            0,
+            page::EntryAttributes::RW as usize
         );
         p.context.regs[ContextRegisters::ra as usize] = forkret as usize;
         p.context.regs[ContextRegisters::sp as usize] = p.kstack + PAGE_SIZE;
@@ -79,13 +77,12 @@ pub fn init_proc() {
         &mut p.pgtable
     );
     // map user stack
-    let seg = mem::ALLOC().lock().allocate(mem::PAGE_SIZE);
+    let stack = page::Page::new();
     let stack_begin = 0x80001000;
     p.pgtable.map(
         stack_begin,
-        seg as usize,
-        page::EntryAttributes::URW as usize,
-        0,
+        stack,
+        page::EntryAttributes::URW as usize
     );
     p.trapframe.epc = entry as usize;
     p.trapframe.regs[Register::sp as usize] = stack_begin + 0x1000; // sp

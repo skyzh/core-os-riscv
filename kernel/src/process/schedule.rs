@@ -47,12 +47,12 @@ pub fn scheduler() -> ! {
         if let Some(p) = find_next_runnable_proc() {
             c.process = Some(p);
             let p = c.process.as_mut().unwrap();
-            info!("scheduler: switching to {}", p.pid);
+            // info!("scheduler: switching to {}", p.pid);
             p.state = ProcessState::RUNNING;
             let ctx = core::mem::replace(&mut p.context, box Context::zero());
-            info!("swtch to proc");
+            // info!("swtch to proc");
             swtch(&mut c.scheduler_context, *ctx);
-            info!("come back");
+            // info!("come back");
             let p = core::mem::replace(&mut c.process, None).unwrap();
             put_back_proc(p);
         }
