@@ -16,6 +16,7 @@
 #![feature(maybe_uninit_uninit_array)]
 #![feature(maybe_uninit_ref)]
 #![allow(dead_code)]
+#![doc(file = "README.md")]
 
 #[macro_use]
 extern crate alloc;
@@ -30,11 +31,9 @@ mod page;
 mod print;
 mod process;
 mod symbols;
-mod symbols_gen;
 mod trap;
 mod uart;
 mod syscall;
-mod syscall_gen;
 
 use riscv::{asm, register::*};
 use crate::process::my_cpu;

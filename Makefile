@@ -26,7 +26,7 @@ QEMU_DRIVE=hdd.img
 
 all: $(KERNEL_OUT) $(USER_LIB_OUT)
 
-K_AUTOGEN_FILES = $K/asm/symbols.S $K/symbols_gen.rs $K/syscall_gen.rs
+K_AUTOGEN_FILES = $K/asm/symbols.S $K/symbols/gen.rs $K/syscall/gen.rs
 U_AUTOGEN_FILES = $U/usys.S
 
 ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
@@ -44,9 +44,9 @@ $(USER_LIB_OUT): $(U_AUTOGEN_FILES) FORCE
 
 $K/asm/symbols.S: utils/symbols.S.py utils/symbols.py
 	$< > $@
-$K/symbols_gen.rs: utils/symbols_gen.rs.py utils/symbols.py
+$K/symbols/gen.rs: utils/symbols_gen.rs.py utils/symbols.py
 	$< > $@
-$K/syscall_gen.rs: utils/syscall_gen.rs.py utils/syscall.py
+$K/syscall/gen.rs: utils/syscall_gen.rs.py utils/syscall.py
 	$< > $@
 $U/usys.S: utils/usys.S.py utils/syscall.py
 	$< > $@
@@ -91,13 +91,12 @@ userreadelf: $(USERPROG)
 	readelf -a $<
 
 docs:
-	cd kernel && cargo rustdoc -- \
-						--no-defaults \
-						--passes strip-hidden \
-						--passes collapse-docs \
-						--passes unindent-comments \
-						--passes strip-priv-imports
-	open ./target/$(TARGET)/doc/kernel/index.html
+	cd kernel && cargo rustdoc --open -- \
+				--no-defaults \
+				--passes strip-hidden \
+				--passes collapse-docs \
+				--passes unindent-comments \
+				--passes strip-priv-imports \
 
 .PHONY: clean
 clean:

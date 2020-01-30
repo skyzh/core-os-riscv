@@ -3,10 +3,11 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+mod gen;
+pub use gen::*;
 use crate::process::{TrapFrame, Register, my_proc, fork};
 use crate::{info, panic, print, println};
 use crate::page;
-pub use crate::syscall_gen::*;
 use crate::mem::{align_val, page_down};
 use crate::symbols::{PAGE_ORDER, PAGE_SIZE};
 

@@ -3,7 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-pub use crate::symbols_gen::*;
+mod gen;
+pub use gen::*;
 use core::ops::Range;
 
 extern "C" {

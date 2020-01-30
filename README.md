@@ -35,13 +35,13 @@ make qemu
 
 If you want to use readelf tools, etc., you may install pwntools on macOS.
 
-## Docs
+## Documentation
 
 ```bash
 make docs
 ```
 
-I'll continuously add Rust-specific implementations into documentation. Highlights are shown below.
+I'll continuously add Rust-specific implementations and how I made this project into documentation. Highlights are shown below.
 
 * `Process` takes full ownership of pagetable, context and trapframe.
 * `fork` implementation.
