@@ -20,6 +20,7 @@
 
 #[macro_use]
 extern crate alloc;
+
 // This is experimental and requires alloc_prelude as a feature
 use alloc::prelude::v1::*;
 
@@ -44,149 +45,149 @@ extern "C" fn eh_personality() {}
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-	panic_println!("Aborting: ");
-	if let Some(p) = info.location() {
-		panic_println!(
+    panic_println!("Aborting: ");
+    if let Some(p) = info.location() {
+        panic_println!(
 			"line {}, file {}: {}",
 			p.line(),
 			p.file(),
 			info.message().unwrap()
 		);
-	} else {
-		panic_println!("no information available.");
-	}
-	abort();
+    } else {
+        panic_println!("no information available.");
+    }
+    abort();
 }
 
 #[no_mangle]
 extern "C" fn abort() -> ! {
-	wait_forever();
+    wait_forever();
 }
 
 #[no_mangle]
 extern "C" fn kinit() {
-	// unsafe { mem::zero_volatile(symbols::bss_range()); }
-	mem::init();
-	uart::UART().lock().init();
-	info!("Booting core-os...");
-	info!("Drivers:");
-	info!("  UART intialized");
-	info!("Booting on hart {}", mhartid::read());
-	use symbols::*;
-	print_map_symbols();
-	use page::EntryAttributes;
-	use page::{Table, KERNEL_PGTABLE};
-	let mut pgtable = KERNEL_PGTABLE().lock();
-	pgtable.id_map_range(
-		unsafe { TEXT_START },
-		unsafe { TEXT_END },
-		EntryAttributes::RX as usize,
-	);
-	pgtable.id_map_range(
-		unsafe { RODATA_START },
-		unsafe { RODATA_END },
-		EntryAttributes::RX as usize,
-	);
-	pgtable.id_map_range(
-		unsafe { DATA_START },
-		unsafe { DATA_END },
-		EntryAttributes::RW as usize,
-	);
-	pgtable.id_map_range(
-		unsafe { BSS_START },
-		unsafe { BSS_END },
-		EntryAttributes::RW as usize,
-	);
-	pgtable.id_map_range(
-		unsafe { KERNEL_STACK_START },
-		unsafe { KERNEL_STACK_END },
-		EntryAttributes::RW as usize,
-	);
-	pgtable.kernel_map(
-		UART_BASE_ADDR,
-		UART_BASE_ADDR,
-		EntryAttributes::RW as usize
-	);
-	pgtable.kernel_map(
-		TRAMPOLINE_START,
-		unsafe { TRAMPOLINE_TEXT_START },
-		page::EntryAttributes::RX as usize
-	);
-	pgtable.id_map_range(
-		unsafe { HEAP_START },
-		unsafe { HEAP_START + HEAP_SIZE },
-		EntryAttributes::RW as usize,
-	);
-	// CLINT
-	//  -> MSIP
-	pgtable.id_map_range(0x0200_0000, 0x0200_ffff, EntryAttributes::RW as usize);
-	// PLIC
-	pgtable.id_map_range(0x0c00_0000, 0x0c00_2000, EntryAttributes::RW as usize);
-	pgtable.id_map_range(0x0c20_0000, 0x0c20_8000, EntryAttributes::RW as usize);
-	use uart::*;
-	/* TODO: use Rust primitives */
-	use process::TrapFrame;
-	let cpu = my_cpu();
-	let kernel_trapframe = &mut cpu.kernel_trapframe;
+    // unsafe { mem::zero_volatile(symbols::bss_range()); }
+    mem::init();
+    uart::UART().lock().init();
+    info!("Booting core-os...");
+    info!("Drivers:");
+    info!("  UART intialized");
+    info!("Booting on hart {}", mhartid::read());
+    use symbols::*;
+    print_map_symbols();
+    use page::EntryAttributes;
+    use page::{Table, KERNEL_PGTABLE};
+    let mut pgtable = KERNEL_PGTABLE().lock();
+    pgtable.id_map_range(
+        TEXT_START(),
+        TEXT_END(),
+        EntryAttributes::RX as usize,
+    );
+    pgtable.id_map_range(
+        RODATA_START(),
+        RODATA_END(),
+        EntryAttributes::RX as usize,
+    );
+    pgtable.id_map_range(
+        DATA_START(),
+        DATA_END(),
+        EntryAttributes::RW as usize,
+    );
+    pgtable.id_map_range(
+        BSS_START(),
+        BSS_END(),
+        EntryAttributes::RW as usize,
+    );
+    pgtable.id_map_range(
+        KERNEL_STACK_START(),
+        KERNEL_STACK_END(),
+        EntryAttributes::RW as usize,
+    );
+    pgtable.kernel_map(
+        UART_BASE_ADDR,
+        UART_BASE_ADDR,
+        EntryAttributes::RW as usize,
+    );
+    pgtable.kernel_map(
+        TRAMPOLINE_START,
+        TRAMPOLINE_TEXT_START(),
+        page::EntryAttributes::RX as usize,
+    );
+    pgtable.id_map_range(
+        HEAP_START(),
+        HEAP_START() + HEAP_SIZE(),
+        EntryAttributes::RW as usize,
+    );
+    // CLINT
+    //  -> MSIP
+    pgtable.id_map_range(0x0200_0000, 0x0200_ffff, EntryAttributes::RW as usize);
+    // PLIC
+    pgtable.id_map_range(0x0c00_0000, 0x0c00_2000, EntryAttributes::RW as usize);
+    pgtable.id_map_range(0x0c20_0000, 0x0c20_8000, EntryAttributes::RW as usize);
+    use uart::*;
+    /* TODO: use Rust primitives */
+    use process::TrapFrame;
+    let cpu = my_cpu();
+    let kernel_trapframe = &mut cpu.kernel_trapframe;
 
-	let root_ppn = &mut *pgtable as *mut Table as usize;
-	let satp_val = arch::build_satp(8, 0, root_ppn);
-	unsafe {
-		mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
-	}
-	kernel_trapframe.satp = satp_val;
-	let stack_addr = Box::into_raw(Page::new());
-	kernel_trapframe.sp = stack_addr as usize + mem::PAGE_SIZE;
-	kernel_trapframe.hartid = 0;
-	pgtable.id_map_range(
-		stack_addr as usize,
-		stack_addr as usize + mem::PAGE_SIZE,
-		EntryAttributes::RW as usize,
-	);
-	unsafe {
-		asm!("csrw satp, $0" :: "r"(satp_val));
-		asm!("sfence.vma zero, zero");
-	}
-	info!("Page table set up, switching to supervisor mode");
+    let root_ppn = &mut *pgtable as *mut Table as usize;
+    let satp_val = arch::build_satp(8, 0, root_ppn);
+    unsafe {
+        mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
+    }
+    kernel_trapframe.satp = satp_val;
+    let stack_addr = Box::into_raw(Page::new());
+    kernel_trapframe.sp = stack_addr as usize + mem::PAGE_SIZE;
+    kernel_trapframe.hartid = 0;
+    pgtable.id_map_range(
+        stack_addr as usize,
+        stack_addr as usize + mem::PAGE_SIZE,
+        EntryAttributes::RW as usize,
+    );
+    unsafe {
+        asm!("csrw satp, $0" :: "r"(satp_val));
+        asm!("sfence.vma zero, zero");
+    }
+    info!("Page table set up, switching to supervisor mode");
 }
 
 #[no_mangle]
 extern "C" fn kinit_hart(hartid: usize) {
-	wait_forever();
-	use process::TrapFrame;
-	let mut cpu = my_cpu();
-	let kernel_trapframe = &mut cpu.kernel_trapframe;
-	mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
-	// We can't do the following until zalloc() is locked, but we
-	// don't have locks, yet :( cpu::KERNEL_TRAP_FRAME[hartid].satp
-	// = cpu::KERNEL_TRAP_FRAME[0].satp;
-	// cpu::KERNEL_TRAP_FRAME[hartid].trap_stack = page::zalloc(1);
-	kernel_trapframe.hartid = hartid;
-	info!("{} initialized", hartid);
-	wait_forever();
+    wait_forever();
+    use process::TrapFrame;
+    let mut cpu = my_cpu();
+    let kernel_trapframe = &mut cpu.kernel_trapframe;
+    mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
+    // We can't do the following until zalloc() is locked, but we
+    // don't have locks, yet :( cpu::KERNEL_TRAP_FRAME[hartid].satp
+    // = cpu::KERNEL_TRAP_FRAME[0].satp;
+    // cpu::KERNEL_TRAP_FRAME[hartid].trap_stack = page::zalloc(1);
+    kernel_trapframe.hartid = hartid;
+    info!("{} initialized", hartid);
+    wait_forever();
 }
 
 pub fn wait_forever() -> ! {
-	loop {
-		unsafe {
-			asm::wfi();
-		}
-	}
+    loop {
+        unsafe {
+            asm::wfi();
+        }
+    }
 }
 
 #[no_mangle]
 extern "C" fn kmain() -> ! {
-	info!("Now in supervisor mode");
-	/*
-	unsafe {
-		let mtimecmp = 0x0200_4000 as *mut u64;
-		let mtime = 0x0200_bff8 as *const u64;
-		// The frequency given by QEMU is 10_000_000 Hz, so this sets
-		// the next interrupt to fire one second from now.
-		mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
-	}*/
-	process::init_proc();
-	process::scheduler()
+    info!("Now in supervisor mode");
+    /*
+    unsafe {
+        let mtimecmp = 0x0200_4000 as *mut u64;
+        let mtime = 0x0200_bff8 as *const u64;
+        // The frequency given by QEMU is 10_000_000 Hz, so this sets
+        // the next interrupt to fire one second from now.
+        mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
+    }*/
+    process::init_proc();
+    process::scheduler()
 }
 
 /*

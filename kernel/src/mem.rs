@@ -107,7 +107,7 @@ static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new(), "alloc");
 
 pub fn init() {
     unsafe {
-        ALLOC().lock().base_addr = align_val(HEAP_START, PAGE_ORDER);
+        ALLOC().lock().base_addr = align_val(HEAP_START(), PAGE_ORDER);
     }
     // workaround for non-zero data region
     let mut alloc = ALLOC().lock();

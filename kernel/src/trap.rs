@@ -143,7 +143,7 @@ pub extern "C" fn usertrap() {
 
 #[inline]
 pub fn trampoline_userret(tf: usize, satp_val: usize) -> ! {
-    let uservec_offset = userret as usize - unsafe { TRAMPOLINE_TEXT_START };
+    let uservec_offset = userret as usize - TRAMPOLINE_TEXT_START();
     let fn_addr = (TRAMPOLINE_START + uservec_offset) as *const ();
     let fn_addr: extern "C" fn(usize, usize) -> usize = unsafe { core::mem::transmute(fn_addr) };
     (fn_addr)(tf, satp_val);
@@ -159,7 +159,7 @@ pub fn usertrapret() -> ! {
         // send syscalls, interrupts, and exceptions to trampoline.S
         unsafe {
             stvec::write(
-                (uservec as usize - TRAMPOLINE_TEXT_START) + TRAMPOLINE_START,
+                (uservec as usize - TRAMPOLINE_TEXT_START()) + TRAMPOLINE_START,
                 stvec::TrapMode::Direct,
             );
         }

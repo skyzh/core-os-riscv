@@ -55,7 +55,7 @@ impl Process {
         // map trampoline
         p.pgtable.kernel_map(
             TRAMPOLINE_START,
-            unsafe { TRAMPOLINE_TEXT_START },
+            TRAMPOLINE_TEXT_START(),
             page::EntryAttributes::RX as usize
         );
 
