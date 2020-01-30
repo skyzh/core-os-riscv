@@ -57,7 +57,7 @@ fn sys_write() -> i32 {
     for i in 0..sz {
         print!("{}", unsafe { *content.add(i) } as char);
     }
-    0
+    sz as i32
 }
 
 fn sys_fork() -> i32 {

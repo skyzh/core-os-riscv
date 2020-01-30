@@ -90,6 +90,9 @@ impl Entry {
     pub fn paddr(&self) -> PPN {
         PPN((self.0 & !0x3ff) << 2)
     }
+    pub fn flags(&self) -> usize {
+        self.0 & 0x3ff
+    }
     pub const fn new(ppn: usize, flags: usize) -> Self {
         Self(((ppn & !0xfff) >> 2) | flags)
     }
@@ -112,6 +115,11 @@ impl PPN {
             2 => self.ppn2(),
             _ => unreachable!(),
         }
+    }
+    pub fn clone_page(&self) -> Box<Page> {
+        let mut pg = Page::new();
+        unsafe { core::ptr::copy(self.0 as *const u8, pg.data.as_mut_ptr(), PAGE_SIZE); }
+        pg
     }
 }
 
@@ -256,22 +264,47 @@ impl Table {
                     if v.is_u() {
                         // drop user page
                         let pg = unsafe { Box::from_raw(v.paddr().0 as *mut Page) };
-                        core::mem::drop(pg);
                     }
                 } else {
                     // drop page table
                     let mut table = unsafe { Box::from_raw(v.paddr().0 as *mut Table) };
                     table.drop_walk(level - 1);
-                    drop(table);
                 }
             }
         }
+    }
+
+    fn clone_walk(&self, level: usize) -> Box<Self> {
+        let mut pgtable = Table::new();
+        for i in 0..self.len() {
+            let v = &self.entries[i];
+            if v.is_v() {
+                if v.is_leaf() {
+                    if v.is_u() {
+                        let pg = v.paddr().clone_page();
+                        pgtable.entries[i] = Entry::new(Box::into_raw(pg) as usize, v.flags());
+                    }
+                } else {
+                    let table = unsafe { Box::from_raw(v.paddr().0 as *mut Table) };
+                    let pg = table.clone_walk(level - 1);
+                    core::mem::forget(table);
+                    pgtable.entries[i] = Entry::new(Box::into_raw(pg) as usize, v.flags());
+                }
+            }
+        }
+        box pgtable
     }
 }
 
 impl Drop for Table {
     fn drop(&mut self) {
         self.drop_walk(2);
+    }
+}
+
+impl Clone for Box<Table> {
+    fn clone(&self) -> Self {
+        self.clone_walk(2)
     }
 }
 

@@ -11,7 +11,7 @@
 #![feature(const_generics)]
 
 use user::println;
-use user::syscall::{fork, exit, exec};
+use user::syscall::{fork, exit, exec, write};
 use core::ptr::null;
 
 #[no_mangle]
@@ -19,6 +19,7 @@ pub unsafe extern "C" fn _start() -> ! {
     for i in 0..100 {
         println!("init {}", i);
     }
+    println!("write: {}", write(0, "test"));
     fork();
     exec("sh", null());
     exit(0);
