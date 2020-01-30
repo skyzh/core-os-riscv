@@ -98,6 +98,7 @@ docs:
 						--passes unindent-comments \
 						--passes strip-priv-imports
 	open ./target/$(TARGET)/doc/kernel/index.html
+
 .PHONY: clean
 clean:
 	cargo clean

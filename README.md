@@ -35,6 +35,17 @@ make qemu
 
 If you want to use readelf tools, etc., you may install pwntools on macOS.
 
+## Docs
+
+```bash
+make docs
+```
+
+I'll continuously add Rust-specific implementations into documentation. Highlights are shown below.
+
+* `Process` takes full ownership of pagetable, context and trapframe.
+* `fork` implementation.
+
 ## Roadmap
 
 The main goal of this project is to make an xv6-like operating system with the Rust programming language. And now it's in a very early stage. I'm still working on it.
@@ -47,10 +58,11 @@ The main goal of this project is to make an xv6-like operating system with the R
 - [x] Process
 - [x] System call
 - [x] Scheduling
-- [ ] Test multiple process scheduling
-- [ ] More system call
+- [x] Test multiple process scheduling
+- [x] Fork system call
 - [x] Kernel Allocator
-- [ ] Remove direct call to allocator
+- [x] Remove direct call to allocator
+- [ ] Simple fs and exec system call
 - [ ] Allocator and stdlib
 - [ ] Real spinlock instead of nulllock
 - [ ] Multi-core support
@@ -80,8 +92,6 @@ The main goal of this project is to make an xv6-like operating system with the R
 
 [7] https://gist.github.com/cb372/5f6bf16ca0682541260ae52fc11ea3bb
 
-## Highlights of Rust-specific Implementations
+## Known Issues
 
-* `swtch_and_drop` drops a process owning the context, thus preserving Rust ownership constraints.
-* `Process` takes full ownership of pagetable, context and trapframe.
 * Issue of `!`: function of `!` return type may interfere with RAII (objects won't be dropped). If function of return type `!` is called, there may be possible memory leak. Rust should drop all objects before calling these functions (instead of stack rewinding)
