@@ -90,6 +90,14 @@ userobjdump: $(USERPROG)
 userreadelf: $(USERPROG)
 	readelf -a $<
 
+docs:
+	cd kernel && cargo rustdoc -- \
+						--no-defaults \
+						--passes strip-hidden \
+						--passes collapse-docs \
+						--passes unindent-comments \
+						--passes strip-priv-imports
+	open ./target/$(TARGET)/doc/kernel/index.html
 .PHONY: clean
 clean:
 	cargo clean
