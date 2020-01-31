@@ -5,10 +5,12 @@ rust:
 cache: cargo
 before_script:
   - sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
-  - echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.profile
+  - eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
   - brew tap riscv/riscv
-  - brew install riscv-tools
-  - brew install qemu
+  - brew install riscv-tools qemu
+  - cargo install cargo-xbuild cargo-binutils
+  - rustup component add rust-src llvm-tools-preview rustfmt rls rust-analysis
+  - rustup target add riscv64gc-unknown-none-elf
 script:
   - make all
   - make docs
