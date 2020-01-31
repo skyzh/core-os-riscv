@@ -7,6 +7,8 @@ In files not modified by this project, original licenses are preserved.
 
 ## Build Instructions
 
+### macOS
+
 First of all, install GNU RISC-V tools and QEMU. Python3 is also required to generate some files automatically.
 
 ```bash
@@ -34,6 +36,10 @@ make qemu
 ```
 
 If you want to use readelf tools, etc., you may install pwntools on macOS.
+
+### Ubuntu
+
+Refer to `.travis.yml` for building scripts.
 
 ## Documentation
 

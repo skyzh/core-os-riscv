@@ -1,0 +1,14 @@
+dist: bionic
+language: rust
+rust:
+  - nightly
+cache: cargo
+before_script:
+  - sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
+  - echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.profile
+  - brew tap riscv/riscv
+  - brew install riscv-tools
+  - brew install qemu
+script:
+  - make all
+  - make docs
