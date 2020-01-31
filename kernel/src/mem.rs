@@ -5,31 +5,43 @@
 
 use core::ops::Range;
 use crate::info;
+use crate::{println, panic};
 pub use crate::symbols::*;
+use crate::nulllock::Mutex;
 
+/// Maximum number of pages. As QEMU and linker script `kernel.ld`
+/// are set to have 128MB of RAM, maximum number of pages can be calculated.
 pub const MAX_PAGE: usize = 128 * 1024 * 1024 / (1 << 12);
 
+/// Frame allocator gives out one or more pages.
 pub struct Allocator {
+    /// A bool array records whether a page is handed out
     pub page_allocated: [usize; MAX_PAGE],
+    /// Pages are handed out from `base_addr`, which is the start address
+    /// of HEAP.
     pub base_addr: usize,
 }
 
+/// Align an address to upper bound according to specified order.
 pub const fn align_val(val: usize, order: usize) -> usize {
     let o = (1usize << order) - 1;
     (val + o) & !o
 }
 
+/// Align an address to lower bound according to specified order.
 pub const fn align_val_down(val: usize, order: usize) -> usize {
     val & !((1usize << order) - 1)
 }
 
+/// Align an address to the begin of a page.
 pub const fn page_down(val: usize) -> usize {
     align_val_down(val, PAGE_ORDER)
 }
 
-use crate::{println, panic};
-
 impl Allocator {
+    /// Returns a new allocator instance
+    /// 
+    /// `base_addr` should be intialized later.
     pub const fn new() -> Self {
         Allocator {
             base_addr: 0,
@@ -41,6 +53,7 @@ impl Allocator {
         let addr = self.base_addr + id * PAGE_SIZE;
         addr
     }
+
     unsafe fn offset_id_of(&self, id: usize) -> *mut u8 {
         self.offset_addr_of(id) as *mut u8
     }
@@ -80,6 +93,7 @@ impl Allocator {
         }
     }
 
+    /// Print page allocation status
     pub fn debug(&self) {
         let mut j = 0;
         loop {
@@ -101,14 +115,10 @@ impl Allocator {
     }
 }
 
-use crate::nulllock::Mutex;
-
 static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new(), "alloc");
 
 pub fn init() {
-    unsafe {
-        ALLOC().lock().base_addr = align_val(HEAP_START(), PAGE_ORDER);
-    }
+    ALLOC().lock().base_addr = align_val(HEAP_START(), PAGE_ORDER);
     // workaround for non-zero data region
     let mut alloc = ALLOC().lock();
     for i in 0..MAX_PAGE {

@@ -16,7 +16,7 @@ impl StdIO {
 
 impl Write for StdIO {
     fn write_str(&mut self, out: &str) -> Result<(), Error> {
-        unsafe { syscall::write(1, out); }
+        syscall::write(1, out);
         Ok(())
     }
 }
@@ -37,4 +37,9 @@ macro_rules! println {
     ($($arg:tt)*) => ({
         $crate::print::_print(format_args_nl!($($arg)*));
     })
+}
+
+#[macro_export]
+macro_rules! format {
+    ($($arg:tt)*) => (core::fmt::format(format_args_nl!($($arg)*)))
 }

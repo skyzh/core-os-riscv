@@ -45,6 +45,7 @@ I'll continuously add Rust-specific implementations and how I made this project 
 
 * `Process` takes full ownership of pagetable, context and trapframe.
 * `fork` implementation.
+* Use `include_bytes!` to embed `init` binary into kernel.
 
 ## Roadmap
 
@@ -62,12 +63,13 @@ The main goal of this project is to make an xv6-like operating system with the R
 - [x] Fork system call
 - [x] Kernel Allocator
 - [x] Remove direct call to allocator
+- [ ] Timer Interrupt and scheduling
 - [ ] Simple fs and exec system call
-- [ ] Allocator and stdlib
+- [ ] Use initcode instead of init binary
+- [ ] Allocator and stdlib in user-space
 - [ ] Real spinlock instead of nulllock
 - [ ] Multi-core support
 - [ ] Use Option instead of panic!
-- [ ] Timer Interrupt and scheduling
 - [ ] Persistence
 - [ ] Eliminate use of unsafe
 - [ ] Documentation

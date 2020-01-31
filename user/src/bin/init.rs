@@ -10,7 +10,7 @@
 #![feature(format_args_nl)]
 #![feature(const_generics)]
 
-use user::{println, print};
+use user::{println, print, format};
 use user::syscall::{fork, exit, exec, write};
 use core::ptr::null;
 
@@ -18,7 +18,7 @@ use core::ptr::null;
 pub unsafe extern "C" fn _start() -> ! {
     println!("ready to fork!");
     let p = fork();
-    println!("fork result: {}", p);
+    println!("{}", format!("fork result: {}", p));
     loop {
         print!(""); // yield CPU
     }

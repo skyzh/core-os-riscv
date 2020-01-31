@@ -1,6 +1,5 @@
 /target
 **/*.rs.bk
-Cargo.lock
 kernel.img
 hdd.img
 __pycache__/

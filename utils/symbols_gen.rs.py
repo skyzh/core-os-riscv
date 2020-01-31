@@ -20,4 +20,4 @@ from symbols import symbols
 for symbol in symbols:
     # print("symbol! { __%s, %s, usize }" % (symbol, symbol))
     print("extern \"C\" { static __%s: usize; }" % symbol.lower())
-    print("pub fn %s() -> usize { unsafe { &__%s as *const _ as _ } }" % (symbol, symbol.lower()))
+    print("#[inline] pub fn %s() -> usize { unsafe { &__%s as *const _ as _ } }" % (symbol, symbol.lower()))
