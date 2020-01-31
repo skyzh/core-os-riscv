@@ -39,7 +39,7 @@ If you want to use readelf tools, etc., you may install pwntools on macOS.
 
 ### Ubuntu
 
-Refer to `.travis.yml` for building scripts.
+Use Linuxbrew.
 
 ## Documentation
 
