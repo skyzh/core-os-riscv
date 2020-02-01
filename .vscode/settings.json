@@ -1,3 +1,7 @@
 {
-    "rust.all_targets": false
+    "rust.all_targets": false,
+    "files.associations": {
+        "istream": "cpp",
+        "iosfwd": "cpp"
+    }
 }

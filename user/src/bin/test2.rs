@@ -16,12 +16,6 @@ use core::ptr::null;
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
-    println!("ready to fork!");
-    let p = fork();
-    println!("fork result: {}", p);
-    loop {
-        print!(""); // yield CPU
-    }
-    // exec("sh", null());
+    println!("test2!");
     exit(0);
 }

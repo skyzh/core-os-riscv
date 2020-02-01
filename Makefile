@@ -10,11 +10,12 @@ CFLAGS+=-march=rv64gc -mabi=lp64
 -Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector -fno-pie -no-pie
 TARGET_PATH=./target/$(TARGET)/$(TYPE)
 KERNEL_LIBS=$(TARGET_PATH)
+USER_LIBS=$(TARGET_PATH)
 KERNEL_LIB=-lkernel -lgcc
 KERNEL_LINKER_SCRIPT=$K/kernel.ld
-KERNEL_LIB_OUT=$(LIBS)/libkernel.a
+KERNEL_LIB_OUT=$(KERNEL_LIBS)/libkernel.a
 KERNEL_OUT=kernel.elf
-USER_LIB_OUT=$(LIBS)/libuser.rlib
+USER_LIB_OUT=$(USER_LIBS)/libuser.rlib
 USER_LINKER_SCRIPT=$U/user.ld
 
 QEMU_BINARY=qemu-system-riscv64
@@ -51,9 +52,6 @@ $K/syscall/gen.rs: utils/syscall_gen.rs.py utils/syscall.py
 $U/usys.S: utils/usys.S.py utils/syscall.py
 	$< > $@
 
-$(QEMU_DRIVE):
-	dd if=/dev/zero of=$@ count=32 bs=1048576
-
 qemu: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
 		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
@@ -82,7 +80,15 @@ objdump: $(KERNEL_OUT)
 readelf: $(KERNEL_OUT)
 	readelf -a $<
 
-USERPROG = ./target/$(TARGET)/$(TYPE)/loop
+UPROGS = $(USER_LIBS)/init \
+		 $(USER_LIBS)/test1 \
+		 $(USER_LIBS)/test2 \
+		 $(USER_LIBS)/test3
+
+$(QEMU_DRIVE): $(UPROGS) fs/fs.cpp
+	dd if=/dev/zero of=$@ count=32 bs=1048576
+	g++ fs/fs.cpp -o target/mkfs --std=c++11
+	./target/mkfs hdd.img $(UPROGS)
 
 userobjdump: $(USERPROG)
 	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $<
