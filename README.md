@@ -72,7 +72,7 @@ The main goal of this project is to make an xv6-like operating system with the R
 - [x] Kernel Allocator
 - [x] Remove direct call to allocator
 - [ ] Timer Interrupt and scheduling
-- [ ] Fake fs and exec system call
+- [x] Fake fs and exec system call
 - [ ] External interrupt and virt-io driver
 - [ ] Use initcode instead of init binary
 - [ ] Allocator and stdlib in user-space
