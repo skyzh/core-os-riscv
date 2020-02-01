@@ -48,7 +48,8 @@ const ELF_PROG_FLAG_WRITE: u32 = 2;
 const ELF_PROG_FLAG_READ: u32 = 4;
 const ELF_MAGIC: u32 = 0x464C457F;
 
-pub fn parse_elf(a: *const u8, sz: usize, pgtable: &mut page::Table) -> u64 {
+pub fn parse_elf(a: &[u8], pgtable: &mut page::Table) -> u64 {
+    let a = a.as_ptr();
     /* TODO: Use something safer */
     // peek head of byte array to get ELF information
     let elfhdr = unsafe { &*(a as *const ELFHeader) };
@@ -85,14 +86,13 @@ pub fn parse_elf(a: *const u8, sz: usize, pgtable: &mut page::Table) -> u64 {
             hdr.off as usize,
             hdr.filesz as usize,
         );
-        /* info!(
+        /* println!(
             "map segment ELF 0x{:X}~0x{:X} -> MEM 0x{:X}",
             hdr.off,
             hdr.off + hdr.filesz,
             hdr.vaddr
         ); */
     }
-    // info!("elf loaded");
     elfhdr.entry
 }
 

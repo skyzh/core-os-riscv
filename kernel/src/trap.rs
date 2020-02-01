@@ -124,8 +124,6 @@ pub extern "C" fn usertrap() {
     if sstatus::read().spp() != sstatus::SPP::User {
         panic!("not from user mode");
     }
-    // stvec::write()
-
     let p = my_proc();
     p.trapframe.epc = sepc::read();
     let scause = scause::read().bits();
@@ -188,7 +186,6 @@ pub fn usertrapret() -> ! {
         let root_ppn = &mut *p.pgtable as *mut page::Table as usize;
         satp_val = crate::arch::build_satp(8, 0, root_ppn);
     }
-
     // jump to trampoline.S at the top of memory, which 
     // switches to the user page table, restores user registers,
     // and switches to user mode with sret.

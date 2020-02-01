@@ -4,7 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 /// Get file in the fake filesystem. Maximum file size is 1048576 (1M).
-pub fn get_file(filename: &str) -> (*const u8, usize) {
+pub fn get_file(filename: &str) -> &'static [u8] {
     let init;
     let test1;
     let test2;
@@ -22,10 +22,10 @@ pub fn get_file(filename: &str) -> (*const u8, usize) {
         init = include_bytes!("../../target/riscv64gc-unknown-none-elf/release/init");
     }
     match filename {
-        "/init" => (init.as_ptr(), init.len()),
-        "/test1" => (test1.as_ptr(), test1.len()),
-        "/test2" => (test2.as_ptr(), test2.len()),
-        "/test3" => (test3.as_ptr(), test3.len()),
+        "/init" => init,
+        "/test1" => test1,
+        "/test2" => test2,
+        "/test3" => test3,
         _ => unreachable!()
     }
 }

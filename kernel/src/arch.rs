@@ -4,6 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 use core::time::Duration;
+use crate::panic;
 
 pub fn time() -> Duration {
     let mtime = 0x0200_bff8 as *const u64;
@@ -37,7 +38,13 @@ pub fn intr_off() {
 
 #[inline(always)]
 pub fn hart_id() -> usize {
-    let hart_id: usize = 0;
+    let mut hart_id: usize = 0;
     unsafe { asm!("mv $0, tp" :: "r"(hart_id)); }
     hart_id
+}
+
+extern "C" { fn __sp() -> usize; }
+
+pub fn sp() -> usize {
+    unsafe { __sp() }
 }

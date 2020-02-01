@@ -11,7 +11,7 @@ use crate::arch;
 use crate::println;
 use crate::trap::usertrapret;
 use alloc::boxed::Box;
-use crate::process::{put_back_proc, my_proc, PROCS_POOL};
+use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu};
 use crate::page::{Page, Table};
 use crate::process::Register::a0;
 use crate::fs;
@@ -87,21 +87,15 @@ pub extern "C" fn forkret() {
 
 pub fn init_proc() {
     let mut p = Process::new(0);
-    let (content, sz) = fs::get_file("/init");
+    let content = fs::get_file("/init");
     let entry = crate::elf::parse_elf(
-        content, sz,
+        content,
         &mut p.pgtable
     );
     // map user stack
-    let stack = page::Page::new();
-    let stack_begin = 0x80001000;
-    p.pgtable.map(
-        stack_begin,
-        stack,
-        page::EntryAttributes::URW as usize
-    );
+    let sp = map_stack(&mut p.pgtable, 0x80001000);
     p.trapframe.epc = entry as usize;
-    p.trapframe.regs[Register::sp as usize] = stack_begin + 0x1000; // sp
+    p.trapframe.regs[Register::sp as usize] = sp;
     p.state = ProcessState::RUNNABLE;
     put_back_proc(box p);
 }
@@ -132,5 +126,26 @@ pub fn fork() -> i32 {
     f_pid
 }
 
+pub fn map_stack(pgtable: &mut Table, stack_begin: usize) -> usize {
+    let stack = page::Page::new();
+    pgtable.map(
+        stack_begin,
+        stack,
+        page::EntryAttributes::URW as usize
+    );
+    stack_begin + PAGE_SIZE
+}
+
 pub fn exec(path: &str) {
+    let p = my_proc();
+    let content = fs::get_file(path);
+    p.pgtable.unmap_user();
+    let entry = crate::elf::parse_elf(
+        content,
+        &mut p.pgtable
+    );
+    // map user stack
+    let sp = map_stack(&mut p.pgtable, 0x80001000);
+    p.trapframe.epc = entry as usize;
+    p.trapframe.regs[Register::sp as usize] = sp;
 }

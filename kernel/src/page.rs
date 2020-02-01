@@ -8,6 +8,7 @@ use crate::nulllock::Mutex;
 use crate::{print, println, panic};
 use crate::symbols::*;
 use alloc::boxed::Box;
+use crate::process::my_cpu;
 
 const TABLE_ENTRY_CNT: usize = 512;
 
@@ -208,10 +209,10 @@ impl Table {
         for i in 0..self.len() {
             let v = &self.entries[i];
             if v.is_v() {
-                for j in 0..(2 - level) {
-                    print!(".");
-                }
                 if !v.is_leaf() {
+                    for j in 0..(2 - level) {
+                        print!(".");
+                    }
                     println!(
                         "{}: 0x{:X} -> 0x{:X}",
                         i,
@@ -226,8 +227,13 @@ impl Table {
                     let r_flag = if v.is_r() { "R" } else { "" };
                     let w_flag = if v.is_w() { "W" } else { "" };
                     let x_flag = if v.is_x() { "X" } else { "" };
-
-                    println!("{}: 0x{:X} -> 0x{:X}  {}{}{}{}", i, (vpn << 9 | i) << 12, v.paddr().0, u_flag, r_flag, w_flag, x_flag);
+                    let vaddr = (vpn << 9 | i) << 12;
+                    if vaddr != v.paddr().0 {
+                        for j in 0..(2 - level) {
+                            print!(".");
+                        }
+                        println!("{}: 0x{:X} -> 0x{:X}  {}{}{}{}", i, vaddr, v.paddr().0, u_flag, r_flag, w_flag, x_flag);
+                    }
                 }
             }
         }
@@ -238,12 +244,11 @@ impl Table {
     }
 
     pub fn id_map_range(&mut self, start: usize, end: usize, bits: usize) {
-        let mut memaddr = start & !(PAGE_SIZE - 1);
+        let mut memaddr = mem::align_val_down(start, PAGE_ORDER);
         let num_kb_pages = (mem::align_val(end, 12) - memaddr) / PAGE_SIZE;
-
         for _ in 0..num_kb_pages {
             self.map_addr(memaddr, memaddr, bits, 0);
-            memaddr += 1 << 12;
+            memaddr += PAGE_SIZE;
         }
     }
 
@@ -259,11 +264,11 @@ impl Table {
         }
     }
 
-    /* TODO: use same function for drop_walk and walk */
+    /* TODO: use same function for drop_walk, unmap_user and walk */
 
     fn drop_walk(&mut self, level: usize) {
         for i in 0..self.len() {
-            let v = &self.entries[i];
+            let v = &mut self.entries[i];
             if v.is_v() {
                 if v.is_leaf() {
                     if v.is_u() {
@@ -290,14 +295,32 @@ impl Table {
                         pgtable.entries[i] = Entry::new(Box::into_raw(pg) as usize, v.flags());
                     }
                 } else {
-                    let table = unsafe { Box::from_raw(v.paddr().0 as *mut Table) };
+                    let table = unsafe { (v.paddr().0 as *mut Table).as_mut().unwrap() };
                     let pg = table.clone_walk(level - 1);
-                    core::mem::forget(table);
                     pgtable.entries[i] = Entry::new(Box::into_raw(pg) as usize, v.flags());
                 }
             }
         }
         box pgtable
+    }
+
+     pub fn unmap_user(&mut self) {
+        for i in 0..self.len() {
+            let v = &mut self.entries[i];
+            if v.is_v() {
+                if v.is_leaf() {
+                    if v.is_u() {
+                        // drop user page
+                        let pg = unsafe { Box::from_raw(v.paddr().0 as *mut Page) };
+                        *v = Entry(0);
+                    }
+                } else {
+                    // drop page table
+                    let mut table = unsafe { (v.paddr().0 as *mut Table).as_mut().unwrap() };
+                    table.unmap_user();
+                }
+            }
+        }
     }
 }
 

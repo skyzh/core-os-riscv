@@ -136,8 +136,8 @@ extern "C" fn kinit() {
         mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
     }
     kernel_trapframe.satp = satp_val;
-    let stack_addr = Box::into_raw(Page::new());
-    kernel_trapframe.sp = stack_addr as usize + mem::PAGE_SIZE;
+    let stack_addr = mem::ALLOC().lock().allocate(PAGE_SIZE * 1024);
+    kernel_trapframe.sp = stack_addr as usize + PAGE_SIZE * 1024;
     kernel_trapframe.hartid = 0;
     pgtable.id_map_range(
         stack_addr as usize,

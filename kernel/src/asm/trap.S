@@ -74,9 +74,3 @@ m_trap_vector:
 	# the last one loaded t6 back to its original value.
 
 	mret
-
-
-.global make_syscall
-make_syscall:
-	ecall
-	ret
