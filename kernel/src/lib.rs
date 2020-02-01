@@ -16,7 +16,6 @@
 #![feature(maybe_uninit_uninit_array)]
 #![feature(maybe_uninit_ref)]
 #![allow(dead_code)]
-#![doc(file = "README.md")]
 
 #[macro_use]
 extern crate alloc;
@@ -26,6 +25,7 @@ use alloc::prelude::v1::*;
 
 mod arch;
 mod elf;
+mod fs;
 mod mem;
 mod nulllock;
 mod page;

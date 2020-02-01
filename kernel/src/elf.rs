@@ -48,15 +48,15 @@ const ELF_PROG_FLAG_WRITE: u32 = 2;
 const ELF_PROG_FLAG_READ: u32 = 4;
 const ELF_MAGIC: u32 = 0x464C457F;
 
-pub fn parse_elf<const N: usize>(a: &'static [u8; N], pgtable: &mut page::Table) -> u64 {
+pub fn parse_elf(a: *const u8, sz: usize, pgtable: &mut page::Table) -> u64 {
     /* TODO: Use something safer */
     // peek head of byte array to get ELF information
-    let elfhdr = &unsafe { core::mem::transmute::<&[u8], &[ELFHeader]>(a) }[0];
+    let elfhdr = unsafe { &*(a as *const ELFHeader) };
     if elfhdr.magic != ELF_MAGIC {
         panic!("wrong magic number");
     }
     let mut proghdr = unsafe {
-        let offset_u8 = (&a[0] as *const u8).offset(elfhdr.phoff as isize);
+        let offset_u8 = a.offset(elfhdr.phoff as isize);
         offset_u8 as *const ProgramHeader
     };
     for i in 0..elfhdr.phnum {
@@ -96,10 +96,10 @@ pub fn parse_elf<const N: usize>(a: &'static [u8; N], pgtable: &mut page::Table)
     elfhdr.entry
 }
 
-fn load_segment<const N: usize>(
+fn load_segment(
     pgtable: &mut page::Table,
     vaddr: usize,
-    elf: &'static [u8; N],
+    elf: *const u8,
     offset: usize,
     sz: usize,
 ) {

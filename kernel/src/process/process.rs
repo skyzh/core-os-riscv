@@ -14,6 +14,7 @@ use alloc::boxed::Box;
 use crate::process::{put_back_proc, my_proc, PROCS_POOL};
 use crate::page::{Page, Table};
 use crate::process::Register::a0;
+use crate::fs;
 
 #[derive(PartialEq)]
 pub enum ProcessState {
@@ -86,8 +87,9 @@ pub extern "C" fn forkret() {
 
 pub fn init_proc() {
     let mut p = Process::new(0);
+    let (content, sz) = fs::get_file("/init");
     let entry = crate::elf::parse_elf(
-        include_bytes!("../../../target/riscv64gc-unknown-none-elf/release/init"),
+        content, sz,
         &mut p.pgtable
     );
     // map user stack
@@ -128,4 +130,7 @@ pub fn fork() -> i32 {
     fork_p.state = ProcessState::RUNNABLE;
     put_back_proc(box fork_p);
     f_pid
+}
+
+pub fn exec(path: &str) {
 }

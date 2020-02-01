@@ -5,7 +5,7 @@
 
 mod gen;
 pub use gen::*;
-use crate::process::{TrapFrame, Register, my_proc, fork};
+use crate::process::{TrapFrame, Register, my_proc, fork, exec};
 use crate::{info, panic, print, println};
 use crate::page;
 use crate::mem::{align_val, page_down};
@@ -44,6 +44,7 @@ pub fn argptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *
     unsafe { (paddr as *const u8).add(ptr - pg_begin) }
 }
 
+
 fn sys_write() -> i32 {
     let fd;
     let content;
@@ -66,7 +67,21 @@ fn sys_fork() -> i32 {
 }
 
 fn sys_exec() -> i32 {
-    unimplemented!()
+    let path;
+    {
+        let p = my_proc();
+        let sz = arguint(&p.trapframe, 1);
+        let ptr = argptr(&p.pgtable, &p.trapframe, 0, sz);
+        path = unsafe {
+            // First, we build a &[u8]...
+            let slice = core::slice::from_raw_parts(ptr, sz);
+
+            // ... and then convert that slice into a string slice
+            core::str::from_utf8(slice).unwrap()
+        };
+    }
+    exec(path);
+    0
 }
 
 fn sys_exit() -> i32 {

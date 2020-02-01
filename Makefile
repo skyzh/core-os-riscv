@@ -34,7 +34,7 @@ ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S \
 				 $K/asm/swtch.S
 
-$(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) $(USER_LIB_OUT) $(TARGET_PATH)/init FORCE
+$(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) $(USER_LIB_OUT) $(USER_LIB_OUT) FORCE
 	cd kernel && cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
 $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)

@@ -13,8 +13,8 @@ pub fn fork() -> i32 {
     unsafe { __fork() }
 }
 
-pub fn exec(path: &str, args: *const *const u8) -> i32 {
-    unsafe { __exec(path.as_bytes().as_ptr() as *const u8, args) }
+pub fn exec(path: &str, args: *const *const u8) -> ! {
+    unsafe { __exec(path.as_bytes().as_ptr() as *const u8, path.len() as i32, args) }
 }
 
 pub fn write(fd: i32, content: &str) -> i32 {

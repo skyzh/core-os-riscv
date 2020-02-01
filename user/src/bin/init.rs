@@ -19,6 +19,11 @@ pub unsafe extern "C" fn _start() -> ! {
     println!("ready to fork!");
     let p = fork();
     println!("fork result: {}", p);
+    if p == 0 {
+        exec("/test1", null());
+    } else {
+        exec("/test2", null());
+    }
     loop {
         print!(""); // yield CPU
     }
