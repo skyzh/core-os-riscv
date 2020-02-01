@@ -1,5 +1,7 @@
 # core-os-riscv
 
+[![Sourcegraph](https://sourcegraph.com/github.com/skyzh/core-os-riscv/-/badge.svg)](https://sourcegraph.com/github.com/skyzh/core-os-riscv?badge)
+
 An operating system in Rust.
 
 This project is based on "The Adventures of OS: Making a RISC-V Operating System using Rust".
