@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! Module for processing syscall
+
 mod gen;
 pub use gen::*;
 use crate::process::{TrapFrame, Register, my_proc, fork, exec};
@@ -11,6 +13,7 @@ use crate::page;
 use crate::mem::{align_val, page_down};
 use crate::symbols::{PAGE_ORDER, PAGE_SIZE};
 
+/// Get the `pos`th argument from syscall
 pub fn argraw(tf: &TrapFrame, pos: usize) -> usize {
     match pos {
         0 => tf.regs[Register::a0 as usize],
@@ -23,9 +26,12 @@ pub fn argraw(tf: &TrapFrame, pos: usize) -> usize {
     }
 }
 
+/// Get the `pos`th argument as i32 from syscall
 pub fn argint(tf: &TrapFrame, pos: usize) -> i32 {
     argraw(tf, pos) as i32
 }
+
+/// Get the `pos`th argument as usize from syscall
 pub fn arguint(tf: &TrapFrame, pos: usize) -> usize {
     let sz = argraw(tf, pos) as i32;
     if sz < 0 {
@@ -34,6 +40,7 @@ pub fn arguint(tf: &TrapFrame, pos: usize) -> usize {
     sz as usize
 }
 
+/// Get the `pos`th argument as a pointer from syscall, return kernel-space pointer
 pub fn argptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *const u8 {
     let ptr = argraw(tf, pos);
     let pg_begin = page_down(ptr);
@@ -44,7 +51,7 @@ pub fn argptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *
     unsafe { (paddr as *const u8).add(ptr - pg_begin) }
 }
 
-
+/// write syscall
 fn sys_write() -> i32 {
     let fd;
     let content;
@@ -62,10 +69,12 @@ fn sys_write() -> i32 {
     sz as i32
 }
 
+/// fork syscall entry
 fn sys_fork() -> i32 {
     fork()
 }
 
+/// exec syscall entry
 fn sys_exec() -> i32 {
     let path;
     {
@@ -84,10 +93,12 @@ fn sys_exec() -> i32 {
     0
 }
 
+/// exit syscall entry
 fn sys_exit() -> i32 {
     unimplemented!()
 }
 
+/// Process all syscall
 pub fn syscall() -> i32 {
     let syscall_id;
     {

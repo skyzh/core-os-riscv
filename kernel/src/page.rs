@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! Paging implementaion and page table abstraction
+
 use crate::mem::{self, ALLOC};
 use crate::nulllock::Mutex;
 use crate::{print, println, panic};

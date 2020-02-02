@@ -3,11 +3,19 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! UART driver module
+
 use core::convert::TryInto;
 use core::fmt::Write;
 use core::fmt::Error;
+use crate::nulllock::Mutex;
 
+/// UART base address on QEMU RISC-V
+pub const UART_BASE_ADDR: usize = 0x1000_0000;
+
+/// UART driver
 pub struct Uart {
+    /// UART MMIO base address
     base_address: usize,
 }
 
@@ -27,6 +35,7 @@ impl Uart {
         }
     }
 
+    /// Initialize UART driver
     pub fn init(&mut self) {
         let ptr = self.base_address as *mut u8;
         unsafe {
@@ -91,18 +100,22 @@ impl Uart {
         }
     }
 
+    /// Put a character into UART
     pub fn put(&mut self, c: u8) {
         let ptr = self.base_address as *mut u8;
         loop {
+            // Wait until previous data is flushed
             if unsafe { ptr.add(5).read_volatile() } & (1 << 5) != 0 {
                 break;
             }
         }
         unsafe {
+            // Write data
             ptr.add(0).write_volatile(c);
         }
     }
 
+    /// Get a character from UART
     pub fn get(&mut self) -> Option<u8> {
         let ptr = self.base_address as *mut u8;
         unsafe {
@@ -117,9 +130,9 @@ impl Uart {
     }
 }
 
-use crate::nulllock::Mutex;
 
-pub const UART_BASE_ADDR: usize = 0x1000_0000;
+/// UART driver object
 static __UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR), "uart");
 
+/// Global function to get an instance of UART driver
 pub fn UART() -> &'static Mutex<Uart> { &__UART }

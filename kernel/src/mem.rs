@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! Allocator implementation
+
 use core::ops::Range;
 use crate::info;
 use crate::{println, panic};

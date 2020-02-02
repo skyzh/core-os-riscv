@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! ELF parsing
+
 use crate::panic;
 use crate::mem;
 use crate::arch;

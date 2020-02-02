@@ -10,16 +10,24 @@ use core::ptr::null_mut;
 #[repr(align(4096))]
 #[derive(Clone)]
 pub struct TrapFrame {
+    /// integer registers
     pub regs: [usize; 32],   // 0 - 255
+    /// floating point registers
     pub fregs: [usize; 32],  // 256 - 511
+    /// kernel satp register
     pub satp: usize,         // 512 - 519
+    /// kernel sp
     pub sp: usize,           // 520
+    /// kernel hartid
     pub hartid: usize,       // 528
-    pub trap: usize,         // 536 Address of usertrap
+    /// `usertrap` function address
+    pub trap: usize,         // 536
+    /// sret target address
     pub epc: usize           // 544
 }
 
 impl TrapFrame {
+    /// create an initialized trapframe
     pub const fn zero() -> Self {
         TrapFrame {
             regs: [0; 32],
@@ -33,6 +41,7 @@ impl TrapFrame {
     }
 }
 
+/// Mapping between register name and trapframe `regs` array index
 pub enum Register {
     zero = 0,
     ra = 1,

@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crate::wait_forever;
+use crate::arch::wait_forever;
 use crate::arch;
 use crate::trap::usertrapret;
 use crate::symbols::*;

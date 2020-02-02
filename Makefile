@@ -72,7 +72,7 @@ qemugdb: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
 		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
 		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo \
-		-s
+		-S -gdb tcp::1234
 
 objdump: $(KERNEL_OUT)
 	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $(KERNEL_OUT)
@@ -85,9 +85,11 @@ UPROGS = $(USER_LIBS)/init \
 		 $(USER_LIBS)/test2 \
 		 $(USER_LIBS)/test3
 
-$(QEMU_DRIVE): $(UPROGS) fs/fs.cpp
+target/mkfs: fs/fs.cpp
+	g++ $< -o $@ --std=c++11
+
+$(QEMU_DRIVE): $(UPROGS) target/mkfs
 	dd if=/dev/zero of=$@ count=32 bs=1048576
-	g++ fs/fs.cpp -o target/mkfs --std=c++11
 	./target/mkfs hdd.img $(UPROGS)
 
 userobjdump: $(USERPROG)
@@ -96,7 +98,7 @@ userobjdump: $(USERPROG)
 userreadelf: $(USERPROG)
 	readelf -a $<
 
-docs:
+docs: all
 	cd kernel && cargo rustdoc --open -- \
 				--no-defaults \
 				--passes strip-hidden \
@@ -109,4 +111,5 @@ clean:
 	cargo clean
 	rm -f $(KERNEL_OUT) $(OUTPUT)
 	rm -f $(K_AUTOGEN_FILES) $(U_AUTOGEN_FILES)
+
 FORCE:

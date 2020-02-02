@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! Macros for output
+
 use core::fmt;
 
 #[doc(hidden)]
@@ -20,11 +22,13 @@ pub fn _panic_print(args: fmt::Arguments) {
 	uart.write_fmt(args).unwrap();
 }
 
+/// Print information
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => ($crate::print::_print(format_args!($($arg)*)));
 }
 
+/// Print with a new line
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
@@ -33,6 +37,7 @@ macro_rules! println {
     })
 }
 
+/// Create a new UART object and print
 #[macro_export]
 macro_rules! panic_println {
     () => ($crate::print!("\n"));

@@ -18,15 +18,11 @@ use core::ptr::null;
 pub unsafe extern "C" fn _start() -> ! {
     println!("ready to fork!");
     let p = fork();
-    println!("fork result: {}", p);
     if p == 0 {
+        println!("subprocess calling test1");
         exec("/test1", null());
     } else {
+        println!("parent calling test2");
         exec("/test2", null());
     }
-    loop {
-        print!(""); // yield CPU
-    }
-    // exec("sh", null());
-    exit(0);
 }

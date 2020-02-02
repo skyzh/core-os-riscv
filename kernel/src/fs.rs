@@ -3,7 +3,9 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-/// Get file in the fake filesystem. Maximum file size is 1048576 (1M).
+//! A simple in-memory filesystem
+
+/// Get file in the fake filesystem.
 pub fn get_file(filename: &str) -> &'static [u8] {
     let init;
     let test1;

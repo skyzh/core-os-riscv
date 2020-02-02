@@ -43,6 +43,7 @@ use crate::page::Page;
 #[no_mangle]
 extern "C" fn eh_personality() {}
 
+/// Panic handler
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     panic_println!("Aborting: ");
@@ -59,11 +60,14 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     abort();
 }
 
+/// Abort function
 #[no_mangle]
 extern "C" fn abort() -> ! {
-    wait_forever();
+    arch::wait_forever();
 }
 
+/// Initialize kernel page table and drivers in machine mode,
+/// and prepare to switch to supervisor mode
 #[no_mangle]
 extern "C" fn kinit() {
     // unsafe { mem::zero_volatile(symbols::bss_range()); }
@@ -151,9 +155,11 @@ extern "C" fn kinit() {
     info!("Page table set up, switching to supervisor mode");
 }
 
+/// Initialize hart other than `0`
 #[no_mangle]
 extern "C" fn kinit_hart(hartid: usize) {
-    wait_forever();
+    arch::wait_forever();
+    /*
     use process::TrapFrame;
     let mut cpu = my_cpu();
     let kernel_trapframe = &mut cpu.kernel_trapframe;
@@ -164,17 +170,11 @@ extern "C" fn kinit_hart(hartid: usize) {
     // cpu::KERNEL_TRAP_FRAME[hartid].trap_stack = page::zalloc(1);
     kernel_trapframe.hartid = hartid;
     info!("{} initialized", hartid);
-    wait_forever();
+    arch::wait_forever();
+    */
 }
 
-pub fn wait_forever() -> ! {
-    loop {
-        unsafe {
-            asm::wfi();
-        }
-    }
-}
-
+/// Start first process and begin scheduling
 #[no_mangle]
 extern "C" fn kmain() -> ! {
     info!("Now in supervisor mode");
@@ -189,18 +189,3 @@ extern "C" fn kmain() -> ! {
     process::init_proc();
     process::scheduler()
 }
-
-/*
-pub fn test_alloc() {
-	let ptr = alloc::ALLOC().lock().allocate(64 * 4096);
-	let ptr = alloc::ALLOC().lock().allocate(1);
-	let ptr2 = alloc::ALLOC().lock().allocate(1);
-	let ptr = alloc::ALLOC().lock().allocate(1);
-	alloc::ALLOC().lock().deallocate(ptr);
-	let ptr = alloc::ALLOC().lock().allocate(1);
-	let ptr = alloc::ALLOC().lock().allocate(1);
-	let ptr = alloc::ALLOC().lock().allocate(1);
-	alloc::ALLOC().lock().deallocate(ptr2);
-	alloc::ALLOC().lock().debug();
-}
-*/

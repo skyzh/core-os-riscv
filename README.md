@@ -2,10 +2,10 @@
 
 [![Sourcegraph](https://sourcegraph.com/github.com/skyzh/core-os-riscv/-/badge.svg)](https://sourcegraph.com/github.com/skyzh/core-os-riscv?badge)
 
-An operating system in Rust.
+An xv6-like operating system in Rust.
 
-This project is based on "The Adventures of OS: Making a RISC-V Operating System using Rust".
-In files not modified by this project, original licenses are preserved.
+This project is originally based on "The Adventures of OS: Making a RISC-V Operating System using Rust",
+and is now being made to have an xv6-like structure.
 
 ## Build Instructions
 
@@ -49,11 +49,7 @@ Use Linuxbrew.
 make docs
 ```
 
-I'll continuously add Rust-specific implementations and how I made this project into documentation. Highlights are shown below.
-
-* `Process` takes full ownership of pagetable, context and trapframe.
-* `fork` implementation.
-* Use `include_bytes!` to embed `init` binary into kernel.
+I'll continuously add Rust-specific implementations and how I made this project into documentation.
 
 ## Roadmap
 

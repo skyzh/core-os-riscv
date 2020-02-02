@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! Machine mode and supervisor mode traps
+
 use crate::{println, info, panic};
 use crate::process::{TrapFrame, self, Process, CPU, my_proc, my_cpu, yield_cpu};
 use crate::arch;
@@ -12,6 +14,7 @@ use crate::nulllock::Mutex;
 use crate::syscall;
 use crate::process::Register::a0;
 
+/// Process interrupt in machine mode
 #[no_mangle]
 extern "C" fn m_trap(
     epc: usize,
@@ -117,6 +120,7 @@ extern "C" fn m_trap(
     return_pc
 }
 
+/// Called by `uservec` in `trampoline.S`, return from user space.
 #[no_mangle]
 pub extern "C" fn usertrap() {
     // info!("user trap");
@@ -139,15 +143,16 @@ pub extern "C" fn usertrap() {
     usertrapret();
 }
 
+/// Jump to user space through trampoline after trapframe is properly set. Calls `userret` in `trampoline.S`.
 #[inline]
-pub fn trampoline_userret(tf: usize, satp_val: usize) -> ! {
+fn trampoline_userret(tf: usize, satp_val: usize) -> ! {
     let uservec_offset = userret as usize - TRAMPOLINE_TEXT_START();
     let fn_addr = (TRAMPOLINE_START + uservec_offset) as *const ();
-    let fn_addr: extern "C" fn(usize, usize) -> usize = unsafe { core::mem::transmute(fn_addr) };
-    (fn_addr)(tf, satp_val);
-    crate::wait_forever()
+    let fn_addr: extern "C" fn(usize, usize) -> ! = unsafe { core::mem::transmute(fn_addr) };
+    (fn_addr)(tf, satp_val)
 }
 
+/// Jump to user space through trampoline
 pub fn usertrapret() -> ! {
     let satp_val: usize;
     {

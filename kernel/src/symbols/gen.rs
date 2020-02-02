@@ -1,11 +1,6 @@
-
-#[macro_export]
-macro_rules! symbol {
-    ( $x:ident, $y:ident, $type:ty ) => {
-        extern "C" { static $x: $type; }
-        pub const $y: $type = unsafe { $x };
-    }
-}
+//! This module is automatically generated with `symbols_gen.rs.py`,
+//! which contains all linker script symbols in `kernel.ld` and a wrapper function
+//! to safely get them.
 
 extern "C" { static __heap_start: usize; }
 #[inline] pub fn HEAP_START() -> usize { unsafe { &__heap_start as *const _ as _ } }
