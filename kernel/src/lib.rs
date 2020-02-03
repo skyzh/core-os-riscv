@@ -35,6 +35,7 @@ mod symbols;
 mod trap;
 mod uart;
 mod plic;
+mod clint;
 mod syscall;
 
 use riscv::{asm, register::*};
@@ -70,99 +71,23 @@ extern "C" fn abort() -> ! {
 /// Initialize kernel page table and drivers in machine mode,
 /// and prepare to switch to supervisor mode
 #[no_mangle]
-extern "C" fn kinit() {
-    // unsafe { mem::zero_volatile(symbols::bss_range()); }
-    mem::init();
-    uart::UART().lock().init();
-    info!("Booting core-os...");
-    info!("Drivers:");
-    info!("  UART... \x1b[0;32minitialized\x1b[0m");
-    let mut PLIC = plic::PLIC().lock();
-    PLIC.set_threshold(0);
-    // VIRTIO = [1..8]
-    // UART0 = 10
-    // PCIE = [32..35]
-    // Enable the UART interrupt.
-    PLIC.enable(10);
-    PLIC.set_priority(10, 1);
-    info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
-    info!("Booting on hart {}", mhartid::read());
-    use symbols::*;
-    print_map_symbols();
-    use page::EntryAttributes;
-    use page::{Table, KERNEL_PGTABLE};
-    let mut pgtable = KERNEL_PGTABLE().lock();
-    pgtable.id_map_range(
-        TEXT_START(),
-        TEXT_END(),
-        EntryAttributes::RX as usize,
-    );
-    pgtable.id_map_range(
-        RODATA_START(),
-        RODATA_END(),
-        EntryAttributes::RX as usize,
-    );
-    pgtable.id_map_range(
-        DATA_START(),
-        DATA_END(),
-        EntryAttributes::RW as usize,
-    );
-    pgtable.id_map_range(
-        BSS_START(),
-        BSS_END(),
-        EntryAttributes::RW as usize,
-    );
-    pgtable.id_map_range(
-        KERNEL_STACK_START(),
-        KERNEL_STACK_END(),
-        EntryAttributes::RW as usize,
-    );
-    pgtable.kernel_map(
-        UART_BASE_ADDR,
-        UART_BASE_ADDR,
-        EntryAttributes::RW as usize,
-    );
-    pgtable.kernel_map(
-        TRAMPOLINE_START,
-        TRAMPOLINE_TEXT_START(),
-        page::EntryAttributes::RX as usize,
-    );
-    pgtable.id_map_range(
-        HEAP_START(),
-        HEAP_START() + HEAP_SIZE(),
-        EntryAttributes::RW as usize,
-    );
-    // CLINT
-    //  -> MSIP
-    pgtable.id_map_range(0x0200_0000, 0x0200_ffff, EntryAttributes::RW as usize);
-    // PLIC
-    pgtable.id_map_range(0x0c00_0000, 0x0c00_2000, EntryAttributes::RW as usize);
-    pgtable.id_map_range(0x0c20_0000, 0x0c20_8000, EntryAttributes::RW as usize);
-    use uart::*;
-
-    use process::TrapFrame;
-    let cpu = my_cpu();
-    let kernel_trapframe = &mut cpu.kernel_trapframe;
-
-    let root_ppn = &mut *pgtable as *mut Table as usize;
-    let satp_val = arch::build_satp(8, 0, root_ppn);
-    unsafe {
-        mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
-    }
-    kernel_trapframe.satp = satp_val;
-    let stack_addr = mem::alloc_stack();
-    kernel_trapframe.sp = stack_addr as usize + PAGE_SIZE * 1024;
-    kernel_trapframe.hartid = 0;
-    pgtable.id_map_range(
-        stack_addr as usize,
-        stack_addr as usize + mem::PAGE_SIZE,
-        EntryAttributes::RW as usize,
-    );
-    unsafe {
-        asm!("csrw satp, $0" :: "r"(satp_val));
-        asm::sfence_vma(0, 0);
-    }
-    info!("Page table set up, switching to supervisor mode");
+unsafe extern "C" fn kinit() {
+    use riscv::register::*;
+    // next mode is supervisor mode
+    mstatus::set_mpp(mstatus::MPP::Supervisor);
+    // mret jump to kmain
+    mepc::write(kmain as usize);
+    // disable paging
+    asm!("csrw satp, zero");
+    // delegate all interrupts and exceptions to supervisor mode
+    asm!("li t0, 0xffff");
+    asm!("csrw medeleg, t0");
+    asm!("csrw mideleg, t0");
+    // save cpuid to tp
+    asm!("csrr a1, mhartid");
+    asm!("mv tp, a1");
+    // switch to supervisor mode
+    asm!("mret");
 }
 
 /// Initialize hart other than `0`
@@ -187,15 +112,40 @@ extern "C" fn kinit_hart(hartid: usize) {
 /// Start first process and begin scheduling
 #[no_mangle]
 extern "C" fn kmain() -> ! {
-    info!("Now in supervisor mode");
+    if arch::hart_id() != 0 {
+        arch::wait_forever();
+    }
+    // TODO: zero volatile bss
+    // unsafe { mem::zero_volatile(symbols::bss_range()); }
+    mem::alloc_init();
+    uart::UART().lock().init();
+    info!("Booting core-os...");
+    info!("Drivers:");
+    info!("  UART... \x1b[0;32minitialized\x1b[0m");
+    plic::PLIC().lock().init(plic::UART0_IRQ);
+    info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
+    info!("Booting on hart {}", arch::hart_id());
+    mem::init();
+    info!("Initializing...");
+    unsafe { trap::init(); }
+    info!("  Trap... \x1b[0;32minitialized\x1b[0m");
     /*
     unsafe {
-        let mtimecmp = 0x0200_4000 as *mut u64;
-        let mtime = 0x0200_bff8 as *const u64;
+        let mtimecmp = clint::CLINT_MTIMECMP_BASE as *mut u64;
+        let mtime = clint::CLINT_MTIME_BASE as *const u64;
         // The frequency given by QEMU is 10_000_000 Hz, so this sets
         // the next interrupt to fire one second from now.
         mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
-    }*/
+    }
+    */
+    info!("  Timer... \x1b[0;32minitialized\x1b[0m");
+    let mut PLIC = plic::PLIC().lock();
+    PLIC.enable(plic::UART0_IRQ);
+    PLIC.set_threshold(0);
+    PLIC.set_priority(plic::UART0_IRQ, 1);
+    info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
+    // arch::wait_forever();
+
     process::init_proc();
     process::scheduler()
 }

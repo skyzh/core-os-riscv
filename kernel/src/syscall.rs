@@ -95,6 +95,7 @@ fn sys_exec() -> i32 {
 
 /// exit syscall entry
 fn sys_exit() -> i32 {
+    crate::arch::wait_forever();
     unimplemented!()
 }
 

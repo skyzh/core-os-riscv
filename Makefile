@@ -32,7 +32,7 @@ U_AUTOGEN_FILES = $U/usys.S
 
 ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S \
-				 $K/asm/swtch.S
+				 $K/asm/swtch.S $K/asm/kernelvec.S
 
 $(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) $(USER_LIB_OUT) $(USER_LIB_OUT) FORCE
 	cd kernel && cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
@@ -60,7 +60,8 @@ qemu: all $(QEMU_DRIVE)
 qemunostdio: all $(QEMU_DRIVE)
     $(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
             -nographic -serial stdio -bios none -kernel $(KERNEL_OUT) \
-            -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo
+            -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo \
+			-d int
 
 qemudbg: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \

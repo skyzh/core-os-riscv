@@ -12,7 +12,7 @@ use crate::symbols::*;
 
 /// Get current time from MMIO
 pub fn time() -> Duration {
-    let mtime = 0x0200_bff8 as *const u64;
+    let mtime = crate::clint::CLINT_MTIME_BASE as *const u64;
     Duration::from_nanos(unsafe { mtime.read_volatile() } * 100)
 }
 
@@ -44,7 +44,7 @@ pub fn intr_off() {
 #[inline(always)]
 pub fn hart_id() -> usize {
     let mut hart_id: usize = 0;
-    unsafe { asm!("mv $0, tp" :: "r"(hart_id)); }
+    unsafe { asm!("mv $0, tp" : "=r"(hart_id) :: "volatile"); }
     hart_id
 }
 

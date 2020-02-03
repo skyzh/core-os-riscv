@@ -119,12 +119,95 @@ impl Allocator {
 
 static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new(), "alloc");
 
-pub fn init() {
+pub fn alloc_init() {
     ALLOC().lock().base_addr = align_val(HEAP_START(), PAGE_ORDER);
     // workaround for non-zero data region
     let mut alloc = ALLOC().lock();
     for i in 0..MAX_PAGE {
         alloc.page_allocated[i] = 0;
+    }
+}
+
+pub fn init() {
+    use crate::symbols::*;
+    // print_map_symbols();
+    use crate::page::EntryAttributes;
+    use crate::page::{Table, KERNEL_PGTABLE};
+    use crate::uart::UART_BASE_ADDR;
+    use crate::process::*;
+    use riscv::register::*;
+    use riscv::asm;
+    use crate::mem;
+    use crate::arch;
+
+    let mut pgtable = KERNEL_PGTABLE().lock();
+    pgtable.id_map_range(
+        TEXT_START(),
+        TEXT_END(),
+        EntryAttributes::RX as usize,
+    );
+    pgtable.id_map_range(
+        RODATA_START(),
+        RODATA_END(),
+        EntryAttributes::RX as usize,
+    );
+    pgtable.id_map_range(
+        DATA_START(),
+        DATA_END(),
+        EntryAttributes::RW as usize,
+    );
+    pgtable.id_map_range(
+        BSS_START(),
+        BSS_END(),
+        EntryAttributes::RW as usize,
+    );
+    pgtable.id_map_range(
+        KERNEL_STACK_START(),
+        KERNEL_STACK_END(),
+        EntryAttributes::RW as usize,
+    );
+    pgtable.kernel_map(
+        UART_BASE_ADDR,
+        UART_BASE_ADDR,
+        EntryAttributes::RW as usize,
+    );
+    pgtable.kernel_map(
+        TRAMPOLINE_START,
+        TRAMPOLINE_TEXT_START(),
+        EntryAttributes::RX as usize,
+    );
+    pgtable.id_map_range(
+        HEAP_START(),
+        HEAP_START() + HEAP_SIZE(),
+        EntryAttributes::RW as usize,
+    );
+    // CLINT
+    //  -> MSIP
+    pgtable.id_map_range(0x0200_0000, 0x0200_ffff, EntryAttributes::RW as usize);
+    // PLIC
+    pgtable.id_map_range(0x0c00_0000, UART_BASE_ADDR - 1, EntryAttributes::RW as usize);
+
+    let cpu = my_cpu();
+    let kernel_trapframe = &mut cpu.kernel_trapframe;
+
+    let root_ppn = &mut *pgtable as *mut Table as usize;
+    let satp_val = arch::build_satp(8, 0, root_ppn);
+    unsafe {
+        sscratch::write(kernel_trapframe as *mut TrapFrame as usize);
+    }
+    kernel_trapframe.satp = satp_val;
+    let stack_addr = mem::alloc_stack();
+    kernel_trapframe.sp = stack_addr as usize + PAGE_SIZE * 1024;
+    kernel_trapframe.hartid = 0;
+    pgtable.id_map_range(
+        stack_addr as usize,
+        stack_addr as usize + mem::PAGE_SIZE,
+        EntryAttributes::RW as usize,
+    );
+
+    unsafe {
+        asm!("csrw satp, $0" :: "r"(satp_val));
+        asm::sfence_vma(0, 0);
     }
 }
 
@@ -161,7 +244,7 @@ pub unsafe fn zero_volatile<T>(range: Range<*mut T>)
         T: From<u8>,
 {
     let mut ptr = range.start;
-
+    info!("{:?}", range);
     while ptr < range.end {
         core::ptr::write_volatile(ptr, T::from(0));
         ptr = ptr.offset(1);

@@ -4,6 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 //! Linker-script constants and RISC-V constants
+//! (This module may be viewed as memory layout definitions)
 
 mod gen;
 pub use gen::*;
@@ -15,6 +16,8 @@ extern "C" {
 	pub fn uservec();
 	/// `userret` function in `trampoline.S`
 	pub fn userret();
+	/// `kernelvec` function in `kernelvec.S`
+	pub fn kernelvec();
 }
 
 /// Page order

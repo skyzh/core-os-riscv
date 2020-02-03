@@ -14,16 +14,24 @@ use crate::nulllock::Mutex;
 use crate::syscall;
 use crate::process::Register::a0;
 
-/// Process interrupt in machine mode
 #[no_mangle]
-extern "C" fn m_trap(
+extern "C" fn m_trap() -> () {
+    panic!("machine mode trap");
+}
+
+/// Process interrupt from supervisor mode
+#[no_mangle]
+extern "C" fn kerneltrap(
     epc: usize,
     tval: usize,
     cause: usize,
     hart: usize,
-    _status: usize,
-    _frame: &mut TrapFrame,
-) -> usize {
+    _status: usize
+) -> () {
+    use riscv::register::*;
+    if sstatus::read().spp() != sstatus::SPP::Supervisor {
+        panic!("not from supervisor mode");
+    }
     // We're going to handle all traps in machine mode. RISC-V lets
     // us delegate to supervisor mode, but switching out SATP (virtual memory)
     // gets hairy.
@@ -165,7 +173,7 @@ extern "C" fn m_trap(
         }
     };
     // Finally, return the updated program counter
-    return_pc
+    // return_pc
 }
 
 /// Called by `uservec` in `trampoline.S`, return from user space.
@@ -244,4 +252,9 @@ pub fn usertrapret() -> ! {
     // and switches to user mode with sret.
     // println!("jumping to trampoline 0x{:x} 0x{:x}...", trap_frame_addr , TRAPFRAME_START);
     trampoline_userret(TRAPFRAME_START, satp_val)
+}
+
+pub unsafe fn init() {
+    use riscv::register::*;
+    stvec::write(crate::symbols::kernelvec as usize, stvec::TrapMode::Direct);
 }

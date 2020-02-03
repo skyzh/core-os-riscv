@@ -49,7 +49,7 @@ SECTIONS
 
   PROVIDE(__memory_start = ORIGIN(ram));
   PROVIDE(__kernel_stack_start = __bss_end);
-  PROVIDE(__kernel_stack_end = __kernel_stack_start + 0x10000);
+  PROVIDE(__kernel_stack_end = __kernel_stack_start + 0x80000);
   PROVIDE(__memory_end = ORIGIN(ram) + LENGTH(ram));
   PROVIDE(__heap_start = __kernel_stack_end);
   PROVIDE(__heap_size = __memory_end - __kernel_stack_end);
