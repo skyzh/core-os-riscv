@@ -135,7 +135,7 @@ impl Plic {
 }
 
 /// PLIC driver object
-static __PLIC: Mutex<Plic> = Mutex::new(Plic::new(), "PLIC");
+static __PLIC: Mutex<Plic> = Mutex::new(Plic::new());
 
 /// Global function to get an instance of PLIC driver
 pub fn PLIC() -> &'static Mutex<Plic> { &__PLIC }

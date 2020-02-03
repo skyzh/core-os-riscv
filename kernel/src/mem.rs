@@ -117,7 +117,7 @@ impl Allocator {
     }
 }
 
-static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new(), "alloc");
+static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new());
 
 pub fn alloc_init() {
     ALLOC().lock().base_addr = align_val(HEAP_START(), PAGE_ORDER);

@@ -132,7 +132,7 @@ impl Uart {
 
 
 /// UART driver object
-static __UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR), "uart");
+static __UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR));
 
 /// Global function to get an instance of UART driver
 pub fn UART() -> &'static Mutex<Uart> { &__UART }

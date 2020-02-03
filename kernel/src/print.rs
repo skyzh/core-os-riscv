@@ -6,6 +6,9 @@
 //! Macros for output
 
 use core::fmt;
+use crate::nulllock::Mutex;
+
+pub static info_lock: Mutex<()> = Mutex::new(());
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
@@ -51,6 +54,7 @@ macro_rules! panic_println {
 macro_rules! info {
     ($string:expr) => ({
         #[allow(unused_imports)]
+        let info_locker = $crate::print::info_lock.lock();
 
         let timestamp = $crate::arch::time();
         let timestamp_subsec_us = timestamp.subsec_micros();
@@ -64,6 +68,7 @@ macro_rules! info {
     });
     ($format_string:expr, $($arg:tt)*) => ({
         #[allow(unused_imports)]
+        let info_locker = $crate::print::info_lock.lock();
 
         let timestamp = $crate::arch::time();
         let timestamp_subsec_us = timestamp.subsec_micros();
@@ -83,7 +88,7 @@ macro_rules! info {
 macro_rules! warn {
     ($string:expr) => ({
         #[allow(unused_imports)]
-        use crate::interface::time::Timer;
+        let info_locker = $crate::print::info_lock.lock();
 
         let timestamp = $crate::arch::time();
         let timestamp_subsec_us = timestamp.subsec_micros();
@@ -97,7 +102,7 @@ macro_rules! warn {
     });
     ($format_string:expr, $($arg:tt)*) => ({
         #[allow(unused_imports)]
-        use crate::interface::time::Timer;
+        let info_locker = $crate::print::info_lock.lock();
 
         let timestamp = $crate::arch::time();
         let timestamp_subsec_us = timestamp.subsec_micros();

@@ -338,6 +338,6 @@ impl Clone for Box<Table> {
     }
 }
 
-static __KERNEL_PGTABLE: Mutex<Table> = Mutex::new(Table::new(), "kernel_pgtable");
+static __KERNEL_PGTABLE: Mutex<Table> = Mutex::new(Table::new());
 
 pub fn KERNEL_PGTABLE() -> &'static Mutex<Table> { &__KERNEL_PGTABLE }

@@ -74,9 +74,6 @@ extern "C" fn abort() -> ! {
 /// and prepare to switch to supervisor mode
 #[no_mangle]
 unsafe extern "C" fn kinit() {
-    if mhartid::read() != 0 {
-        arch::wait_forever();
-    }
     use riscv::register::*;
     // next mode is supervisor mode
     mstatus::set_sie();
@@ -120,35 +117,35 @@ extern "C" fn kinit_hart(hartid: usize) {
 /// Start first process and begin scheduling
 #[no_mangle]
 extern "C" fn kmain() -> ! {
-    if arch::hart_id() != 0 {
-        arch::wait_forever();
-    }
-    // TODO: zero volatile bss
-    // unsafe { mem::zero_volatile(symbols::bss_range()); }
-    mem::alloc_init();
-    uart::UART().lock().init();
-    info!("Booting core-os...");
-    info!("Drivers:");
-    info!("  UART... \x1b[0;32minitialized\x1b[0m");
-    plic::PLIC().lock().init(plic::UART0_IRQ);
-    info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
-    info!("Booting on hart {}", arch::hart_id());
-    mem::init();
-    info!("Initializing...");
-    unsafe { trap::init(); }
-    info!("  Trap... \x1b[0;32minitialized\x1b[0m");
-    info!("  Timer... \x1b[0;32minitialized\x1b[0m");
-    {
-        let mut PLIC = plic::PLIC().lock();
-        PLIC.enable(plic::UART0_IRQ);
-        PLIC.set_threshold(0);
-        PLIC.set_priority(plic::UART0_IRQ, 1);
-    }
-    info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
-    info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
+    use arch::hart_id;
+    if hart_id() == 0 {
 
-    arch::intr_on();
-    /*
+        // TODO: zero volatile bss
+        // unsafe { mem::zero_volatile(symbols::bss_range()); }
+        mem::alloc_init();
+        uart::UART().lock().init();
+        info!("booting core-os on hart {}...", hart_id());
+        info!("drivers:");
+        info!("  UART... \x1b[0;32minitialized\x1b[0m");
+        plic::PLIC().lock().init(plic::UART0_IRQ);
+        info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
+        info!("Booting on hart {}", hart_id());
+        mem::init();
+        info!("Initializing...");
+        unsafe { trap::init(); }
+        info!("  Trap... \x1b[0;32minitialized\x1b[0m");
+        info!("  Timer... \x1b[0;32minitialized\x1b[0m");
+        {
+            let mut PLIC = plic::PLIC().lock();
+            PLIC.enable(plic::UART0_IRQ);
+            PLIC.set_threshold(0);
+            PLIC.set_priority(plic::UART0_IRQ, 1);
+        }
+        info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
+        info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
+
+        arch::intr_on();
+        /*
     loop {
         let x = uart::UART().lock().get();
         if let Some(_x) = x {
@@ -156,8 +153,12 @@ extern "C" fn kmain() -> ! {
         }
     }
     */
-    // unsafe { core::ptr::write_volatile(0 as *mut u8, 0); }
-    arch::wait_forever();
-    process::init_proc();
-    process::scheduler()
+        // unsafe { core::ptr::write_volatile(0 as *mut u8, 0); }
+        arch::wait_forever();
+        process::init_proc();
+        process::scheduler()
+    } else {
+        info!("hart {} booting", hart_id());
+        arch::wait_forever();
+    }
 }
