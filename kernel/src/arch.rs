@@ -41,6 +41,13 @@ pub fn intr_off() {
     }
 }
 
+/// Check if interrupt is enabled
+pub fn intr_get() -> bool {
+    unsafe {
+        sstatus::read().sie()
+    }
+}
+
 #[inline(always)]
 pub fn hart_id() -> usize {
     let mut hart_id: usize = 0;

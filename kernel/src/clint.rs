@@ -6,6 +6,8 @@
 //! RISC-V Core Local Interrupter
 
 use crate::symbols::NCPUS;
+use crate::println;
+use crate::arch::{hart_id, sp};
 
 pub const CLINT_BASE: usize = 0x200_0000;
 pub const CLINT_MTIMECMP_BASE: usize = CLINT_BASE + 0x4000;
@@ -13,23 +15,23 @@ pub const fn CLINT_MTIMECMP(hart: usize) -> usize { CLINT_MTIMECMP_BASE + 8 * ha
 pub const CLINT_MTIME_BASE: usize = CLINT_BASE + 0xBFF8;
 
 /// space for timer trap to save information.
-static mut mscratch0: [usize; NCPUS * 32] = [0; NCPUS * 32];
+static mut mscratch0: [[u64; 8]; NCPUS] = [[0; 8]; NCPUS];
 
 /// Initialize machine-mode timer interrupt
 pub unsafe fn timer_init() {
     use riscv::register::*;
     let id = mhartid::read();
-    let interval = 1_000_000;
-    let mtimecmp = CLINT_MTIMECMP_BASE as *mut u64;
+    let interval = 10000000;
+    let mtimecmp = CLINT_MTIMECMP(id) as *mut u64;
     let mtime = CLINT_MTIME_BASE as *const u64;
     mtimecmp.write_volatile(mtime.read_volatile() + interval);
+    let scratch = &mut mscratch0[id];
 
     // space for timer trap to save information.
-    let base_addr = &mut mscratch0 as *mut _ as usize + 32 * id;
-    mscratch::write(base_addr);
-    let scratch = base_addr as *mut usize;
-    scratch.add(4).write_volatile(CLINT_MTIMECMP(id));
-    scratch.add(5).write_volatile(interval as usize);
+    mscratch::write(scratch.as_mut_ptr() as usize);
+    scratch[3] = mtime as u64;
+    scratch[4] = mtimecmp as u64;
+    scratch[5] = interval;
 
     // set machine-mode trap handler as timervec in kernelvec.S
     mtvec::write(crate::symbols::timervec as usize, mtvec::TrapMode::Direct);
@@ -39,4 +41,10 @@ pub unsafe fn timer_init() {
 
     // enable machine-mode timer interrupt.
     mie::set_mtimer();
+}
+
+pub fn debug() {
+    unsafe {
+        println!("0x{:x} 0x{:x}, {}",mscratch0.as_mut_ptr() as usize ,mscratch0[hart_id()][4], mscratch0[hart_id()][5]);
+    }
 }

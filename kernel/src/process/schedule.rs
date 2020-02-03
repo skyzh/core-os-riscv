@@ -44,17 +44,18 @@ pub fn put_back_proc(p: Box<Process>) {
 pub fn scheduler() -> ! {
     let c = my_cpu();
     let mut lst_pid = 0;
+//    info!("scheduling on {}", arch::hart_id());
     loop {
         arch::intr_on();
         if let Some(p) = find_next_runnable_proc(lst_pid) {
             c.process = Some(p);
             let p = c.process.as_mut().unwrap();
-            // info!("scheduler: switching to {}", p.pid);
+//            info!("scheduler: switching to {}", p.pid);
             p.state = ProcessState::RUNNING;
             let ctx = core::mem::replace(&mut p.context, box Context::zero());
-            // info!("swtch to proc");
+//            info!("swtch to proc");
             swtch(&mut c.scheduler_context, *ctx);
-            // info!("come back");
+//            info!("come back");
             let p = core::mem::replace(&mut c.process, None).unwrap();
             lst_pid = p.pid as usize + 1;
             if lst_pid >= NMAXPROCS {

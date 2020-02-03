@@ -43,6 +43,8 @@ use crate::process::my_cpu;
 use crate::page::Page;
 use crate::symbols::NCPUS;
 use crate::clint::CLINT_MTIMECMP;
+use core::sync::atomic::{AtomicBool, Ordering};
+use crate::arch::intr_get;
 
 #[no_mangle]
 extern "C" fn eh_personality() {}
@@ -76,14 +78,11 @@ extern "C" fn abort() -> ! {
 unsafe extern "C" fn kinit() {
     use riscv::register::*;
     // next mode is supervisor mode
-    mstatus::set_sie();
     mstatus::set_mpp(mstatus::MPP::Supervisor);
     // mret jump to kmain
     mepc::write(kmain as usize);
     // disable paging
     asm!("csrw satp, zero");
-    // set up timer interrupt
-    clint::timer_init();
     // delegate all interrupts and exceptions to supervisor mode
     asm!("li t0, 0xffff");
     asm!("csrw medeleg, t0");
@@ -91,37 +90,21 @@ unsafe extern "C" fn kinit() {
     // save cpuid to tp
     asm!("csrr a1, mhartid");
     asm!("mv tp, a1");
+    // set up timer interrupt
+    if arch::hart_id() == 1 {
+        clint::timer_init();
+    }
     // switch to supervisor mode
     asm!("mret");
 }
 
-/// Initialize hart other than `0`
-#[no_mangle]
-extern "C" fn kinit_hart(hartid: usize) {
-    arch::wait_forever();
-    /*
-    use process::TrapFrame;
-    let mut cpu = my_cpu();
-    let kernel_trapframe = &mut cpu.kernel_trapframe;
-    mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
-    // We can't do the following until zalloc() is locked, but we
-    // don't have locks, yet :( cpu::KERNEL_TRAP_FRAME[hartid].satp
-    // = cpu::KERNEL_TRAP_FRAME[0].satp;
-    // cpu::KERNEL_TRAP_FRAME[hartid].trap_stack = page::zalloc(1);
-    kernel_trapframe.hartid = hartid;
-    info!("{} initialized", hartid);
-    arch::wait_forever();
-    */
-}
-
-/// Start first process and begin scheduling
+/// Initialize hart, start first process and begin scheduling
 #[no_mangle]
 extern "C" fn kmain() -> ! {
     use arch::hart_id;
-    if hart_id() == 0 {
-
-        // TODO: zero volatile bss
-        // unsafe { mem::zero_volatile(symbols::bss_range()); }
+    use nulllock::Mutex;
+    let __started = AtomicBool::new(false);
+    if hart_id() == 1 {
         mem::alloc_init();
         uart::UART().lock().init();
         info!("booting core-os on hart {}...", hart_id());
@@ -129,8 +112,8 @@ extern "C" fn kmain() -> ! {
         info!("  UART... \x1b[0;32minitialized\x1b[0m");
         plic::PLIC().lock().init(plic::UART0_IRQ);
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
-        info!("Booting on hart {}", hart_id());
         mem::init();
+        mem::print_map_symbols();
         info!("Initializing...");
         unsafe { trap::init(); }
         info!("  Trap... \x1b[0;32minitialized\x1b[0m");
@@ -143,22 +126,12 @@ extern "C" fn kmain() -> ! {
         }
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
         info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
-
-        arch::intr_on();
-        /*
-    loop {
-        let x = uart::UART().lock().get();
-        if let Some(_x) = x {
-            print!("{}", _x as char);
-        }
-    }
-    */
-        // unsafe { core::ptr::write_volatile(0 as *mut u8, 0); }
-        arch::wait_forever();
         process::init_proc();
-        process::scheduler()
+        __started.store(true, Ordering::SeqCst);
+        clint::debug();
     } else {
+        while __started.load(Ordering::SeqCst) == false {}
         info!("hart {} booting", hart_id());
-        arch::wait_forever();
     }
+    process::scheduler()
 }

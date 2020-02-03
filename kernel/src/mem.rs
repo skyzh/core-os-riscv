@@ -197,7 +197,7 @@ pub fn init() {
     kernel_trapframe.satp = satp_val;
     let stack_addr = mem::alloc_stack();
     kernel_trapframe.sp = stack_addr as usize + PAGE_SIZE * 1024;
-    kernel_trapframe.hartid = 0;
+    kernel_trapframe.hartid = hart_id();
     pgtable.id_map_range(
         stack_addr as usize,
         stack_addr as usize + mem::PAGE_SIZE,
@@ -215,6 +215,7 @@ pub fn ALLOC() -> &'static Mutex<Allocator> { &__ALLOC }
 use core::alloc::{GlobalAlloc, Layout};
 use crate::plic::PLIC_BASE;
 use crate::clint::CLINT_BASE;
+use crate::arch::hart_id;
 
 struct OsAllocator {}
 

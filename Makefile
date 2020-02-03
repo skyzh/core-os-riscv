@@ -66,7 +66,7 @@ qemudbg: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
 		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
 		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo \
-		-d int
+		-d int -d in_asm
 
 qemugdb: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \

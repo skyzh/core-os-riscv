@@ -13,6 +13,7 @@ use crate::page;
 use crate::nulllock::Mutex;
 use crate::syscall;
 use crate::process::Register::a0;
+use crate::arch::hart_id;
 
 #[no_mangle]
 extern "C" fn m_trap() -> () {
@@ -30,7 +31,7 @@ extern "C" fn kerneltrap(
     cause: usize,
     hart: usize,
     _status: usize
-) -> () {
+) {
     use riscv::register::*;
     if sstatus::read().spp() != sstatus::SPP::Supervisor {
         panic!("not from supervisor mode");
@@ -56,19 +57,12 @@ extern "C" fn kerneltrap(
                 // Timer interrupt
                 // machine-mode timer interrupt ->
                 // supervisor-mode software interrupt
-            },
-            3 => {
-                // Machine software
-                println!("Machine software interrupt CPU#{}", hart);
-            }
-            5 => unsafe {
-                info!("Timer interrupt interrupt CPU#{}", hart);
-                // Machine timer
-                let mtimecmp = 0x0200_4000 as *mut u64;
-                let mtime = 0x0200_bff8 as *const u64;
-                // The frequency given by QEMU is 10_000_000 Hz, so this sets
-                // the next interrupt to fire one second from now.
-                mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
+                // crate::clint::debug();
+                info!("timer on {:x} {} {}", crate::arch::sp(), hart, hart_id());
+                let interval = 10000000;
+                let mtimecmp = crate::clint::CLINT_MTIMECMP(hart_id()) as *mut u64;
+                let mtime = crate::clint::CLINT_MTIME_BASE as *const u64;
+                unsafe { mtimecmp.write_volatile(mtime.read_volatile() + interval); }
             },
             9 => {
                 // Machine external (interrupt from Platform Interrupt Controller (PLIC))
@@ -180,8 +174,6 @@ extern "C" fn kerneltrap(
             }
         }
     };
-    // Finally, return the updated program counter
-    // return_pc
 }
 
 /// Called by `uservec` in `trampoline.S`, return from user space.
