@@ -55,6 +55,18 @@ pub fn hart_id() -> usize {
     hart_id
 }
 
+#[inline]
+pub fn r_sip() -> usize {
+    let mut sip: usize = 0;
+    unsafe { asm!("csrr $0, sip" : "=r"(sip) :: "volatile"); }
+    sip
+}
+
+#[inline]
+pub fn w_sip(x: usize) {
+    unsafe { asm!("csrw sip, $0" :: "r"(x) : "volatile"); }
+}
+
 extern "C" { fn __sp() -> usize; }
 
 pub fn sp() -> usize {

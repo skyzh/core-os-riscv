@@ -109,10 +109,9 @@ timervec:
 
         # schedule the next timer interrupt
         # by adding interval to mtimecmp.
-        ld a4, 24(a0) # mtime
         ld a1, 32(a0) # CLINT_MTIMECMP(hart)
         ld a2, 40(a0) # interval
-        ld a3, 0(a4)
+        ld a3, 0(a1)
         add a3, a3, a2
         sd a3, 0(a1)
 

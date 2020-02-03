@@ -230,7 +230,7 @@ impl Table {
                     let w_flag = if v.is_w() { "W" } else { "" };
                     let x_flag = if v.is_x() { "X" } else { "" };
                     let vaddr = (vpn << 9 | i) << 12;
-                    if vaddr != v.paddr().0 {
+                    if vaddr != v.paddr().0 || true {
                         for j in 0..(2 - level) {
                             print!(".");
                         }

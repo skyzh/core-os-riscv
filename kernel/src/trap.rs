@@ -57,12 +57,9 @@ extern "C" fn kerneltrap(
                 // Timer interrupt
                 // machine-mode timer interrupt ->
                 // supervisor-mode software interrupt
-                // crate::clint::debug();
-                info!("timer on {:x} {} {}", crate::arch::sp(), hart, hart_id());
-                let interval = 10000000;
-                let mtimecmp = crate::clint::CLINT_MTIMECMP(hart_id()) as *mut u64;
-                let mtime = crate::clint::CLINT_MTIME_BASE as *const u64;
-                unsafe { mtimecmp.write_volatile(mtime.read_volatile() + interval); }
+
+                // acknowledge that this interrupt has been processed
+                arch::w_sip(arch::r_sip() & !2);
             },
             9 => {
                 // Machine external (interrupt from Platform Interrupt Controller (PLIC))

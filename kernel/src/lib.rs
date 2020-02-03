@@ -86,6 +86,7 @@ unsafe extern "C" fn kinit() {
     // delegate all interrupts and exceptions to supervisor mode
     asm!("li t0, 0xffff");
     asm!("csrw medeleg, t0");
+    asm!("li t0, 0xff0f");
     asm!("csrw mideleg, t0");
     // save cpuid to tp
     asm!("csrr a1, mhartid");
@@ -128,7 +129,6 @@ extern "C" fn kmain() -> ! {
         info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
         process::init_proc();
         __started.store(true, Ordering::SeqCst);
-        clint::debug();
     } else {
         while __started.load(Ordering::SeqCst) == false {}
         info!("hart {} booting", hart_id());

@@ -66,7 +66,7 @@ qemudbg: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
 		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
 		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo \
-		-d int -d in_asm
+		-d int
 
 qemugdb: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
@@ -75,7 +75,7 @@ qemugdb: all $(QEMU_DRIVE)
 		-S -gdb tcp::1234
 
 objdump: $(KERNEL_OUT)
-	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $(KERNEL_OUT)
+	cd kernel && cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex ../$(KERNEL_OUT)
 
 readelf: $(KERNEL_OUT)
 	readelf -a $<
