@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! RISC-V Platform-Level Interrupt Controller
+
 use crate::nulllock::Mutex;
 use crate::process::my_cpu;
 use crate::arch::hart_id;

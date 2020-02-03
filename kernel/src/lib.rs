@@ -41,6 +41,8 @@ mod syscall;
 use riscv::{asm, register::*};
 use crate::process::my_cpu;
 use crate::page::Page;
+use crate::symbols::NCPUS;
+use crate::clint::CLINT_MTIMECMP;
 
 #[no_mangle]
 extern "C" fn eh_personality() {}
@@ -83,6 +85,8 @@ unsafe extern "C" fn kinit() {
     mepc::write(kmain as usize);
     // disable paging
     asm!("csrw satp, zero");
+    // set up timer interrupt
+    clint::timer_init();
     // delegate all interrupts and exceptions to supervisor mode
     asm!("li t0, 0xffff");
     asm!("csrw medeleg, t0");
@@ -90,9 +94,6 @@ unsafe extern "C" fn kinit() {
     // save cpuid to tp
     asm!("csrr a1, mhartid");
     asm!("mv tp, a1");
-    // setup machine mode interrupt
-    mscratch::write(&mut (my_cpu().kernel_trapframe) as *mut _ as usize);
-    mtvec::write(symbols::m_trap_vector as usize, mtvec::TrapMode::Direct);
     // switch to supervisor mode
     asm!("mret");
 }
@@ -136,26 +137,17 @@ extern "C" fn kmain() -> ! {
     info!("Initializing...");
     unsafe { trap::init(); }
     info!("  Trap... \x1b[0;32minitialized\x1b[0m");
-
-    arch::intr_on();
-    /*
-    unsafe {
-        let mtimecmp = clint::CLINT_MTIMECMP_BASE as *mut u64;
-        let mtime = clint::CLINT_MTIME_BASE as *const u64;
-        // The frequency given by QEMU is 10_000_000 Hz, so this sets
-        // the next interrupt to fire one second from now.
-        mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
-    }
-    */
-
     info!("  Timer... \x1b[0;32minitialized\x1b[0m");
     {
         let mut PLIC = plic::PLIC().lock();
         PLIC.enable(plic::UART0_IRQ);
         PLIC.set_threshold(0);
+        PLIC.set_priority(plic::UART0_IRQ, 1);
     }
-    // PLIC.set_priority(plic::UART0_IRQ, 1);
     info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
+    info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
+
+    arch::intr_on();
     /*
     loop {
         let x = uart::UART().lock().get();

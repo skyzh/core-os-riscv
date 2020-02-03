@@ -30,7 +30,7 @@ all: $(KERNEL_OUT) $(USER_LIB_OUT)
 K_AUTOGEN_FILES = $K/asm/symbols.S $K/symbols/gen.rs $K/syscall/gen.rs
 U_AUTOGEN_FILES = $U/usys.S
 
-ASSEMBLY_FILES = $K/asm/boot.S $K/asm/trap.S \
+ASSEMBLY_FILES = $K/asm/boot.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S \
 				 $K/asm/swtch.S $K/asm/kernelvec.S
 

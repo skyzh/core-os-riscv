@@ -19,7 +19,7 @@ extern "C" {
 	/// `kernelvec` function in `kernelvec.S`
 	pub fn kernelvec();
 	/// `m_trap_vector` function in `trap.S`
-	pub fn m_trap_vector();
+	pub fn timervec();
 }
 
 /// Page order

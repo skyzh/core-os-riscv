@@ -16,7 +16,10 @@ use crate::process::Register::a0;
 
 #[no_mangle]
 extern "C" fn m_trap() -> () {
-    panic!("machine mode trap");
+    use riscv::register::*;
+    if sstatus::read().spp() != sstatus::SPP::Supervisor {
+        panic!("not from supervisor mode");
+    }
 }
 
 /// Process interrupt from supervisor mode
@@ -49,11 +52,16 @@ extern "C" fn kerneltrap(
     if is_async {
         // Asynchronous trap
         match cause_num {
+            1 => {
+                // Timer interrupt
+                // machine-mode timer interrupt ->
+                // supervisor-mode software interrupt
+            },
             3 => {
                 // Machine software
                 println!("Machine software interrupt CPU#{}", hart);
             }
-            7 => unsafe {
+            5 => unsafe {
                 info!("Timer interrupt interrupt CPU#{}", hart);
                 // Machine timer
                 let mtimecmp = 0x0200_4000 as *mut u64;
@@ -256,6 +264,7 @@ pub fn usertrapret() -> ! {
     trampoline_userret(TRAPFRAME_START, satp_val)
 }
 
+/// Initialize supervisor-mode trap
 pub unsafe fn init() {
     use riscv::register::*;
     stvec::write(crate::symbols::kernelvec as usize, stvec::TrapMode::Direct);
