@@ -4,6 +4,8 @@
 // https://opensource.org/licenses/MIT
 
 use crate::nulllock::Mutex;
+use crate::process::my_cpu;
+use crate::arch::hart_id;
 
 pub const PLIC_BASE: usize = 0x0c00_0000;
 pub const PLIC_PRIORITY: usize = PLIC_BASE + 0x0;
@@ -17,7 +19,7 @@ pub const PLIC_SCLAIM_BASE: usize = PLIC_BASE + 0x201004;
 
 pub const fn PLIC_MENABLE(hart: usize) -> usize { PLIC_MENABLE_BASE + hart * 0x100 }
 
-pub const fn PLIC_SENABLE(hart: usize) -> usize { PLIC_MENABLE_BASE + hart * 0x100 }
+pub const fn PLIC_SENABLE(hart: usize) -> usize { PLIC_SENABLE_BASE + hart * 0x100 }
 
 pub const fn PLIC_MPRIORITY(hart: usize) -> usize { PLIC_MPRIORITY_BASE + hart * 0x2000 }
 
@@ -40,7 +42,7 @@ impl Plic {
     /// ID of the interrupt. For example, if the UART is interrupting
     /// and it's next, we will get the value 10.
     pub fn next(&mut self) -> Option<u32> {
-        let claim_reg = PLIC_SCLAIM(0) as *const u32;
+        let claim_reg = PLIC_SCLAIM(hart_id()) as *const u32;
         let claim_no;
         // The claim register is filled with the highest-priority, enabled interrupt.
         unsafe {
@@ -59,7 +61,7 @@ impl Plic {
     /// Complete a pending interrupt by id. The id should come
     /// from the next() function above.
     pub fn complete(&mut self, id: u32) {
-        let complete_reg = PLIC_SCLAIM(0) as *mut u32;
+        let complete_reg = PLIC_SCLAIM(hart_id()) as *mut u32;
         unsafe {
             // We actually write a u32 into the entire complete_register.
             // This is the same register as the claim register, but it can
@@ -89,7 +91,7 @@ impl Plic {
 
     /// Enable a given interrupt id
     pub fn enable(&mut self, id: u32) {
-        let enables = PLIC_SENABLE(0) as *mut u32;
+        let enables = PLIC_SENABLE(hart_id()) as *mut u32;
         let actual_id = 1 << id;
         unsafe {
             // Unlike the complete and claim registers, the plic_int_enable
@@ -109,7 +111,7 @@ impl Plic {
         // is a 3-bit 0b111. So, we and with 7 (0b111) to just get the
         // last three bits.
         let actual_tsh = tsh & 7;
-        let tsh_reg = PLIC_SPRIORITY(0) as *mut u32;
+        let tsh_reg = PLIC_SPRIORITY(hart_id()) as *mut u32;
         unsafe {
             tsh_reg.write_volatile(actual_tsh as u32);
         }
@@ -119,7 +121,7 @@ impl Plic {
     /// The priority must be [0..7]
     pub fn set_priority(&mut self, id: u32, prio: u8) {
         let actual_prio = prio as u32 & 7;
-        let prio_reg = PLIC_SPRIORITY(0) as *mut u32;
+        let prio_reg = PLIC_SPRIORITY(hart_id()) as *mut u32;
         unsafe {
             // The offset for the interrupt id is:
             // PLIC_PRIORITY + 4 * id

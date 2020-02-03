@@ -182,10 +182,9 @@ pub fn init() {
         EntryAttributes::RW as usize,
     );
     // CLINT
-    //  -> MSIP
-    pgtable.id_map_range(0x0200_0000, 0x0200_ffff, EntryAttributes::RW as usize);
+    pgtable.id_map_range(CLINT_BASE, CLINT_BASE + 0x10000 - 1, EntryAttributes::RW as usize);
     // PLIC
-    pgtable.id_map_range(0x0c00_0000, UART_BASE_ADDR - 1, EntryAttributes::RW as usize);
+    pgtable.id_map_range(PLIC_BASE, PLIC_BASE + 0x400000 - 1, EntryAttributes::RW as usize);
 
     let cpu = my_cpu();
     let kernel_trapframe = &mut cpu.kernel_trapframe;
@@ -214,6 +213,8 @@ pub fn init() {
 pub fn ALLOC() -> &'static Mutex<Allocator> { &__ALLOC }
 
 use core::alloc::{GlobalAlloc, Layout};
+use crate::plic::PLIC_BASE;
+use crate::clint::CLINT_BASE;
 
 struct OsAllocator {}
 

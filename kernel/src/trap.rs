@@ -62,7 +62,7 @@ extern "C" fn kerneltrap(
                 // the next interrupt to fire one second from now.
                 mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
             },
-            11 => {
+            9 => {
                 // Machine external (interrupt from Platform Interrupt Controller (PLIC))
                 // println!("Machine external interrupt CPU#{}", hart);
                 // We will check the next interrupt. If the interrupt isn't available, this will
@@ -179,10 +179,12 @@ extern "C" fn kerneltrap(
 /// Called by `uservec` in `trampoline.S`, return from user space.
 #[no_mangle]
 pub extern "C" fn usertrap() {
-    // info!("user trap");
     use riscv::register::*;
     if sstatus::read().spp() != sstatus::SPP::User {
         panic!("not from user mode");
+    }
+    unsafe {
+        stvec::write(kernelvec as usize, stvec::TrapMode::Direct);
     }
     let p = my_proc();
     p.trapframe.epc = sepc::read();

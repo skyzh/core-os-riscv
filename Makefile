@@ -57,11 +57,10 @@ qemu: all $(QEMU_DRIVE)
 		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
 		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo 
 
-qemunostdio: all $(QEMU_DRIVE)
-    $(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
-            -nographic -serial stdio -bios none -kernel $(KERNEL_OUT) \
-            -drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo \
-			-d int
+qemuint: all $(QEMU_DRIVE)
+	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
+		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
+		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo -d int
 
 qemudbg: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \

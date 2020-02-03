@@ -72,8 +72,12 @@ extern "C" fn abort() -> ! {
 /// and prepare to switch to supervisor mode
 #[no_mangle]
 unsafe extern "C" fn kinit() {
+    if mhartid::read() != 0 {
+        arch::wait_forever();
+    }
     use riscv::register::*;
     // next mode is supervisor mode
+    mstatus::set_sie();
     mstatus::set_mpp(mstatus::MPP::Supervisor);
     // mret jump to kmain
     mepc::write(kmain as usize);
@@ -86,6 +90,9 @@ unsafe extern "C" fn kinit() {
     // save cpuid to tp
     asm!("csrr a1, mhartid");
     asm!("mv tp, a1");
+    // setup machine mode interrupt
+    mscratch::write(&mut (my_cpu().kernel_trapframe) as *mut _ as usize);
+    mtvec::write(symbols::m_trap_vector as usize, mtvec::TrapMode::Direct);
     // switch to supervisor mode
     asm!("mret");
 }
@@ -129,6 +136,8 @@ extern "C" fn kmain() -> ! {
     info!("Initializing...");
     unsafe { trap::init(); }
     info!("  Trap... \x1b[0;32minitialized\x1b[0m");
+
+    arch::intr_on();
     /*
     unsafe {
         let mtimecmp = clint::CLINT_MTIMECMP_BASE as *mut u64;
@@ -138,14 +147,25 @@ extern "C" fn kmain() -> ! {
         mtimecmp.write_volatile(mtime.read_volatile() + 10_000_000);
     }
     */
-    info!("  Timer... \x1b[0;32minitialized\x1b[0m");
-    let mut PLIC = plic::PLIC().lock();
-    PLIC.enable(plic::UART0_IRQ);
-    PLIC.set_threshold(0);
-    PLIC.set_priority(plic::UART0_IRQ, 1);
-    info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
-    // arch::wait_forever();
 
+    info!("  Timer... \x1b[0;32minitialized\x1b[0m");
+    {
+        let mut PLIC = plic::PLIC().lock();
+        PLIC.enable(plic::UART0_IRQ);
+        PLIC.set_threshold(0);
+    }
+    // PLIC.set_priority(plic::UART0_IRQ, 1);
+    info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
+    /*
+    loop {
+        let x = uart::UART().lock().get();
+        if let Some(_x) = x {
+            print!("{}", _x as char);
+        }
+    }
+    */
+    // unsafe { core::ptr::write_volatile(0 as *mut u8, 0); }
+    arch::wait_forever();
     process::init_proc();
     process::scheduler()
 }
