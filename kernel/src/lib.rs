@@ -34,6 +34,7 @@ mod process;
 mod symbols;
 mod trap;
 mod uart;
+mod plic;
 mod syscall;
 
 use riscv::{asm, register::*};
@@ -75,7 +76,16 @@ extern "C" fn kinit() {
     uart::UART().lock().init();
     info!("Booting core-os...");
     info!("Drivers:");
-    info!("  UART intialized");
+    info!("  UART... \x1b[0;32minitialized\x1b[0m");
+    let mut PLIC = plic::PLIC().lock();
+    PLIC.set_threshold(0);
+    // VIRTIO = [1..8]
+    // UART0 = 10
+    // PCIE = [32..35]
+    // Enable the UART interrupt.
+    PLIC.enable(10);
+    PLIC.set_priority(10, 1);
+    info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
     info!("Booting on hart {}", mhartid::read());
     use symbols::*;
     print_map_symbols();
@@ -129,7 +139,7 @@ extern "C" fn kinit() {
     pgtable.id_map_range(0x0c00_0000, 0x0c00_2000, EntryAttributes::RW as usize);
     pgtable.id_map_range(0x0c20_0000, 0x0c20_8000, EntryAttributes::RW as usize);
     use uart::*;
-    /* TODO: use Rust primitives */
+
     use process::TrapFrame;
     let cpu = my_cpu();
     let kernel_trapframe = &mut cpu.kernel_trapframe;
@@ -140,7 +150,7 @@ extern "C" fn kinit() {
         mscratch::write(kernel_trapframe as *mut TrapFrame as usize);
     }
     kernel_trapframe.satp = satp_val;
-    let stack_addr = mem::ALLOC().lock().allocate(PAGE_SIZE * 1024);
+    let stack_addr = mem::alloc_stack();
     kernel_trapframe.sp = stack_addr as usize + PAGE_SIZE * 1024;
     kernel_trapframe.hartid = 0;
     pgtable.id_map_range(
@@ -150,7 +160,7 @@ extern "C" fn kinit() {
     );
     unsafe {
         asm!("csrw satp, $0" :: "r"(satp_val));
-        asm!("sfence.vma zero, zero");
+        asm::sfence_vma(0, 0);
     }
     info!("Page table set up, switching to supervisor mode");
 }

@@ -98,13 +98,16 @@ userobjdump: $(USERPROG)
 userreadelf: $(USERPROG)
 	readelf -a $<
 
+CARGO_RUSTDOC_PARA = -- \
+					--no-defaults \
+					--passes strip-hidden \
+					--passes collapse-docs \
+					--passes unindent-comments \
+					--passes strip-priv-imports
+
 docs: all
-	cd kernel && cargo rustdoc --open -- \
-				--no-defaults \
-				--passes strip-hidden \
-				--passes collapse-docs \
-				--passes unindent-comments \
-				--passes strip-priv-imports \
+	cd user && cargo rustdoc --lib $(CARGO_RUSTDOC_PARA)
+	cd kernel && cargo rustdoc --open $(CARGO_RUSTDOC_PARA)
 
 .PHONY: clean
 clean:

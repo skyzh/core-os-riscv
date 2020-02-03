@@ -179,3 +179,7 @@ pub fn debug() {
         }
     }
 }
+
+pub fn alloc_stack() -> *mut u8 {
+    ALLOC().lock().allocate(PAGE_SIZE * 1024)
+}

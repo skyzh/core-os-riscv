@@ -5,7 +5,7 @@
 
 //! Machine mode and supervisor mode traps
 
-use crate::{println, info, panic};
+use crate::{println, print, info, panic};
 use crate::process::{TrapFrame, self, Process, CPU, my_proc, my_cpu, yield_cpu};
 use crate::arch;
 use crate::symbols::*;
@@ -56,7 +56,55 @@ extern "C" fn m_trap(
             },
             11 => {
                 // Machine external (interrupt from Platform Interrupt Controller (PLIC))
-                println!("Machine external interrupt CPU#{}", hart);
+                // println!("Machine external interrupt CPU#{}", hart);
+                // We will check the next interrupt. If the interrupt isn't available, this will
+                // give us None. However, that would mean we got a spurious interrupt, unless we
+                // get an interrupt from a non-PLIC source. This is the main reason that the PLIC
+                // hardwires the id 0 to 0, so that we can use it as an error case.
+                let mut PLIC = crate::plic::PLIC().lock();
+                if let Some(interrupt) = PLIC.next() {
+                    // If we get here, we've got an interrupt from the claim register. The PLIC will
+                    // automatically prioritize the next interrupt, so when we get it from claim, it
+                    // will be the next in priority order.
+                    match interrupt {
+                        10 => { // Interrupt 10 is the UART interrupt.
+                            // We would typically set this to be handled out of the interrupt context,
+                            // but we're testing here! C'mon!
+                            // We haven't yet used the singleton pattern for my_uart, but remember, this
+                            // just simply wraps 0x1000_0000 (UART).
+                            let mut my_uart = crate::uart::UART().lock();
+                            // If we get here, the UART better have something! If not, what happened??
+                            if let Some(c) = my_uart.get() {
+                                drop(my_uart);
+                                // If you recognize this code, it used to be in the lib.rs under kmain(). That
+                                // was because we needed to poll for UART data. Now that we have interrupts,
+                                // here it goes!
+                                match c {
+                                    8 => {
+                                        // This is a backspace, so we
+                                        // essentially have to write a space and
+                                        // backup again:
+                                        print!("{} {}", 8 as char, 8 as char);
+                                    }
+                                    10 | 13 => {
+                                        // Newline or carriage-return
+                                        println!();
+                                    }
+                                    _ => {
+                                        print!("{}", c as char);
+                                    }
+                                }
+                            }
+                        }
+                        // Non-UART interrupts go here and do nothing.
+                        _ => {
+                            println!("Non-UART external interrupt: {}", interrupt);
+                        }
+                    }
+                    // We've claimed it, so now say that we've handled it. This resets the interrupt pending
+                    // and allows the UART to interrupt again. Otherwise, the UART will get "stuck".
+                    PLIC.complete(interrupt);
+                }
             }
             _ => {
                 panic!("Unhandled async trap CPU#{} -> {}\n", hart, cause_num);

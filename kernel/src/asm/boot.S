@@ -28,9 +28,9 @@ _start:
 2:
 	# Control registers, set the stack, mstatus, mepc,
 	# and mtvec to return to the main function.
-	li		t5, 0xffff
-	csrw	medeleg, t5
-	csrw	mideleg, t5
+	# li		t5, 0xffff
+	# csrw	medeleg, t5
+	# csrw	mideleg, t5
 	# The stack grows from top to bottom, so we put the stack pointer
 	# to the very end of the stack range.
 	la		sp, __kernel_stack_end

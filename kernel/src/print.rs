@@ -56,7 +56,7 @@ macro_rules! info {
         let timestamp_subsec_us = timestamp.subsec_micros();
 
         $crate::print::_print(format_args_nl!(
-            concat!("[  {:>3}.{:03}{:03}] ", $string),
+            concat!("\x1b[0;36m[  {:>3}.{:03}{:03}]\x1b[0m ", $string),
             timestamp.as_secs(),
             timestamp_subsec_us / 1_000,
             timestamp_subsec_us % 1_000
@@ -69,7 +69,7 @@ macro_rules! info {
         let timestamp_subsec_us = timestamp.subsec_micros();
 
         $crate::print::_print(format_args_nl!(
-            concat!("[  {:>3}.{:03}{:03}] ", $format_string),
+            concat!("\x1b[0;36m[  {:>3}.{:03}{:03}]\x1b[0m ", $format_string),
             timestamp.as_secs(),
             timestamp_subsec_us / 1_000,
             timestamp_subsec_us % 1_000,
