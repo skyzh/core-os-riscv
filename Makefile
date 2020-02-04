@@ -3,7 +3,7 @@ RELEASE_FLAG=--release
 K=kernel/src
 U=user/src
 TARGET=riscv64gc-unknown-none-elf
-CC=riscv64-unknown-elf-gcc
+CC?=riscv64-unknown-elf-gcc
 CFLAGS=-Wall -Wextra -pedantic
 CFLAGS+=-static -ffreestanding -nostdlib -fno-rtti -fno-exceptions
 CFLAGS+=-march=rv64gc -mabi=lp64 \
