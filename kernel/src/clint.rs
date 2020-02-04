@@ -21,7 +21,7 @@ static mut mscratch0: [[u64; 8]; NCPUS] = [[0; 8]; NCPUS];
 pub unsafe fn timer_init() {
     use riscv::register::*;
     let id = mhartid::read();
-    let interval = 1_000_000;
+    let interval = 10_000_000;
     let mtimecmp = CLINT_MTIMECMP(id) as *mut u64;
     let mtime = CLINT_MTIME_BASE as *const u64;
     mtimecmp.write_volatile(mtime.read_volatile() + interval);

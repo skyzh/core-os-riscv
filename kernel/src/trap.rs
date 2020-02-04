@@ -33,9 +33,6 @@ extern "C" fn kerneltrap(
     _status: usize
 ) {
     use riscv::register::*;
-    if sstatus::read().spp() != sstatus::SPP::Supervisor {
-        panic!("not from supervisor mode");
-    }
     // We're going to handle all traps in machine mode. RISC-V lets
     // us delegate to supervisor mode, but switching out SATP (virtual memory)
     // gets hairy.
@@ -49,6 +46,9 @@ extern "C" fn kerneltrap(
     // The cause contains the type of trap (sync, async) as well as the cause
     // number. So, here we narrow down just the cause number.
     let cause_num = cause & 0xfff;
+    if sstatus::read().spp() != sstatus::SPP::Supervisor {
+        panic!("not from supervisor mode, async {}, {:x}, hart {}, epc {:x}, tval {}", is_async, cause_num, hart, epc, tval);
+    }
     let mut return_pc = epc;
     if is_async {
         // Asynchronous trap
@@ -196,8 +196,10 @@ pub extern "C" fn usertrap() {
         p.trapframe.epc += 4;
         arch::intr_on();
         p.trapframe.regs[a0 as usize] = syscall::syscall() as usize;
+    } else if scause == 0x8000000000000001 {
+        yield_cpu();
     } else {
-        panic!("unexpected scause {}", scause);
+        panic!("unexpected scause {:x}", scause);
     }
 
     usertrapret();

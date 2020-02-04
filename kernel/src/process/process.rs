@@ -85,6 +85,7 @@ pub extern "C" fn forkret() {
     usertrapret();
 }
 
+/// Put init process into `PROCS_POOL`
 pub fn init_proc() {
     let mut p = Process::new(0);
     let content = fs::get_file("/init");
@@ -126,6 +127,7 @@ pub fn fork() -> i32 {
     f_pid
 }
 
+/// map user stack in `pgtable` at `stack_begin` and returns `sp`
 pub fn map_stack(pgtable: &mut Table, stack_begin: usize) -> usize {
     let stack = page::Page::new();
     pgtable.map(

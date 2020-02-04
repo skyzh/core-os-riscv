@@ -56,34 +56,39 @@ I'll continuously add Rust-specific implementations and how I made this project 
 The main goal of this project is to make an xv6-like operating system with the Rust programming language. And now it's in a very early stage. I'm still working on it.
 
 - [x] Adapt code from http://osblog.stephenmarz.com/
-- [x] UART drivers
-- [x] Virtual Memory
-- [x] Load ELF files from memory
-- [x] Switch to User-mode
-- [x] Process
-- [x] System call
-- [x] Scheduling
-- [x] Test multiple process scheduling
-- [x] Fork system call
-- [x] Kernel Allocator
-- [x] Remove direct call to allocator
-- [x] Machine-mode Timer Interrupt
-- [x] Fake fs and exec system call
-- [x] External interrupt
-- [ ] (WIP) Timer-interrupt-based scheduling
-- [ ] (WIP) Virt-io driver
-- [ ] Use initcode instead of init binary
-- [ ] Allocator and stdlib in user-space
-- [x] Real spinlock instead of nulllock
-- [ ] (WIP) Multi-core support
-- [ ] Use Option instead of panic!
-- [ ] Persistence
-- [ ] Eliminate use of unsafe
-- [ ] Documentation
-- [ ] High-level abstractions (driver, vm, etc.)
-- [ ] Port to aarch64 and deploy on Raspi
-- [ ] Rewrite code from other sources
-- [ ] Security issues
+
+* Virtual Memory and Management
+    - [x] Virtual Memory
+    - [x] Load ELF files from memory
+    - [x] Kernel Allocator
+    - [x] Remove direct call to allocator
+* Traps and Interrupt, Drivers
+    - [x] UART drivers
+    - [x] Machine-mode Timer Interrupt
+    - [x] External interrupt
+    - [ ] (WIP) Virt-io driver
+* Process and Scheduling
+    - [x] Switch to User-mode
+    - [x] Process
+    - [x] System call
+    - [x] Scheduling
+    - [x] Test multiple process scheduling
+    - [x] Fork system call
+    - [x] Timer-interrupt-based scheduling
+    - [ ] (WIP) Multi-core support
+    - [ ] Use initcode instead of init binary
+    - [ ] Allocator and stdlib in user-space
+* Filesystem
+    - [x] Fake fs and exec system call
+    - [x] Real spinlock instead of nulllock
+    - [ ] Use Option instead of panic!
+* Miscellaneous
+    - [ ] Eliminate use of unsafe
+    - [ ] Documentation
+    - [ ] High-level abstractions (driver, vm, etc.)
+    - [ ] Port to aarch64 and deploy on Raspi
+    - [x] Rewrite and credit code from other sources
+    - [ ] Security issues
 
 ## Reference
 

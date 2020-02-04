@@ -5,7 +5,8 @@
 
 use core::ptr::null_mut;
 
-// Trapframe should be aligned because it will be mapped to high address
+/// Trap frame contains information for switching to
+/// and switching back from user space
 #[repr(C)]
 #[repr(align(4096))]
 #[derive(Clone)]

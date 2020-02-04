@@ -8,12 +8,12 @@ use crate::arch;
 use crate::trap::usertrapret;
 use crate::symbols::*;
 use crate::process::{PROCS_POOL, ProcessState, swtch, Register, Context, my_cpu, Process};
-use crate::info;
+use crate::{info, println};
 use crate::panic;
 use alloc::boxed::Box;
 use core::borrow::BorrowMut;
-use core::mem::MaybeUninit;
 
+/// Find a runnable process whose pid >= `from_pid`
 fn find_next_runnable_proc(from_pid: usize) -> Option<Box<Process>> {
     let mut pool = PROCS_POOL.lock();
     for pid in from_pid..NMAXPROCS {
@@ -31,6 +31,7 @@ fn find_next_runnable_proc(from_pid: usize) -> Option<Box<Process>> {
     None
 }
 
+/// Put process back to `PROCS_POOL`
 pub fn put_back_proc(p: Box<Process>) {
     let mut pool = PROCS_POOL.lock();
     let p_in_pool = &mut pool[p.pid as usize];
@@ -41,6 +42,7 @@ pub fn put_back_proc(p: Box<Process>) {
     panic!("pid {} already occupied", p.pid);
 }
 
+/// Kernel scheduler
 pub fn scheduler() -> ! {
     let c = my_cpu();
     let mut lst_pid = 0;
