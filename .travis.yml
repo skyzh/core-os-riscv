@@ -1,19 +1,22 @@
 dist: bionic
 language: rust
 rust:
-  - nightly
+- nightly
 cache: cargo
+before_install:
+- apt install gcc-riscv64-unknown-elf -y
 before_script:
-  - cargo install cargo-xbuild cargo-binutils
-  - rustup component add rust-src llvm-tools-preview rustfmt rls rust-analysis
-  - rustup target add riscv64gc-unknown-none-elf
+- cargo install cargo-xbuild cargo-binutils
+- rustup component add rust-src llvm-tools-preview rustfmt rls rust-analysis
+- rustup target add riscv64gc-unknown-none-elf
 script:
-  - make docs
+- make docs
 deploy:
   provider: pages
   skip_cleanup: true
-  github_token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
   keep_history: false
   on:
     branch: master
   local_dir: target/riscv64gc-unknown-none-elf/doc
+  github_token:
+    secure: OP4kj/t0Ii7GCdgZXZGDB6lFGcJHb6uRDCd2JQbOBsSsqHcgTsit9YR0gTElAQ3qrgL9Ey7eWNWl2JQUmHzE2Tat01R0/YmKfTeOHPq3kNBxO4PDxdyi3wyeIgpR9X8S2HjYOAzNrqigIcmSd9aA5xwWkUDYhcGEu/e3pv3Us+E8vx1BgAACpDHEsmanMiPd001JtPPmwYDYt9GiV/L0YEnrW6++1F0haSM+1i348AWUVYTKuujBUN68hHI7se/snk+9aKeyp0srVgyuKWV00iCw44UAd0/e3sOnkNEmO0UNj8dmmo9DMOdEx4UGZDcW5xCu3sU1zpVLp8B3AKKmpDWq7NrYg5TuZQ1dMtTKw2WOX2wK0RkR3PRYcVNZiQtxUg2CvlqqDHnru2+zYAlPwEIhWqT7dNDQrlBbdY0IKluvYnym6ah5ub12Bal2Au+K2Fc0waiUpWCf4WanemU0ebYSOK1Tf9Bs3zJKlzSI5HTfm+/BQe7oyKXR9+Oi0smCRVyVNYumBl2YK3YyoillRVgvbH8EwzSQf0/cCpvEYXpwEqGGZrhNprxXDqfsCTFDChqiH1s6oGkBYJivxCykfwCqDJ0cIEk/MBy+BPQNZwLjUeq34/YQw03jeSveV+4b6PqH8qmfOz21sEM93xTBXAppeskfh2xK6+qRRpnnuwQ=

@@ -6,7 +6,7 @@
 //! All syscalls of core-os
 //! 
 //! Syscalls of core-os are defined and implemented with Rust
-//! primitives (e.g. str, [u8]). This module will transmute
+//! primitives (e.g. `str`, `[u8]`). This module will transmute
 //! these Rust primitives into pointers and other machine-specific
 //! representations before calling functions in `syscall_internal` and
 //! trapping into kernel.
