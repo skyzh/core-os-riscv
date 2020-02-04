@@ -6,8 +6,10 @@ TARGET=riscv64gc-unknown-none-elf
 CC=riscv64-unknown-elf-gcc
 CFLAGS=-Wall -Wextra -pedantic
 CFLAGS+=-static -ffreestanding -nostdlib -fno-rtti -fno-exceptions
-CFLAGS+=-march=rv64gc -mabi=lp64
--Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector -fno-pie -no-pie
+CFLAGS+=-march=rv64gc -mabi=lp64 \
+		-Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany \
+		-ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector \
+		-fno-pie -no-pie
 OBJCOPY=riscv64-unknown-elf-objcopy
 TARGET_PATH=./target/$(TARGET)/$(TYPE)
 KERNEL_LIBS=$(TARGET_PATH)

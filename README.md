@@ -1,11 +1,13 @@
 # core-os-riscv
 
-[![Sourcegraph](https://sourcegraph.com/github.com/skyzh/core-os-riscv/-/badge.svg)](https://sourcegraph.com/github.com/skyzh/core-os-riscv?badge)
-
 An xv6-like operating system in Rust.
 
 This project is originally based on "The Adventures of OS: Making a RISC-V Operating System using Rust",
 and is now being made to have an xv6-like structure.
+
+You may browse this repo with [Sourcegraph](https://sourcegraph.com/github.com/skyzh/core-os-riscv).
+
+Documentation of this repo is built and deployed with Travis. [![Build Status](https://travis-ci.com/skyzh/core-os-riscv.svg?branch=master)](https://travis-ci.com/skyzh/core-os-riscv)
 
 ## Build Instructions
 
