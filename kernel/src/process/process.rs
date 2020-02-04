@@ -29,6 +29,7 @@ pub struct Process {
     pub context: Box<Context>,
     pub state: ProcessState,
     pub kstack: usize,
+    pub kstack_sp: usize,
     pub pid: i32
 }
 
@@ -42,14 +43,15 @@ impl Process {
             panic!("invalid pid");
         }
 
-        let kstack = Page::new();
+        let kstack = mem::ALLOC().lock().allocate(PAGE_SIZE * 1024) as usize;
 
         let mut p = Self {
             trapframe,
             pgtable,
             context: box Context::zero(),
             state: ProcessState::UNUSED,
-            kstack: Box::into_raw(kstack) as usize,
+            kstack: kstack,
+            kstack_sp: kstack + PAGE_SIZE * 1024,
             pid
         };
 

@@ -67,6 +67,25 @@ pub fn w_sip(x: usize) {
     unsafe { asm!("csrw sip, $0" :: "r"(x) : "volatile"); }
 }
 
+#[inline]
+pub fn r_sstatus() -> usize {
+    let mut x: usize = 0;
+    unsafe { asm!("csrr $0, sstatus" : "=r"(x) :: "volatile"); }
+    x
+}
+
+#[inline]
+pub fn r_satp() -> usize {
+    let mut x: usize = 0;
+    unsafe { asm!("csrr $0, satp" : "=r"(x) :: "volatile"); }
+    x
+}
+
+#[inline]
+pub fn w_sstatus(x: usize) {
+    unsafe { asm!("csrw sstatus, $0" :: "r"(x) : "volatile"); }
+}
+
 extern "C" { fn __sp() -> usize; }
 
 pub fn sp() -> usize {

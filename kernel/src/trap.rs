@@ -25,28 +25,24 @@ extern "C" fn m_trap() -> () {
 
 /// Process interrupt from supervisor mode
 #[no_mangle]
-extern "C" fn kerneltrap(
-    epc: usize,
-    tval: usize,
-    cause: usize,
-    hart: usize,
-    _status: usize
-) {
-    use riscv::register::*;
+extern "C" fn kerneltrap() {
+    use riscv::register;
+
+    let epc = register::sepc::read();
+    let tval = register::stval::read();
+    let cause = register::scause::read();
+    let hart = arch::hart_id();
+    let sstatus = register::sstatus::read();
+    let sstatus_bits = arch::r_sstatus();
+
     // We're going to handle all traps in machine mode. RISC-V lets
     // us delegate to supervisor mode, but switching out SATP (virtual memory)
     // gets hairy.
-    let is_async = {
-        if cause >> 63 & 1 == 1 {
-            true
-        } else {
-            false
-        }
-    };
+    let is_async = cause.is_interrupt();
     // The cause contains the type of trap (sync, async) as well as the cause
     // number. So, here we narrow down just the cause number.
-    let cause_num = cause & 0xfff;
-    if sstatus::read().spp() != sstatus::SPP::Supervisor {
+    let cause_num = cause.code();
+    if sstatus.spp() != register::sstatus::SPP::Supervisor {
         panic!("not from supervisor mode, async {}, {:x}, hart {}, epc {:x}, tval {}", is_async, cause_num, hart, epc, tval);
     }
     let mut return_pc = epc;
@@ -177,6 +173,9 @@ extern "C" fn kerneltrap(
             }
         }
     };
+
+    register::sepc::write(epc);
+    arch::w_sstatus(sstatus_bits);
 }
 
 /// Called by `uservec` in `trampoline.S`, return from user space.
@@ -233,10 +232,10 @@ pub fn usertrapret() -> ! {
         // the process next re-enters the kernel.
         let mut p = my_proc();
         let c = my_cpu();
-        p.trapframe.satp = c.kernel_trapframe.satp;
-        p.trapframe.sp = c.kernel_trapframe.sp;
+        p.trapframe.satp = arch::r_satp();
+        p.trapframe.sp = p.kstack_sp;
         p.trapframe.trap = crate::trap::usertrap as usize;
-        p.trapframe.hartid = c.kernel_trapframe.hartid;
+        p.trapframe.hartid = arch::hart_id();
 
         // println!("trap 0x{:x}", proc_cpu.process.trapframe.trap);
 

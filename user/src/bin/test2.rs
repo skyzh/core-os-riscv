@@ -16,6 +16,7 @@ use core::ptr::null;
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
-    loop { println!("test2!"); }
+    println!("test2 running...");
+    loop {}
     exit(0);
 }

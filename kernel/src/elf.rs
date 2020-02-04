@@ -77,7 +77,7 @@ pub fn parse_elf(a: &[u8], pgtable: &mut page::Table) -> u64 {
         if hdr.vaddr + hdr.memsz < hdr.vaddr {
             panic!("bad elf: vaddr");
         }
-        if hdr.vaddr as usize % mem::PAGE_SIZE != 0 {
+        if hdr.vaddr as usize % PAGE_SIZE != 0 {
             println!("{:X}", hdr.vaddr);
             panic!("bad elf: vaddr align")
         }
@@ -110,12 +110,12 @@ fn load_segment(
         let mut seg = page::Page::new();
         let src = elf as *const u8;
         unsafe {
-            let src = src.add(offset + i * mem::PAGE_SIZE);
-            core::ptr::copy(src, seg.data.as_mut_ptr(), mem::PAGE_SIZE);
+            let src = src.add(offset + i * PAGE_SIZE);
+            core::ptr::copy(src, seg.data.as_mut_ptr(), PAGE_SIZE);
         }
         use page::EntryAttributes;
         pgtable.map(
-            vaddr + i * mem::PAGE_SIZE,
+            vaddr + i * PAGE_SIZE,
             seg,
             EntryAttributes::URX as usize
         );

@@ -44,12 +44,6 @@ kernelvec:
         sd t5, 232(sp)
         sd t6, 240(sp)
 
-        csrr	a0, sepc
-        csrr	a1, stval
-        csrr	a2, scause
-        mv      a3, tp
-        csrr	a4, sstatus
-
         // call the C trap handler in trap.c
         call kerneltrap
 

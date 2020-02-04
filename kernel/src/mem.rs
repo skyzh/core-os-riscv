@@ -8,8 +8,16 @@
 use core::ops::Range;
 use crate::info;
 use crate::{println, panic};
-pub use crate::symbols::*;
+use crate::symbols::*;
 use crate::spinlock::Mutex;
+use crate::page::EntryAttributes;
+use crate::page::{Table, KERNEL_PGTABLE};
+use crate::uart::UART_BASE_ADDR;
+use crate::process::*;
+use riscv::{register::*, asm};
+use crate::mem;
+use crate::arch;
+
 
 /// Maximum number of pages. As QEMU and linker script `kernel.ld`
 /// are set to have 128MB of RAM, maximum number of pages can be calculated.
@@ -129,16 +137,6 @@ pub fn alloc_init() {
 }
 
 pub fn init() {
-    use crate::symbols::*;
-    // print_map_symbols();
-    use crate::page::EntryAttributes;
-    use crate::page::{Table, KERNEL_PGTABLE};
-    use crate::uart::UART_BASE_ADDR;
-    use crate::process::*;
-    use riscv::register::*;
-    use crate::mem;
-    use crate::arch;
-
     let mut pgtable = KERNEL_PGTABLE().lock();
     pgtable.id_map_range(
         TEXT_START(),
@@ -184,29 +182,12 @@ pub fn init() {
     pgtable.id_map_range(CLINT_BASE, CLINT_BASE + 0x10000, EntryAttributes::RW as usize);
     // PLIC
     pgtable.id_map_range(PLIC_BASE, PLIC_BASE + 0x400000, EntryAttributes::RW as usize);
-
-    let cpu = my_cpu();
-    let kernel_trapframe = &mut cpu.kernel_trapframe;
-
-    let root_ppn = &mut *pgtable as *mut Table as usize;
-    let satp_val = arch::build_satp(8, 0, root_ppn);
-    unsafe {
-        sscratch::write(kernel_trapframe as *mut TrapFrame as usize);
-    }
-    kernel_trapframe.satp = satp_val;
-    let stack_addr = mem::alloc_stack();
-    kernel_trapframe.sp = stack_addr as usize + PAGE_SIZE * 1024;
-    kernel_trapframe.hartid = hart_id();
-    pgtable.id_map_range(
-        stack_addr as usize,
-        stack_addr as usize + mem::PAGE_SIZE,
-        EntryAttributes::RW as usize,
-    );
 }
 
 pub fn hartinit() {
-    use riscv::asm;
-    let satp_val = my_cpu().kernel_trapframe.satp;
+    let mut pgtable = KERNEL_PGTABLE().lock();
+    let root_ppn = &mut *pgtable as *mut Table as usize;
+    let satp_val = arch::build_satp(8, 0, root_ppn);
     unsafe {
         asm!("csrw satp, $0" :: "r"(satp_val));
         asm::sfence_vma(0, 0);

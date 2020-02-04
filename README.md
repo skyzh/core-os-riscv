@@ -62,6 +62,7 @@ The main goal of this project is to make an xv6-like operating system with the R
     - [x] Load ELF files from memory
     - [x] Kernel Allocator
     - [x] Remove direct call to allocator
+    - [ ] (WIP, Bug) Kernel stack management and mapping
 * Traps and Interrupt, Drivers
     - [x] UART drivers
     - [x] Machine-mode Timer Interrupt
