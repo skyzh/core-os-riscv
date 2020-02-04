@@ -47,7 +47,7 @@ Use Linuxbrew.
 
 ## Documentation
 
-Documentation of this repo is automatically built and deployed with Travis.
+Documentation of this repo is automatically built and deployed with Travis. You may view online version [here](https://skyzh.github.io/core-os-riscv/kernel/).
 
 ```bash
 make docs
