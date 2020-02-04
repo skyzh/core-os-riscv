@@ -12,7 +12,7 @@ use crate::println;
 use crate::trap::usertrapret;
 use alloc::boxed::Box;
 use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu};
-use crate::page::{Page, Table};
+use crate::page::{Page, Table, EntryAttributes};
 use crate::process::Register::a0;
 use crate::fs;
 
@@ -87,17 +87,25 @@ pub extern "C" fn forkret() {
     usertrapret();
 }
 
+fn init_code() -> &'static [u8] {
+    #[cfg(debug_assertions)]
+    let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/debug/initcode");
+    #[cfg(not(debug_assertions))]
+    let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/release/initcode");
+    x
+}
+
 /// Put init process into `PROCS_POOL`
 pub fn init_proc() {
     let mut p = Process::new(0);
-    let content = fs::get_file("/init");
-    let entry = crate::elf::parse_elf(
-        content,
-        &mut p.pgtable
-    );
+    // map init code
+    let content = init_code();
+    let mut page = Page::new();
+    page.data[0..content.len()].copy_from_slice(content);
+    p.pgtable.map(0, page, EntryAttributes::URX as usize);
     // map user stack
     let sp = map_stack(&mut p.pgtable, 0x80001000);
-    p.trapframe.epc = entry as usize;
+    p.trapframe.epc = 0;
     p.trapframe.regs[Register::sp as usize] = sp;
     p.state = ProcessState::RUNNABLE;
     put_back_proc(box p);

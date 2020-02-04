@@ -1,9 +1,9 @@
-        #
-        # interrupts and exceptions while in supervisor
-        # mode come here.
-        #
-        # push all registers, call kerneltrap(), restore, return.
-        #
+#
+# interrupts and exceptions while in supervisor
+# mode come here.
+#
+# push all registers, call kerneltrap(), restore, return.
+#
 .globl kerneltrap
 .globl kernelvec
 .align 4
@@ -85,9 +85,9 @@ kernelvec:
         // return to whatever we were doing in the kernel.
         sret
 
-        #
-        # machine-mode timer interrupt.
-        #
+#
+# machine-mode timer interrupt.
+#
 .globl timervec
 .align 4
 timervec:

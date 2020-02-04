@@ -43,6 +43,9 @@ pub const NCPUS : usize = 8;
 /// Maximum process on machine.
 pub const NMAXPROCS: usize = 256;
 
+/// Scheduler timer interrupt interval
+pub const SCHEDULER_INTERVAL: usize = 1_000_000;
+
 pub unsafe fn bss_range() -> Range<*mut usize> {
     Range {
         start: BSS_START as *mut usize,

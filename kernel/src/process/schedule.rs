@@ -54,9 +54,9 @@ pub fn scheduler() -> ! {
             let p = c.process.as_mut().unwrap();
             p.state = ProcessState::RUNNING;
             let ctx = core::mem::replace(&mut p.context, box Context::zero());
-            info!("scheduler {}: switching to {}", arch::hart_id(), p.pid);
+//            info!("scheduler {}: switching to {}", arch::hart_id(), p.pid);
             swtch(&mut c.scheduler_context, *ctx);
-            info!("scheduler {}: come back", arch::hart_id());
+//            info!("scheduler {}: come back", arch::hart_id());
             let mut p = core::mem::replace(&mut c.process, None).unwrap();
             p.state = ProcessState::RUNNABLE;
             lst_pid = p.pid as usize + 1;

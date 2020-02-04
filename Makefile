@@ -8,6 +8,7 @@ CFLAGS=-Wall -Wextra -pedantic
 CFLAGS+=-static -ffreestanding -nostdlib -fno-rtti -fno-exceptions
 CFLAGS+=-march=rv64gc -mabi=lp64
 -Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector -fno-pie -no-pie
+OBJCOPY=riscv64-unknown-elf-objcopy
 TARGET_PATH=./target/$(TARGET)/$(TYPE)
 KERNEL_LIBS=$(TARGET_PATH)
 USER_LIBS=$(TARGET_PATH)
@@ -25,10 +26,10 @@ CPUS=4
 MEM=128M
 QEMU_DRIVE=hdd.img
 
-all: $(KERNEL_OUT) $(USER_LIB_OUT)
+all: $(USER_LIB_OUT) $(KERNEL_OUT)
 
 K_AUTOGEN_FILES = $K/asm/symbols.S $K/symbols/gen.rs $K/syscall/gen.rs
-U_AUTOGEN_FILES = $U/usys.S
+U_AUTOGEN_FILES = $U/usys.S $U/syscall.h
 
 ASSEMBLY_FILES = $K/asm/boot.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S \
@@ -36,7 +37,7 @@ ASSEMBLY_FILES = $K/asm/boot.S \
 
 CXX_FILES = $K/spinlock.c
 
-$(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) $(USER_LIB_OUT) $(USER_LIB_OUT) FORCE
+$(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) $(USER_LIBS)/initcode $(USER_LIB_OUT) FORCE
 	cd kernel && cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
 $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT) $(CXX_FILES)
@@ -45,6 +46,10 @@ $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT) $(CXX_FILES)
 $(USER_LIB_OUT): $(U_AUTOGEN_FILES) FORCE
 	cd user && RUSTFLAGS="-C link-arg=-T$(USER_LINKER_SCRIPT)" cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
+$(USER_LIBS)/initcode: $U/initcode.S $U/syscall.h
+	$(CC) $(CFLAGS) -T$(USER_LINKER_SCRIPT) -o $@.elf $<
+	$(OBJCOPY) -S -O binary $@.elf $@
+
 $K/asm/symbols.S: utils/symbols.S.py utils/symbols.py
 	$< > $@
 $K/symbols/gen.rs: utils/symbols_gen.rs.py utils/symbols.py
@@ -52,6 +57,8 @@ $K/symbols/gen.rs: utils/symbols_gen.rs.py utils/symbols.py
 $K/syscall/gen.rs: utils/syscall_gen.rs.py utils/syscall.py
 	$< > $@
 $U/usys.S: utils/usys.S.py utils/syscall.py
+	$< > $@
+$U/syscall.h: utils/syscall.h.py utils/syscall.py
 	$< > $@
 
 qemu: all $(QEMU_DRIVE)

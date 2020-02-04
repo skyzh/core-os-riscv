@@ -76,8 +76,8 @@ The main goal of this project is to make an xv6-like operating system with the R
     - [x] Test multiple process scheduling
     - [x] Fork system call
     - [x] Timer-interrupt-based scheduling
-    - [ ] (WIP) Multi-core support
-    - [ ] Use initcode instead of init binary
+    - [x] Multi-core support
+    - [x] Use initcode instead of init binary
     - [ ] Allocator and stdlib in user-space
 * Filesystem
     - [x] Fake fs and exec system call
