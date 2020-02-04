@@ -82,8 +82,8 @@ The main goal of this project is to make an xv6-like operating system with the R
 * Filesystem
     - [x] Fake fs and exec system call
     - [x] Real spinlock instead of nulllock
-    - [ ] Use Option instead of panic!
 * Miscellaneous
+    - [ ] Use Option instead of panic!
     - [ ] Eliminate use of unsafe
     - [ ] Documentation
     - [ ] High-level abstractions (driver, vm, etc.)

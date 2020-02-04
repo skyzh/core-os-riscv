@@ -4,6 +4,11 @@
 // https://opensource.org/licenses/MIT
 
 //! Module for processing syscall
+//! 
+//! All functions that begin with `sys_` will extract
+//! parameters from trap frame, turn pointers into
+//! Rust primitives and call corresponding functions
+//! with these parameters in kernel code.
 
 mod gen;
 pub use gen::*;

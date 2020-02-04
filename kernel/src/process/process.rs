@@ -87,6 +87,9 @@ pub extern "C" fn forkret() {
     usertrapret();
 }
 
+/// binary code of user/src/initcode.S
+/// This file will be compiled to elf, and then
+/// be stripped with objdump, as specified in Makefile.
 fn init_code() -> &'static [u8] {
     #[cfg(debug_assertions)]
     let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/debug/initcode");
@@ -148,6 +151,7 @@ pub fn map_stack(pgtable: &mut Table, stack_begin: usize) -> usize {
     stack_begin + PAGE_SIZE
 }
 
+/// exec syscall
 pub fn exec(path: &str) {
     let p = my_proc();
     let content = fs::get_file(path);

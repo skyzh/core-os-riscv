@@ -12,9 +12,6 @@
 #![feature(alloc_error_handler)]
 #![feature(box_syntax)]
 #![feature(alloc_prelude)]
-#![feature(new_uninit)]
-#![feature(maybe_uninit_uninit_array)]
-#![feature(maybe_uninit_ref)]
 #![allow(dead_code)]
 
 #[macro_use]
@@ -99,6 +96,7 @@ unsafe extern "C" fn kinit() {
 
 use spinlock::Mutex;
 
+/// Controls whether other harts can start boot procedure
 static may_boot: Mutex<bool> = Mutex::new(false);
 
 /// Initialize hart, start first process and begin scheduling
@@ -115,7 +113,7 @@ extern "C" fn kmain() -> ! {
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
         mem::init();
         mem::hartinit();
-        info!("Initializing...");
+        info!("page table configured");
         unsafe { trap::init(); }
         info!("  Trap... \x1b[0;32minitialized\x1b[0m");
         info!("  Timer... \x1b[0;32minitialized\x1b[0m");

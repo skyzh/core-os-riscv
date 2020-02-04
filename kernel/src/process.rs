@@ -32,6 +32,7 @@ static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
 /// An array holding all process information.
 /// 
 /// # Examples
+///
 /// ```
 /// let pool = PROCS_POOL.lock();
 /// let p = &mut pool[0];

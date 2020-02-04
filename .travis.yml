@@ -1,0 +1,10 @@
+dist: bionic
+language: rust
+rust:
+  - nightly
+cache: cargo
+before_script:
+  - rustup component add rust-src llvm-tools-preview rustfmt rls rust-analysis
+  - rustup target add riscv64gc-unknown-none-elf
+script:
+  - make docs

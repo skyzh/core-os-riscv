@@ -20,9 +20,9 @@ pub unsafe extern "C" fn _start() -> ! {
     let p = fork();
     if p == 0 {
         println!("subprocess calling test1");
-        exec("/test1", null());
+        exec("/test1", &[]);
     } else {
         println!("parent calling test2");
-        exec("/test2", null());
+        exec("/test2", &[]);
     }
 }
