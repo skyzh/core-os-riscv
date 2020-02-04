@@ -3,7 +3,7 @@ RELEASE_FLAG=
 K=kernel/src
 U=user/src
 TARGET=riscv64gc-unknown-none-elf
-CC?=riscv64-unknown-elf-gcc
+RISCVCC?=riscv64-unknown-elf-gcc
 CFLAGS=-Wall -Wextra -pedantic
 CFLAGS+=-static -ffreestanding -nostdlib -fno-exceptions
 CFLAGS+=-march=rv64gc -mabi=lp64 \
@@ -43,13 +43,13 @@ $(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) $(USER_LIBS)/initcode $(USER_LIB_OUT) FORC
 	cd kernel && cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
 $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT) $(CXX_FILES)
-	$(CC) $(CFLAGS) -T$(KERNEL_LINKER_SCRIPT) -o $@ $(ASSEMBLY_FILES) $(CXX_FILES) -L$(KERNEL_LIBS) $(KERNEL_LIB)
+	$(RISCVCC) $(CFLAGS) -T$(KERNEL_LINKER_SCRIPT) -o $@ $(ASSEMBLY_FILES) $(CXX_FILES) -L$(KERNEL_LIBS) $(KERNEL_LIB)
 
 $(USER_LIB_OUT): $(U_AUTOGEN_FILES) FORCE
 	cd user && RUSTFLAGS="-C link-arg=-T$(USER_LINKER_SCRIPT)" cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
 $(USER_LIBS)/initcode: $U/initcode.S $U/syscall.h
-	$(CC) $(CFLAGS) -T$(USER_LINKER_SCRIPT) -o $@.elf $<
+	$(RISCVCC) $(CFLAGS) -T$(USER_LINKER_SCRIPT) -o $@.elf $<
 	$(OBJCOPY) -S -O binary $@.elf $@
 
 $K/asm/symbols.S: utils/symbols.S.py utils/symbols.py
