@@ -8,7 +8,7 @@
 use core::convert::TryInto;
 use core::fmt::Write;
 use core::fmt::Error;
-use crate::nulllock::Mutex;
+use crate::spinlock::Mutex;
 
 /// UART base address on QEMU RISC-V
 pub const UART_BASE_ADDR: usize = 0x1000_0000;

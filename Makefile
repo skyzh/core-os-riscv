@@ -34,11 +34,13 @@ ASSEMBLY_FILES = $K/asm/boot.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S \
 				 $K/asm/swtch.S $K/asm/kernelvec.S
 
+CXX_FILES = $K/spinlock.c
+
 $(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) $(USER_LIB_OUT) $(USER_LIB_OUT) FORCE
 	cd kernel && cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
 
 $(KERNEL_OUT): $(KERNEL_LIB_OUT) $(ASSEMBLY_FILES) $(LINKER_SCRIPT)
-	$(CC) $(CFLAGS) -T$(KERNEL_LINKER_SCRIPT) -o $@ $(ASSEMBLY_FILES) -L$(KERNEL_LIBS) $(KERNEL_LIB)
+	$(CC) $(CFLAGS) -T$(KERNEL_LINKER_SCRIPT) -o $@ $(ASSEMBLY_FILES) $(CXX_FILES) -L$(KERNEL_LIBS) $(KERNEL_LIB)
 
 $(USER_LIB_OUT): $(U_AUTOGEN_FILES) FORCE
 	cd user && RUSTFLAGS="-C link-arg=-T$(USER_LINKER_SCRIPT)" cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)

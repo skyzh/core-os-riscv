@@ -20,7 +20,7 @@ mod schedule;
 pub use schedule::*;
 
 use crate::symbols::*;
-use crate::nulllock::Mutex;
+use crate::spinlock::Mutex;
 use crate::arch;
 use alloc::boxed::Box;
 use core::mem::MaybeUninit;

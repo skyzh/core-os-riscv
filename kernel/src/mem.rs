@@ -9,7 +9,7 @@ use core::ops::Range;
 use crate::info;
 use crate::{println, panic};
 pub use crate::symbols::*;
-use crate::nulllock::Mutex;
+use crate::spinlock::Mutex;
 
 /// Maximum number of pages. As QEMU and linker script `kernel.ld`
 /// are set to have 128MB of RAM, maximum number of pages can be calculated.
@@ -136,7 +136,6 @@ pub fn init() {
     use crate::uart::UART_BASE_ADDR;
     use crate::process::*;
     use riscv::register::*;
-    use riscv::asm;
     use crate::mem;
     use crate::arch;
 
@@ -203,7 +202,11 @@ pub fn init() {
         stack_addr as usize + mem::PAGE_SIZE,
         EntryAttributes::RW as usize,
     );
+}
 
+pub fn hartinit() {
+    use riscv::asm;
+    let satp_val = my_cpu().kernel_trapframe.satp;
     unsafe {
         asm!("csrw satp, $0" :: "r"(satp_val));
         asm::sfence_vma(0, 0);
@@ -216,6 +219,7 @@ use core::alloc::{GlobalAlloc, Layout};
 use crate::plic::PLIC_BASE;
 use crate::clint::CLINT_BASE;
 use crate::arch::hart_id;
+use crate::process::my_cpu;
 
 struct OsAllocator {}
 

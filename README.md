@@ -74,7 +74,7 @@ The main goal of this project is to make an xv6-like operating system with the R
 - [ ] (WIP) Virt-io driver
 - [ ] Use initcode instead of init binary
 - [ ] Allocator and stdlib in user-space
-- [x] Real spinlock instead of nulllock (Using spin crate)
+- [x] Real spinlock instead of nulllock
 - [ ] (WIP) Multi-core support
 - [ ] Use Option instead of panic!
 - [ ] Persistence

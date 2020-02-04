@@ -6,7 +6,6 @@ edition = "2018"
 
 [dependencies]
 riscv = "0.5.4"
-spin = "0.5.2"
 
 [lib]
 name = "kernel"

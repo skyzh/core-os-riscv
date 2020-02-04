@@ -6,7 +6,7 @@
 //! Macros for output
 
 use core::fmt;
-use crate::nulllock::Mutex;
+use crate::spinlock::Mutex;
 
 pub static info_lock: Mutex<()> = Mutex::new(());
 

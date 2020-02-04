@@ -50,20 +50,19 @@ pub fn scheduler() -> ! {
         if let Some(p) = find_next_runnable_proc(lst_pid) {
             c.process = Some(p);
             let p = c.process.as_mut().unwrap();
-//            info!("scheduler: switching to {}", p.pid);
             p.state = ProcessState::RUNNING;
             let ctx = core::mem::replace(&mut p.context, box Context::zero());
-//            info!("swtch to proc");
+            info!("scheduler {}: switching to {}", arch::hart_id(), p.pid);
             swtch(&mut c.scheduler_context, *ctx);
-//            info!("come back");
-            let p = core::mem::replace(&mut c.process, None).unwrap();
+            info!("scheduler {}: come back", arch::hart_id());
+            let mut p = core::mem::replace(&mut c.process, None).unwrap();
+            p.state = ProcessState::RUNNABLE;
             lst_pid = p.pid as usize + 1;
             if lst_pid >= NMAXPROCS {
                 lst_pid = 0;
             }
             put_back_proc(p);
         } else {
-            // info!("no proc available");
             lst_pid = 0;
         }
     }

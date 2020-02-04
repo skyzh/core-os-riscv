@@ -27,7 +27,7 @@ mod arch;
 mod elf;
 mod fs;
 mod mem;
-mod nulllock;
+mod spinlock;
 mod page;
 mod print;
 mod process;
@@ -92,20 +92,20 @@ unsafe extern "C" fn kinit() {
     asm!("csrr a1, mhartid");
     asm!("mv tp, a1");
     // set up timer interrupt
-    if arch::hart_id() == 1 {
-        clint::timer_init();
-    }
+    clint::timer_init();
     // switch to supervisor mode
     asm!("mret");
 }
+
+use spinlock::Mutex;
+
+static may_boot: Mutex<bool> = Mutex::new(false);
 
 /// Initialize hart, start first process and begin scheduling
 #[no_mangle]
 extern "C" fn kmain() -> ! {
     use arch::hart_id;
-    use nulllock::Mutex;
-    let __started = AtomicBool::new(false);
-    if hart_id() == 1 {
+    if hart_id() == 0 {
         mem::alloc_init();
         uart::UART().lock().init();
         info!("booting core-os on hart {}...", hart_id());
@@ -114,24 +114,27 @@ extern "C" fn kmain() -> ! {
         plic::PLIC().lock().init(plic::UART0_IRQ);
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
         mem::init();
-        mem::print_map_symbols();
+        mem::hartinit();
         info!("Initializing...");
         unsafe { trap::init(); }
         info!("  Trap... \x1b[0;32minitialized\x1b[0m");
         info!("  Timer... \x1b[0;32minitialized\x1b[0m");
-        {
-            let mut PLIC = plic::PLIC().lock();
-            PLIC.enable(plic::UART0_IRQ);
-            PLIC.set_threshold(0);
-            PLIC.set_priority(plic::UART0_IRQ, 1);
-        }
+        plic::init();
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
         info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
         process::init_proc();
-        __started.store(true, Ordering::SeqCst);
+        *may_boot.lock() = true;
     } else {
-        while __started.load(Ordering::SeqCst) == false {}
+        loop {
+            let l = may_boot.lock();
+            if *l == true {
+                break;
+            }
+        }
         info!("hart {} booting", hart_id());
+        mem::hartinit();
+        unsafe { trap::init(); }
+        plic::init();
     }
     process::scheduler()
 }

@@ -6,7 +6,7 @@
 //! Paging implementaion and page table abstraction
 
 use crate::mem::{self, ALLOC};
-use crate::nulllock::Mutex;
+use crate::spinlock::Mutex;
 use crate::{print, println, panic};
 use crate::symbols::*;
 use alloc::boxed::Box;

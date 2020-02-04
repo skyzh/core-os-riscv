@@ -10,7 +10,7 @@ use crate::process::{TrapFrame, self, Process, CPU, my_proc, my_cpu, yield_cpu};
 use crate::arch;
 use crate::symbols::*;
 use crate::page;
-use crate::nulllock::Mutex;
+use crate::spinlock::Mutex;
 use crate::syscall;
 use crate::process::Register::a0;
 use crate::arch::hart_id;
@@ -60,6 +60,12 @@ extern "C" fn kerneltrap(
 
                 // acknowledge that this interrupt has been processed
                 arch::w_sip(arch::r_sip() & !2);
+                let p = &my_cpu().process;
+                if let Some(p) = p {
+                    if p.state == process::ProcessState::RUNNING {
+                        yield_cpu();
+                    }
+                }
             },
             9 => {
                 // Machine external (interrupt from Platform Interrupt Controller (PLIC))
@@ -190,7 +196,6 @@ pub extern "C" fn usertrap() {
         p.trapframe.epc += 4;
         arch::intr_on();
         p.trapframe.regs[a0 as usize] = syscall::syscall() as usize;
-        yield_cpu();
     } else {
         panic!("unexpected scause {}", scause);
     }
