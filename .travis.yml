@@ -4,7 +4,16 @@ rust:
   - nightly
 cache: cargo
 before_script:
+  - cargo install cargo-xbuild cargo-binutils
   - rustup component add rust-src llvm-tools-preview rustfmt rls rust-analysis
   - rustup target add riscv64gc-unknown-none-elf
 script:
   - make docs
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep_history: false
+  on:
+    branch: master
+  local_dir: target/riscv64gc-unknown-none-elf/doc
