@@ -10,6 +10,8 @@
 //! these Rust primitives into pointers and other machine-specific
 //! representations before calling functions in `syscall_internal` and
 //! trapping into kernel.
+//!
+//! Usage of syscalls is listed in their corresponding sub-page.
 
 use crate::syscall_internal::{__exit, __fork, __write, __exec};
 
@@ -18,6 +20,7 @@ use crate::syscall_internal::{__exit, __fork, __write, __exec};
 /// # Examples
 ///
 /// ```
+/// use user::syscall::exit;
 /// exit(0);
 /// ```
 pub fn exit(code: i32) -> ! {

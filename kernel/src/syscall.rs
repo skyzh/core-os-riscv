@@ -9,6 +9,9 @@
 //! parameters from trap frame, turn pointers into
 //! Rust primitives and call corresponding functions
 //! with these parameters in kernel code.
+//!
+//! For specifications and how to do syscalls, refer to
+//! [syscall module in user crate](../../user/syscall/index.html).
 
 mod gen;
 pub use gen::*;

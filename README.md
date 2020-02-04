@@ -47,10 +47,12 @@ Use Linuxbrew.
 
 ## Documentation
 
-Documentation of this repo is automatically built and deployed with Travis. You may view online version [here](https://skyzh.github.io/core-os-riscv/kernel/).
+Documentation of this repo is automatically built and deployed with Travis. You may view online version 
+[here](https://skyzh.github.io/core-os-riscv/kernel/), 
+syscall specification [here](https://skyzh.github.io/core-os-riscv/user/syscall/index.html).
 
 ```bash
-make docs
+make && make docs
 ```
 
 I'll continuously add Rust-specific implementations and how I made this project into documentation.
