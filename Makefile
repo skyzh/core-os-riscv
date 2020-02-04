@@ -1,11 +1,11 @@
-TYPE=release
-RELEASE_FLAG=--release
+TYPE=debug
+RELEASE_FLAG=
 K=kernel/src
 U=user/src
 TARGET=riscv64gc-unknown-none-elf
 CC?=riscv64-unknown-elf-gcc
 CFLAGS=-Wall -Wextra -pedantic
-CFLAGS+=-static -ffreestanding -nostdlib -fno-rtti -fno-exceptions
+CFLAGS+=-static -ffreestanding -nostdlib -fno-exceptions
 CFLAGS+=-march=rv64gc -mabi=lp64 \
 		-Wall -Werror -O -fno-omit-frame-pointer -ggdb -MD -mcmodel=medany \
 		-ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector \

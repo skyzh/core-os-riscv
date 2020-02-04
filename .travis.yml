@@ -4,7 +4,7 @@ rust:
 - nightly
 cache: cargo
 before_install:
-- sudo apt install gcc-8-riscv64-linux-gnu -y
+- sudo apt update -y && sudo apt install gcc-8-riscv64-linux-gnu -y
 before_script:
 - cargo install cargo-xbuild cargo-binutils
 - rustup component add rust-src llvm-tools-preview rustfmt rls rust-analysis
