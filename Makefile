@@ -116,9 +116,14 @@ CARGO_RUSTDOC_PARA = -- \
 					--passes unindent-comments \
 					--passes strip-priv-imports
 
-docs: all
+docs:
 	cd user && cargo rustdoc --lib $(CARGO_RUSTDOC_PARA)
 	cd kernel && cargo rustdoc --open $(CARGO_RUSTDOC_PARA)
+
+ci:
+	mkdir -p $(USER_LIBS)
+	touch $(USER_LIBS)/initcode
+	touch $(UPROGS)
 
 .PHONY: clean
 clean:
