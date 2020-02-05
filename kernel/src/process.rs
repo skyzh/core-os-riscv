@@ -53,12 +53,17 @@ pub static PROCS_POOL: Mutex<[(bool, Option<Box<Process>>); NMAXPROCS]> = Mutex:
 pub unsafe fn init() {
 }
 
-/// Get CPU object of current hart
+/// Get CPU object of current hart.
 pub fn my_cpu() -> &'static mut CPU {
     unsafe { &mut CPUS[arch::hart_id()] }
 }
 
-/// Get current running process on current hart
+/// Get reference to current running process on current hart.
+///
+/// Note that this reference is always valid no matter
+/// which hart this process is scheduled.
+/// On the contrary, `&mut my_cpu().process` can't
+/// be moved between harts.
 pub fn my_proc() -> &'static mut Process {
     let proc_cpu = my_cpu();
     proc_cpu.process.as_mut().unwrap()
