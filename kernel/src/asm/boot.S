@@ -11,6 +11,14 @@
 .global __kernel_stack_start
 .global kinit
 _start:
+	la 		a0, __bss_start
+	la		a1, __bss_end
+	bgeu	a0, a1, 2f
+1:
+	sd		zero, (a0)
+	addi	a0, a0, 8
+	bltu	a0, a1, 1b
+2:
 	# Allocate 64K stack for each hart
 	la sp, __kernel_stack_start
 	li a0, 0x10000

@@ -14,6 +14,7 @@
 //! Usage of syscalls is listed in their corresponding sub-page.
 
 use crate::syscall_internal::{__exit, __fork, __write, __exec};
+use core::ptr::null;
 
 /// Exit current process with exit code `code`
 /// 
@@ -47,6 +48,8 @@ pub fn fork() -> i32 {
     unsafe { __fork() }
 }
 
+pub const EXEC_MAX_ARGS: usize = 10;
+
 /// Replace current process image with the new one
 /// in the filesystem.
 ///
@@ -58,7 +61,22 @@ pub fn fork() -> i32 {
 /// exec("/init", &[]);
 /// ```
 pub fn exec(path: &str, args: &[&str]) -> ! {
-    unsafe { __exec(path.as_bytes().as_ptr() as *const u8, path.len() as i32, core::ptr::null()) }
+    let arg_cnt = args.len();
+    let mut args_sz = [0; EXEC_MAX_ARGS];
+    let mut args_ptr = [null(); EXEC_MAX_ARGS];
+    for i in 0..args.len() {
+        args_sz[i] = args[i].len() as i32;
+        args_ptr[i] = args[i].as_bytes().as_ptr() as *const u8;
+    }
+    unsafe {
+        __exec(
+            path.as_bytes().as_ptr() as *const u8,
+            path.len() as i32,
+            arg_cnt as i32,
+            args_ptr.as_ptr(),
+            args_sz.as_ptr()
+        )
+    }
 }
 
 pub fn write(fd: i32, content: &str) -> i32 {

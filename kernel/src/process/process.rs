@@ -140,15 +140,19 @@ pub fn fork() -> i32 {
     f_pid
 }
 
+pub const USER_STACK_PAGE: usize = 4;
 /// map user stack in `pgtable` at `stack_begin` and returns `sp`
 pub fn map_stack(pgtable: &mut Table, stack_begin: usize) -> usize {
-    let stack = page::Page::new();
-    pgtable.map(
-        stack_begin,
-        stack,
-        page::EntryAttributes::URW as usize
-    );
-    stack_begin + PAGE_SIZE
+    for i in 0..USER_STACK_PAGE {
+        let stack = page::Page::new();
+        pgtable.map(
+            stack_begin + i * PAGE_SIZE,
+            stack,
+            page::EntryAttributes::URW as usize
+        );
+    }
+
+    stack_begin + PAGE_SIZE * USER_STACK_PAGE
 }
 
 /// exec syscall
@@ -162,6 +166,7 @@ pub fn exec(path: &str) {
     );
     // map user stack
     let sp = map_stack(&mut p.pgtable, 0x80001000);
+    println!("0x{:x}", p.trapframe.as_ref() as *const _ as usize);
     p.trapframe.epc = entry as usize;
     p.trapframe.regs[Register::sp as usize] = sp;
 }

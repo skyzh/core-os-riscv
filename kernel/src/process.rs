@@ -50,6 +50,9 @@ static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
 /// ```
 pub static PROCS_POOL: Mutex<[(bool, Option<Box<Process>>); NMAXPROCS]> = Mutex::new([(false, None); NMAXPROCS]);
 
+pub unsafe fn init() {
+}
+
 /// Get CPU object of current hart
 pub fn my_cpu() -> &'static mut CPU {
     unsafe { &mut CPUS[arch::hart_id()] }

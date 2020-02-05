@@ -92,7 +92,6 @@ fn sys_exec() -> i32 {
         path = unsafe {
             // First, we build a &[u8]...
             let slice = core::slice::from_raw_parts(ptr, sz);
-
             // ... and then convert that slice into a string slice
             core::str::from_utf8(slice).unwrap()
         };

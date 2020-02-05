@@ -136,8 +136,8 @@ pub fn alloc_init() {
     }
 }
 
-pub fn init() {
-    let mut pgtable = KERNEL_PGTABLE().lock();
+pub unsafe fn init() {
+    let mut pgtable: &mut Table = &mut *(&KERNEL_PGTABLE as *const _ as *mut _);
     pgtable.id_map_range(
         TEXT_START(),
         TEXT_END(),
@@ -185,8 +185,7 @@ pub fn init() {
 }
 
 pub fn hartinit() {
-    let mut pgtable = KERNEL_PGTABLE().lock();
-    let root_ppn = &mut *pgtable as *mut Table as usize;
+    let root_ppn = &KERNEL_PGTABLE as *const Table as usize;
     let satp_val = arch::build_satp(8, 0, root_ppn);
     unsafe {
         asm!("csrw satp, $0" :: "r"(satp_val));

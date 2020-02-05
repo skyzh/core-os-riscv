@@ -38,7 +38,7 @@ mod syscall;
 use riscv::{asm, register::*};
 use crate::process::my_cpu;
 use crate::page::Page;
-use crate::symbols::NCPUS;
+use crate::symbols::{NCPUS, print_map_symbols};
 use crate::clint::CLINT_MTIMECMP;
 use core::sync::atomic::{AtomicBool, Ordering};
 use crate::arch::intr_get;
@@ -111,18 +111,21 @@ extern "C" fn kmain() -> ! {
         info!("  UART... \x1b[0;32minitialized\x1b[0m");
         plic::PLIC().lock().init(plic::UART0_IRQ);
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
-        mem::init();
+        unsafe { mem::init(); }
         mem::hartinit();
         info!("page table configured");
         unsafe { trap::init(); }
+        unsafe { process::init(); }
         info!("  Trap... \x1b[0;32minitialized\x1b[0m");
         info!("  Timer... \x1b[0;32minitialized\x1b[0m");
         plic::init();
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
         info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
+        print_map_symbols();
         process::init_proc();
         *may_boot.lock() = true;
     } else {
+        loop {}
         loop {
             let l = may_boot.lock();
             if *l == true {

@@ -5,3 +5,4 @@ hdd.img
 __pycache__/
 kernel.elf
 .idea/
+*.d

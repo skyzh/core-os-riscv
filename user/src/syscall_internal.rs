@@ -16,5 +16,5 @@ extern "C" {
     pub fn __write(fd: i32, content: *const u8, sz: i32) -> i32;
     pub fn __exit(code: i32) -> !;
     pub fn __fork() -> i32;
-    pub fn __exec(path: *const u8, sz: i32, args: *const *const u8) -> !;
+    pub fn __exec(path: *const u8, path_sz: i32, arg_cnt: i32, args: *const *const u8, args_sz: *const i32) -> !;
 }
