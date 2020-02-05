@@ -72,7 +72,7 @@ pub fn my_cpu() -> &'static mut CPU {
 /// let p = process::my_proc();
 /// arch::intr_on();
 /// // There may be timer interrupt at any time, and context
-/// // of this process in kernel may be scheduler to another
+/// // of this process in kernel may be scheduled to another
 /// // hart.
 /// p.trapframe.epc += 4;
 /// ```
@@ -85,7 +85,7 @@ pub fn my_cpu() -> &'static mut CPU {
 /// arch::intr_on();
 /// // After this kernel context is scheduled on another
 /// // hart, p is no longer valid, as previous hart may
-/// // have scheduled a different process, or there were
+/// // have scheduled a different process, or there is
 /// // no process running at all.
 /// p.trapframe.epc += 4; // Load page fault
 /// ```

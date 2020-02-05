@@ -217,6 +217,11 @@ fn trampoline_userret(tf: usize, satp_val: usize) -> ! {
 }
 
 /// Jump to user space through trampoline
+///
+/// As this function is called by `forkret`, where there may
+/// be memory leak related to RAII, content of `usertrapret`
+/// should be wrapped in brackets so that all objects are
+/// dropped before jumping to trampoline.
 pub fn usertrapret() -> ! {
     let satp_val: usize;
     {

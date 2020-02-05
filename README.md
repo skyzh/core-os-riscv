@@ -116,4 +116,7 @@ The main goal of this project is to make an xv6-like operating system with the R
 
 ## Known Issues
 
-* Issue of `!`: function of `!` return type may interfere with RAII (objects won't be dropped). If function of return type `!` is called, there may be possible memory leak. Rust should drop all objects before calling these functions (instead of stack rewinding)
+* Issue of `!`: function of `!` return type may interfere with RAII (objects won't be dropped). 
+If function of return type `!` is called, there may be possible memory leak. Rust should drop 
+all objects before calling these functions. Specifically, `forkret` and first call of `usertrapret`
+is such a code path where there'll be memory leak.

@@ -88,7 +88,8 @@ impl<T> Mutex<T> {
 
 impl<T: ?Sized> Mutex<T> {
     fn obtain_lock(&self) {
-        unsafe { spin_acquire(&self.lock); }
+        while arch::__sync_lock_test_and_set(&self.lock, 1) != 0 {}
+        arch::__sync_synchronize();
     }
 
     pub fn lock(&self) -> MutexGuard<T> {
@@ -135,7 +136,8 @@ impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
             panic!("lock {}: unlock from another hart {}!", self.mutex.name, arch::hart_id());
         }
         unsafe { *self.mutex.hart.get() = -1; }
-        unsafe { spin_release(&self.lock); }
+        arch::__sync_synchronize();
+        arch::__sync_lock_release(&self.lock);
         // panic_println!("{} unlock on {}", self.mutex.name, arch::hart_id());
     }
 }

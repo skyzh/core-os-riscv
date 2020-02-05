@@ -37,7 +37,7 @@ ASSEMBLY_FILES = $K/asm/boot.S \
 				 $K/asm/trampoline.S $K/asm/symbols.S \
 				 $K/asm/swtch.S $K/asm/kernelvec.S
 
-CXX_FILES = $K/spinlock.c
+CXX_FILES = 
 
 $(KERNEL_LIB_OUT): $(K_AUTOGEN_FILES) $(USER_LIBS)/initcode $(USER_LIB_OUT) FORCE
 	cd kernel && cargo xbuild --target=$(TARGET) $(RELEASE_FLAG)
