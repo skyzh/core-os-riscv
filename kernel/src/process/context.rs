@@ -43,7 +43,7 @@ pub fn yield_cpu() {
     let p = my_proc();
     let ctx = core::mem::replace(&mut c.scheduler_context, Context::zero());
     p.state = ProcessState::RUNNABLE;
-
+    
     if crate::arch::intr_get() {
         panic!("yield interruptable");
     }

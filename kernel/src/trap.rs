@@ -13,7 +13,7 @@ use crate::page;
 use crate::spinlock::Mutex;
 use crate::syscall;
 use crate::process::Register::a0;
-use crate::arch::hart_id;
+use crate::arch::{hart_id, sp};
 
 #[no_mangle]
 extern "C" fn m_trap() -> () {
@@ -44,6 +44,9 @@ extern "C" fn kerneltrap() {
     let cause_num = cause.code();
     if sstatus.spp() != register::sstatus::SPP::Supervisor {
         panic!("not from supervisor mode, async {}, {:x}, hart {}, epc {:x}, tval {}", is_async, cause_num, hart, epc, tval);
+    }
+    if arch::intr_get() {
+        panic!("interrupt not disabled");
     }
     let mut return_pc = epc;
     if is_async {
@@ -131,12 +134,12 @@ extern "C" fn kerneltrap() {
             }
             8 => {
                 // Environment (system) call from User mode
-                println!("E-call from User mode! CPU#{} -> 0x{:08x}", hart, epc);
+                panic!("E-call from User mode! CPU#{} -> 0x{:08x}", hart, epc);
                 return_pc += 4;
             }
             9 => {
                 // Environment (system) call from Supervisor mode
-                println!("E-call from Supervisor mode! CPU#{} -> 0x{:08x}", hart, epc);
+                panic!("E-call from Supervisor mode! CPU#{} -> 0x{:08x}", hart, epc);
                 return_pc += 4;
             }
             11 => {
@@ -146,7 +149,7 @@ extern "C" fn kerneltrap() {
             // Page faults
             12 => {
                 // Instruction page fault
-                println!(
+                panic!(
                     "Instruction page fault CPU#{} -> 0x{:08x}: 0x{:08x}",
                     hart, epc, tval
                 );
@@ -154,7 +157,7 @@ extern "C" fn kerneltrap() {
             }
             13 => {
                 // Load page fault
-                println!(
+                panic!(
                     "Load page fault CPU#{} -> 0x{:08x}: 0x{:08x}",
                     hart, epc, tval
                 );
@@ -162,7 +165,7 @@ extern "C" fn kerneltrap() {
             }
             15 => {
                 // Store page fault
-                println!(
+                panic!(
                     "Store page fault CPU#{} -> 0x{:08x}: 0x{:08x}",
                     hart, epc, tval
                 );

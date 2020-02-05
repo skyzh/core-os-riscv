@@ -48,7 +48,7 @@ static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
 ///     }
 /// }
 /// ```
-pub static PROCS_POOL: Mutex<[(bool, Option<Box<Process>>); NMAXPROCS]> = Mutex::new([(false, None); NMAXPROCS]);
+pub static PROCS_POOL: Mutex<[(bool, Option<Box<Process>>); NMAXPROCS]> = Mutex::new([(false, None); NMAXPROCS], "proc pool");
 
 pub unsafe fn init() {
 }

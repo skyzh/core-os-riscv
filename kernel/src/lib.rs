@@ -83,7 +83,7 @@ unsafe extern "C" fn kinit() {
     // delegate all interrupts and exceptions to supervisor mode
     asm!("li t0, 0xffff");
     asm!("csrw medeleg, t0");
-    asm!("li t0, 0xff0f");
+    asm!("li t0, 0xffff");
     asm!("csrw mideleg, t0");
     // save cpuid to tp
     asm!("csrr a1, mhartid");
@@ -97,7 +97,7 @@ unsafe extern "C" fn kinit() {
 use spinlock::Mutex;
 
 /// Controls whether other harts can start boot procedure
-static may_boot: Mutex<bool> = Mutex::new(false);
+static mut may_boot: bool = false;
 
 /// Initialize hart, start first process and begin scheduling
 #[no_mangle]
@@ -121,14 +121,15 @@ extern "C" fn kmain() -> ! {
         plic::init();
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
         info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
-        print_map_symbols();
         process::init_proc();
-        *may_boot.lock() = true;
+        symbols::print_map_symbols();
+        unsafe {
+            asm!("fence");
+            may_boot = true
+        }
     } else {
-        loop {}
         loop {
-            let l = may_boot.lock();
-            if *l == true {
+            if unsafe { may_boot } == true {
                 break;
             }
         }

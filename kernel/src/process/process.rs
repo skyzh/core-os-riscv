@@ -166,7 +166,6 @@ pub fn exec(path: &str) {
     );
     // map user stack
     let sp = map_stack(&mut p.pgtable, 0x80001000);
-    println!("0x{:x}", p.trapframe.as_ref() as *const _ as usize);
     p.trapframe.epc = entry as usize;
     p.trapframe.regs[Register::sp as usize] = sp;
 }

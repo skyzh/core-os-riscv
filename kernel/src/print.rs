@@ -8,7 +8,7 @@
 use core::fmt;
 use crate::spinlock::Mutex;
 
-pub static info_lock: Mutex<()> = Mutex::new(());
+pub static info_lock: Mutex<()> = Mutex::new((), "info");
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
