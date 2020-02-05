@@ -59,7 +59,7 @@ pub fn my_cpu() -> &'static mut CPU {
 }
 
 /// Get current running process on current hart
-pub fn my_proc() -> &'static mut Box<Process> {
+pub fn my_proc() -> &'static mut Process {
     let proc_cpu = my_cpu();
     proc_cpu.process.as_mut().unwrap()
 }
