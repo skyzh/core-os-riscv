@@ -64,6 +64,31 @@ pub fn my_cpu() -> &'static mut CPU {
 /// which hart this process is scheduled.
 /// On the contrary, `&mut my_cpu().process` can't
 /// be moved between harts.
+///
+/// ## Examples
+///
+/// ```
+/// use crate::{arch, process};
+/// let p = process::my_proc();
+/// arch::intr_on();
+/// // There may be timer interrupt at any time, and context
+/// // of this process in kernel may be scheduler to another
+/// // hart.
+/// p.trapframe.epc += 4;
+/// ```
+///
+/// On the contrary, the following code may cause problems.
+///
+/// ```
+/// use crate::{arch, process};
+/// let p = &mut my_cpu().process.unwrap();
+/// arch::intr_on();
+/// // After this kernel context is scheduled on another
+/// // hart, p is no longer valid, as previous hart may
+/// // have scheduled a different process, or there were
+/// // no process running at all.
+/// p.trapframe.epc += 4; // Load page fault
+/// ```
 pub fn my_proc() -> &'static mut Process {
     let proc_cpu = my_cpu();
     proc_cpu.process.as_mut().unwrap()
