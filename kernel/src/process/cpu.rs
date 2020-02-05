@@ -6,13 +6,16 @@
 use super::{Process, TrapFrame, Context};
 use alloc::boxed::Box;
 use core::mem::MaybeUninit;
+use core::cell::UnsafeCell;
+use crate::{arch, panic};
+use crate::arch::hart_id;
 
 /// Holding CPU information
 #[repr(C)]
 pub struct CPU {
     pub scheduler_context: Context,
     pub process: Option<Box<Process>>,
-    pub intr_locker: IntrLocker
+    pub intr_lock: IntrLock,
 }
 
 impl CPU {
@@ -20,22 +23,63 @@ impl CPU {
         Self {
             process: None,
             scheduler_context: Context::zero(),
-            intr_locker: IntrLocker::new()
+            intr_lock: IntrLock::new(),
         }
     }
 }
 
 /// Control interrupt
-pub struct IntrLocker {
-    pub is_locked_before: bool,
-    pub cnt: usize
+pub struct IntrLock {
+    pub is_enabled_before: bool,
+    pub cnt: UnsafeCell<usize>,
 }
 
-impl IntrLocker {
+impl IntrLock {
     pub const fn new() -> Self {
         Self {
-            is_locked_before: false,
-            cnt: 0
+            is_enabled_before: false,
+            cnt: UnsafeCell::new(0),
+        }
+    }
+
+    pub fn lock(&mut self) -> IntrLockGuard {
+        let enabled = arch::intr_get();
+        arch::intr_off();
+        unsafe {
+            if *self.cnt.get() == 0 {
+                self.is_enabled_before = enabled;
+            } else {
+                if enabled {
+                    panic!("lock held but intr enabled");
+                }
+            }
+            *self.cnt.get() += 1;
+            IntrLockGuard { lock: self }
+        }
+    }
+}
+
+/// IntrLock Guard
+pub struct IntrLockGuard<'a> {
+    lock: &'a IntrLock
+}
+
+impl<'a> Drop for IntrLockGuard<'_> {
+    fn drop(&mut self) {
+        if arch::intr_get() {
+            panic!("{} intr enabled", hart_id());
+        }
+        unsafe {
+            let cnt = self.lock.cnt.get();
+            *cnt -= 1;
+            if *cnt == 0 {
+                if self.lock.is_enabled_before {
+                    arch::intr_on();
+                }
+            }
+            if *cnt < 0 {
+                panic!("cnt < 0");
+            }
         }
     }
 }
