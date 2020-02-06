@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+#![allow(non_camel_case_types)]
+
 use core::ptr::null_mut;
 
 /// Trap frame contains information for switching to

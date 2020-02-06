@@ -135,4 +135,5 @@ impl Uart {
 static __UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR), "uart driver");
 
 /// Global function to get an instance of UART driver
+#[allow(non_snake_case)]
 pub fn UART() -> &'static Mutex<Uart> { &__UART }

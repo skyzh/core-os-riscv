@@ -6,11 +6,7 @@
 //! RISC-V hart boot and initialize
 
 use riscv::{asm, register::*};
-use crate::process::my_cpu;
-use crate::page::Page;
-use crate::symbols::{NCPUS, print_map_symbols};
-use crate::clint::CLINT_MTIMECMP;
-use crate::arch::{intr_get, hart_id};
+use crate::arch::hart_id;
 use crate::{clint, plic, mem, uart, process, spinlock, trap};
 use crate::info;
 
@@ -38,10 +34,8 @@ unsafe extern "C" fn kinit() {
     asm!("mret");
 }
 
-use spinlock::Mutex;
-
 /// Controls whether other harts may start boot procedure
-static mut may_boot: bool = false;
+static mut MAY_BOOT: bool = false;
 
 /// Initialize hart, start first process and begin scheduling
 #[no_mangle]
@@ -67,11 +61,11 @@ extern "C" fn kmain() -> ! {
         process::init_proc();
         unsafe {
             asm!("fence");
-            may_boot = true
+            MAY_BOOT = true
         }
     } else {
         loop {
-            if unsafe { may_boot } == true {
+            if unsafe { MAY_BOOT } == true {
                 break;
             }
         }

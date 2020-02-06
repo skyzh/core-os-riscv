@@ -137,7 +137,7 @@ pub fn alloc_init() {
 }
 
 pub unsafe fn init() {
-    let mut pgtable: &mut Table = &mut *(&KERNEL_PGTABLE as *const _ as *mut _);
+    let pgtable: &mut Table = &mut *(&KERNEL_PGTABLE as *const _ as *mut _); // to bypass mut ref
     pgtable.id_map_range(
         TEXT_START(),
         TEXT_END(),
@@ -193,6 +193,7 @@ pub fn hartinit() {
     }
 }
 
+#[allow(non_snake_case)]
 pub fn ALLOC() -> &'static Mutex<Allocator> { &__ALLOC }
 
 use core::alloc::{GlobalAlloc, Layout};

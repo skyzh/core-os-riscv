@@ -1,7 +1,5 @@
 # core-os-riscv
 
-[![Build Status](https://travis-ci.com/skyzh/core-os-riscv.svg?branch=master)](https://travis-ci.com/skyzh/core-os-riscv) (docs)
-
 An xv6-like operating system in Rust.
 
 This project is originally based on "The Adventures of OS: Making a RISC-V Operating System using Rust",
@@ -46,6 +44,9 @@ If you want to use readelf tools, etc., you may install pwntools on macOS.
 Use Linuxbrew.
 
 ## Documentation
+
+[![Build Status](https://travis-ci.com/skyzh/core-os-riscv.svg?branch=master)](https://travis-ci.com/skyzh/core-os-riscv)
+<small>(documentation automatically built with travis)</small>
 
 Documentation of this repo is automatically built and deployed with Travis. You may view online version 
 [here](https://skyzh.github.io/core-os-riscv/kernel/), 

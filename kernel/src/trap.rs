@@ -48,7 +48,6 @@ extern "C" fn kerneltrap() {
     if arch::intr_get() {
         panic!("interrupt not disabled");
     }
-    let mut return_pc = epc;
     if is_async {
         // Asynchronous trap
         match cause_num {
@@ -73,8 +72,8 @@ extern "C" fn kerneltrap() {
                 // give us None. However, that would mean we got a spurious interrupt, unless we
                 // get an interrupt from a non-PLIC source. This is the main reason that the PLIC
                 // hardwires the id 0 to 0, so that we can use it as an error case.
-                let mut PLIC = crate::plic::PLIC().lock();
-                if let Some(interrupt) = PLIC.next() {
+                let mut plic = crate::plic::PLIC().lock();
+                if let Some(interrupt) = plic.next() {
                     // If we get here, we've got an interrupt from the claim register. The PLIC will
                     // automatically prioritize the next interrupt, so when we get it from claim, it
                     // will be the next in priority order.
@@ -115,7 +114,7 @@ extern "C" fn kerneltrap() {
                     }
                     // We've claimed it, so now say that we've handled it. This resets the interrupt pending
                     // and allows the UART to interrupt again. Otherwise, the UART will get "stuck".
-                    PLIC.complete(interrupt);
+                    plic.complete(interrupt);
                 }
             }
             _ => {
@@ -135,12 +134,10 @@ extern "C" fn kerneltrap() {
             8 => {
                 // Environment (system) call from User mode
                 panic!("E-call from User mode! CPU#{} -> 0x{:08x}", hart, epc);
-                return_pc += 4;
             }
             9 => {
                 // Environment (system) call from Supervisor mode
                 panic!("E-call from Supervisor mode! CPU#{} -> 0x{:08x}", hart, epc);
-                return_pc += 4;
             }
             11 => {
                 // Environment (system) call from Machine mode
@@ -153,7 +150,6 @@ extern "C" fn kerneltrap() {
                     "Instruction page fault CPU#{} -> 0x{:08x}: 0x{:08x}",
                     hart, epc, tval
                 );
-                return_pc += 4;
             }
             13 => {
                 // Load page fault
@@ -161,7 +157,6 @@ extern "C" fn kerneltrap() {
                     "Load page fault CPU#{} -> 0x{:08x}: 0x{:08x}",
                     hart, epc, tval
                 );
-                return_pc += 4;
             }
             15 => {
                 // Store page fault
@@ -169,7 +164,6 @@ extern "C" fn kerneltrap() {
                     "Store page fault CPU#{} -> 0x{:08x}: 0x{:08x}",
                     hart, epc, tval
                 );
-                return_pc += 4;
             }
             _ => {
                 panic!("Unhandled sync trap CPU#{} -> {}\n", hart, cause_num);
@@ -239,7 +233,6 @@ pub fn usertrapret() -> ! {
         // set up trapframe values that uservec will need when
         // the process next re-enters the kernel.
         let mut p = my_proc();
-        let c = my_cpu();
         p.trapframe.satp = arch::r_satp();
         p.trapframe.sp = p.kstack_sp;
         p.trapframe.trap = crate::trap::usertrap as usize;

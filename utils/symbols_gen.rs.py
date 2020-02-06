@@ -18,6 +18,9 @@ macro_rules! symbol {
 print("""//! This module is automatically generated with `symbols_gen.rs.py`,
 //! which contains all linker script symbols in `kernel.ld` and a wrapper function
 //! to safely get them.
+
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
 """)
 
 from symbols import symbols

@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//！Kernel code
+
 #![no_std]
 #![feature(panic_info_message, asm)]
 #![feature(global_asm)]
@@ -13,8 +15,8 @@
 #![feature(box_syntax)]
 #![feature(alloc_prelude)]
 #![allow(dead_code)]
+#![allow(unused_imports)]
 
-#[macro_use]
 extern crate alloc;
 
 // This is experimental and requires alloc_prelude as a feature

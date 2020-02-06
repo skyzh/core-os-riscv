@@ -1,3 +1,10 @@
+// Copyright (c) 2020 Alex Chi
+//
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
+// core-os-riscv spin-lock is based on Rust crate `spin`.
+
 //The MIT License (MIT)
 //
 //Copyright (c) 2014 Mathijs van de Nes
@@ -32,14 +39,6 @@ use crate::{arch, panic, process::IntrLockGuard};
 use crate::process::my_cpu;
 use crate::panic_println;
 use crate::arch::hart_id;
-
-// TODO: move amoswap.w.aq into Rust
-extern "C" {
-    /// `spin_acquire` defined in `spinlock.c`
-    fn spin_acquire(locked: &u32);
-    /// `spin_release` defined in `spinlock.c`
-    fn spin_release(locked: &u32);
-}
 
 /// A RISC-V Mutex.
 pub struct Mutex<T: ?Sized> {
@@ -112,7 +111,7 @@ impl<T: ?Sized> Mutex<T> {
     }
 
     unsafe fn holding(&self) -> bool {
-        let intr_lock = my_cpu().intr_lock.lock();
+        let _intr_lock = my_cpu().intr_lock.lock();
         if self.lock == 1 && *self.hart.get() == arch::hart_id() as i64 {
             return true;
         }

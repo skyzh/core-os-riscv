@@ -10,13 +10,16 @@
 #![feature(format_args_nl)]
 #![feature(const_generics)]
 
-use user::{println, print, format};
-use user::syscall::{fork, exit, exec, write};
-use core::ptr::null;
+use user::println;
+use user::syscall::{exit, fork, exec};
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
+    let p = fork();
+    if p == 0 {
+        println!("forking test3...");
+        exec("/test3", &["test1", "test2"]);
+    }
     println!("test2 running...");
-    loop {}
     exit(0);
 }

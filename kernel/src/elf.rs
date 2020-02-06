@@ -62,7 +62,7 @@ pub fn parse_elf(a: &[u8], pgtable: &mut page::Table) -> u64 {
         let offset_u8 = a.offset(elfhdr.phoff as isize);
         offset_u8 as *const ProgramHeader
     };
-    for i in 0..elfhdr.phnum {
+    for _i in 0..elfhdr.phnum {
         let hdr: &ProgramHeader = unsafe {
             let hdr = &*proghdr;
             proghdr = proghdr.offset(1);

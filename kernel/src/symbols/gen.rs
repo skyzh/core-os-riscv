@@ -2,6 +2,9 @@
 //! which contains all linker script symbols in `kernel.ld` and a wrapper function
 //! to safely get them.
 
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+
 extern "C" { static __heap_start: usize; }
 #[inline] pub fn HEAP_START() -> usize { unsafe { &__heap_start as *const _ as _ } }
 extern "C" { static __heap_size: usize; }

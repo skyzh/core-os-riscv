@@ -78,7 +78,7 @@ impl Process {
 
 impl Drop for Process {
     fn drop(&mut self) {
-        let kstack = unsafe { Box::from_raw(self.kstack as *mut Page) };
+        let _kstack = unsafe { Box::from_raw(self.kstack as *mut Page) };
     }
 }
 

@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+#![allow(non_camel_case_types)]
+
 use crate::{println, panic, info};
 use crate::process::{my_cpu, my_proc, Process, ProcessState};
 use crate::spinlock::MutexGuard;

@@ -29,9 +29,24 @@ impl CPU {
 }
 
 /// Control interrupt
+///
+/// Equivalent to xv-6 `push_off` and `pop_off` functions.
+///
+/// ## Examples
+/// ```
+/// {
+///     let intr_lock = my_cpu().intr_lock.lock();
+///     // From this point, interrupt is disabled on this hart.
+///     // And whether interrupt is enabled before is recorded in the lock.
+///     let intr_lock2 = my_cpu().intr_lock.lock();
+///     // No effect.
+/// }
+/// // As all `intr_lock`s are dropped, interrupt may recover to previous
+/// // status.
+/// ```
 pub struct IntrLock {
     pub is_enabled_before: bool,
-    pub cnt: UnsafeCell<usize>,
+    pub cnt: UnsafeCell<isize>,
 }
 
 impl IntrLock {

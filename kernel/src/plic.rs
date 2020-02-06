@@ -5,6 +5,8 @@
 
 //! RISC-V Platform-Level Interrupt Controller
 
+#![allow(non_snake_case)]
+
 use crate::spinlock::Mutex;
 use crate::process::my_cpu;
 use crate::arch::hart_id;
@@ -138,6 +140,7 @@ impl Plic {
 static __PLIC: Mutex<Plic> = Mutex::new(Plic::new(), "plic driver");
 
 /// Global function to get an instance of PLIC driver
+#[allow(non_snake_case)]
 pub fn PLIC() -> &'static Mutex<Plic> { &__PLIC }
 
 pub fn init() {

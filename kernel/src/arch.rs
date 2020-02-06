@@ -43,12 +43,11 @@ pub fn intr_off() {
 
 /// Check if interrupt is enabled
 pub fn intr_get() -> bool {
-    unsafe {
-        sstatus::read().sie()
-    }
+    sstatus::read().sie()
 }
 
 #[inline(always)]
+#[allow(unused_assignments)]
 pub fn hart_id() -> usize {
     let mut hart_id: usize = 0;
     unsafe { asm!("mv $0, tp" : "=r"(hart_id) ::: "volatile"); }
@@ -56,6 +55,7 @@ pub fn hart_id() -> usize {
 }
 
 #[inline]
+#[allow(unused_assignments)]
 pub fn r_sip() -> usize {
     let mut sip: usize = 0;
     unsafe { asm!("csrr $0, sip" : "=r"(sip) ::: "volatile"); }
@@ -68,6 +68,7 @@ pub fn w_sip(x: usize) {
 }
 
 #[inline]
+#[allow(unused_assignments)]
 pub fn r_sstatus() -> usize {
     let mut x: usize = 0;
     unsafe { asm!("csrr $0, sstatus" : "=r"(x) ::: "volatile"); }
@@ -75,6 +76,7 @@ pub fn r_sstatus() -> usize {
 }
 
 #[inline]
+#[allow(unused_assignments)]
 pub fn r_satp() -> usize {
     let mut x: usize = 0;
     unsafe { asm!("csrr $0, satp" : "=r"(x) ::: "volatile"); }

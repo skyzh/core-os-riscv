@@ -212,7 +212,7 @@ impl Table {
             let v = &self.entries[i];
             if v.is_v() {
                 if !v.is_leaf() {
-                    for j in 0..(2 - level) {
+                    for _j in 0..(2 - level) {
                         print!(".");
                     }
                     println!(
@@ -231,7 +231,7 @@ impl Table {
                     let x_flag = if v.is_x() { "X" } else { "" };
                     let vaddr = (vpn << 9 | i) << 12;
                     if vaddr != v.paddr().0 || true {
-                        for j in 0..(2 - level) {
+                        for _j in 0..(2 - level) {
                             print!(".");
                         }
                         println!("{}: 0x{:X} -> 0x{:X}  {}{}{}{}", i, vaddr, v.paddr().0, u_flag, r_flag, w_flag, x_flag);
@@ -275,7 +275,7 @@ impl Table {
                 if v.is_leaf() {
                     if v.is_u() {
                         // drop user page
-                        let pg = unsafe { Box::from_raw(v.paddr().0 as *mut Page) };
+                        let _pg = unsafe { Box::from_raw(v.paddr().0 as *mut Page) };
                     }
                 } else {
                     // drop page table
@@ -313,12 +313,12 @@ impl Table {
                 if v.is_leaf() {
                     if v.is_u() {
                         // drop user page
-                        let pg = unsafe { Box::from_raw(v.paddr().0 as *mut Page) };
+                        let _pg = unsafe { Box::from_raw(v.paddr().0 as *mut Page) };
                         *v = Entry(0);
                     }
                 } else {
                     // drop page table
-                    let mut table = unsafe { (v.paddr().0 as *mut Table).as_mut().unwrap() };
+                    let table = unsafe { (v.paddr().0 as *mut Table).as_mut().unwrap() };
                     table.unmap_user();
                 }
             }
@@ -338,4 +338,5 @@ impl Clone for Box<Table> {
     }
 }
 
+/// Kernel page table
 pub static KERNEL_PGTABLE: Table = Table::new();

@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! User-space library
+
 #![no_std]
 #![feature(global_asm)]
 

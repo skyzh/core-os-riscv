@@ -10,9 +10,8 @@
 #![feature(format_args_nl)]
 #![feature(const_generics)]
 
-use user::{println, print, format};
-use user::syscall::{fork, exit, exec, write};
-use core::ptr::null;
+use user::println;
+use user::syscall::exit;
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
