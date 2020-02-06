@@ -85,7 +85,7 @@ impl Drop for Process {
 
 #[no_mangle]
 pub extern "C" fn forkret() -> ! {
-    return_to(usertrapret())
+    usertrapret()
 }
 
 /// binary code of user/src/initcode.S

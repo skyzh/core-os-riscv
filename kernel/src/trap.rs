@@ -261,7 +261,7 @@ pub fn usertrapret() -> ! {
 }
 
 /// Initialize supervisor-mode trap
-pub unsafe fn init() {
+pub unsafe fn hartinit() {
     use riscv::register::*;
     stvec::write(crate::symbols::kernelvec as usize, stvec::TrapMode::Direct);
 }

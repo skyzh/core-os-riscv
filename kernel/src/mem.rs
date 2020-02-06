@@ -127,16 +127,19 @@ impl Allocator {
 
 static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new(), "global allocator");
 
-pub fn alloc_init() {
-    ALLOC().lock().base_addr = align_val(HEAP_START(), PAGE_ORDER);
+
+/// Initialize allocator and kernel page table
+/// This function should only be called in boot hart
+pub unsafe fn init() {
+    // Initialize allocator
+    ALLOC().get().base_addr = align_val(HEAP_START(), PAGE_ORDER);
+
     // workaround for non-zero data region
-    let mut alloc = ALLOC().lock();
+    let mut alloc = ALLOC().get();
     for i in 0..MAX_PAGE {
         alloc.page_allocated[i] = 0;
     }
-}
 
-pub unsafe fn init() {
     let pgtable: &mut Table = &mut *(&KERNEL_PGTABLE as *const _ as *mut _); // to bypass mut ref
     pgtable.id_map_range(
         TEXT_START(),

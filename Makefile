@@ -63,27 +63,18 @@ $U/usys.S: utils/usys.S.py utils/syscall.py
 $U/syscall.h: utils/syscall.h.py utils/syscall.py
 	$< > $@
 
-qemu: all $(QEMU_DRIVE)
-	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
-		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
-		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo 
+QEMUOPTS =  -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
+            -nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT)
+QEMUOPTS += -drive file=$(QEMU_DRIVE),if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemuint: all $(QEMU_DRIVE)
-	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
-		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
-		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo -d int
+qemu: all $(QEMU_DRIVE)
+	$(QEMU_BINARY) $(QEMUOPTS)
 
 qemudbg: all $(QEMU_DRIVE)
-	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
-		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
-		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo \
-		-d int
+	$(QEMU_BINARY) $(QEMUOPTS) -d int
 
 qemugdb: all $(QEMU_DRIVE)
-	$(QEMU_BINARY) -machine $(MACH) -cpu $(CPU) -smp $(CPUS) -m $(MEM) \
-		-nographic -serial mon:stdio -bios none -kernel $(KERNEL_OUT) \
-		-drive if=none,format=raw,file=$(QEMU_DRIVE),id=foo -device virtio-blk-device,drive=foo \
-		-S -gdb tcp::1234
+	$(QEMU_BINARY) $(QEMUOPTS) -S -gdb tcp::1234
 
 objdump: $(KERNEL_OUT)
 	cd kernel && cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex ../$(KERNEL_OUT)

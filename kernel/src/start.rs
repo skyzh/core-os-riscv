@@ -7,7 +7,7 @@
 
 use riscv::{asm, register::*};
 use crate::arch::{hart_id, wait_forever};
-use crate::{clint, plic, mem, uart, process, spinlock, trap};
+use crate::{clint, plic, mem, uart, process, spinlock, trap, virtio};
 use crate::info;
 use crate::jump::*;
 
@@ -42,23 +42,24 @@ static mut MAY_BOOT: bool = false;
 #[no_mangle]
 extern "C" fn kmain() -> ! {
     if hart_id() == 0 {
-        mem::alloc_init();
-        uart::UART().lock().init();
+        unsafe { uart::init(); }
         info!("booting core-os on hart {}...", hart_id());
-        info!("drivers:");
         info!("  UART... \x1b[0;32minitialized\x1b[0m");
-        plic::PLIC().lock().init(plic::UART0_IRQ);
-        info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
         unsafe { mem::init(); }
+        info!("  kernel page table... \x1b[0;32minitialized\x1b[0m");
+        unsafe { virtio::init(); }
+        info!("  virt-io... \x1b[0;32minitialized\x1b[0m");
+        unsafe { plic::init(); }
+        info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
         mem::hartinit();
-        info!("page table configured");
-        unsafe { trap::init(); }
-        unsafe { process::init(); }
+        info!("kernel page table configured");
         info!("  Trap... \x1b[0;32minitialized\x1b[0m");
         info!("  Timer... \x1b[0;32minitialized\x1b[0m");
-        plic::init();
+        plic::hartinit();
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
+        unsafe { trap::hartinit(); }
         info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
+        unsafe { process::init(); }
         process::init_proc();
         unsafe {
             asm!("fence");
@@ -72,8 +73,8 @@ extern "C" fn kmain() -> ! {
         }
         info!("hart {} booting", hart_id());
         mem::hartinit();
-        unsafe { trap::init(); }
-        plic::init();
+        unsafe { trap::hartinit(); }
+        plic::hartinit();
     }
-    return_to(process::scheduler())
+    process::scheduler()
 }

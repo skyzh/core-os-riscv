@@ -58,7 +58,7 @@ pub fn scheduler() -> ! {
 //            info!("scheduler {}: switching to {}", arch::hart_id(), p.pid);
             swtch(&mut c.scheduler_context, *ctx);
 //            info!("scheduler {}: come back", arch::hart_id());
-            let mut p = core::mem::replace(&mut c.process, None).unwrap();
+            let p = core::mem::replace(&mut c.process, None).unwrap();
             lst_pid = p.pid as usize + 1;
             if lst_pid >= NMAXPROCS {
                 lst_pid = 0;

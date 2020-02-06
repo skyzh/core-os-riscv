@@ -5,8 +5,6 @@
 
 //! RISC-V Platform-Level Interrupt Controller
 
-#![allow(non_snake_case)]
-
 use crate::spinlock::Mutex;
 use crate::process::my_cpu;
 use crate::arch::hart_id;
@@ -21,19 +19,27 @@ pub const PLIC_SPRIORITY_BASE: usize = PLIC_BASE + 0x201000;
 pub const PLIC_MCLAIM_BASE: usize = PLIC_BASE + 0x200004;
 pub const PLIC_SCLAIM_BASE: usize = PLIC_BASE + 0x201004;
 
+#[allow(non_snake_case)]
 pub const fn PLIC_MENABLE(hart: usize) -> usize { PLIC_MENABLE_BASE + hart * 0x100 }
 
+#[allow(non_snake_case)]
 pub const fn PLIC_SENABLE(hart: usize) -> usize { PLIC_SENABLE_BASE + hart * 0x100 }
 
+#[allow(non_snake_case)]
 pub const fn PLIC_MPRIORITY(hart: usize) -> usize { PLIC_MPRIORITY_BASE + hart * 0x2000 }
 
+#[allow(non_snake_case)]
 pub const fn PLIC_SPRIORITY(hart: usize) -> usize { PLIC_SPRIORITY_BASE + hart * 0x2000 }
 
+#[allow(non_snake_case)]
 pub const fn PLIC_MCLAIM(hart: usize) -> usize { PLIC_MCLAIM_BASE + hart * 0x2000 }
 
+#[allow(non_snake_case)]
 pub const fn PLIC_SCLAIM(hart: usize) -> usize { PLIC_SCLAIM_BASE + hart * 0x2000 }
 
 pub const UART0_IRQ: u32 = 10;
+
+pub const VIRTIO0_IRQ: u32 = 1;
 
 pub struct Plic {}
 
@@ -143,9 +149,20 @@ static __PLIC: Mutex<Plic> = Mutex::new(Plic::new(), "plic driver");
 #[allow(non_snake_case)]
 pub fn PLIC() -> &'static Mutex<Plic> { &__PLIC }
 
-pub fn init() {
-    let mut PLIC = PLIC().lock();
-    PLIC.enable(UART0_IRQ);
-    PLIC.set_threshold(0);
-    PLIC.set_priority(UART0_IRQ, 1);
+/// Initialize PLIC
+///
+/// This function should only be called from boot hart
+pub unsafe fn init() {
+    let mut plic = PLIC().get();
+    plic.init(UART0_IRQ);
+    plic.init(VIRTIO0_IRQ);
+}
+
+pub fn hartinit() {
+    let mut plic = PLIC().lock();
+    plic.enable(UART0_IRQ);
+    plic.enable(VIRTIO0_IRQ);
+    plic.set_threshold(0);
+    plic.set_priority(UART0_IRQ, 1);
+    plic.set_priority(VIRTIO0_IRQ, 1);
 }

@@ -117,6 +117,10 @@ impl<T: ?Sized> Mutex<T> {
         }
         false
     }
+
+    pub(crate) unsafe fn get(&self) -> &mut T {
+        &mut *self.data.get()
+    }
 }
 
 impl<'a, T: ?Sized> Deref for MutexGuard<'a, T> {
