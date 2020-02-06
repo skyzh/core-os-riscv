@@ -65,8 +65,3 @@ userret:
 	.endr
 
 	sret
-
-.global __sp
-__sp:
-    mv a0, sp
-    ret

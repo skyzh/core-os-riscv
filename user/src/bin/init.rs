@@ -21,7 +21,6 @@ pub unsafe extern "C" fn _start() -> ! {
         println!("subprocess calling test1");
         exec("/test1", &["test1", "test2"]);
     } else {
-        println!("parent calling test2");
-        exec("/test2", &["test3", "test4"]);
+        loop {}
     }
 }

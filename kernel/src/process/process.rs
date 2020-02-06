@@ -11,10 +11,11 @@ use crate::arch;
 use crate::println;
 use crate::trap::usertrapret;
 use alloc::boxed::Box;
-use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu};
+use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu, sched};
 use crate::page::{Page, Table, EntryAttributes};
 use crate::process::Register::a0;
 use crate::fs;
+use crate::jump::*;
 
 #[derive(PartialEq)]
 pub enum ProcessState {
@@ -83,8 +84,8 @@ impl Drop for Process {
 }
 
 #[no_mangle]
-pub extern "C" fn forkret() {
-    usertrapret();
+pub extern "C" fn forkret() -> ! {
+    return_to(usertrapret())
 }
 
 /// binary code of user/src/initcode.S
@@ -168,4 +169,16 @@ pub fn exec(path: &str) {
     let sp = map_stack(&mut p.pgtable, 0x80001000);
     p.trapframe.epc = entry as usize;
     p.trapframe.regs[Register::sp as usize] = sp;
+}
+
+/// exit syscall
+pub fn exit(status: i32) -> ! {
+    let p = my_proc();
+    if p.pid == 0 {
+        panic!("init exiting");
+    }
+    p.state = ProcessState::ZOMBIE;
+    arch::intr_off();
+    sched();
+    unreachable!();
 }

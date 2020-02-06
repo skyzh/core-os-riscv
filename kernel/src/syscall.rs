@@ -14,8 +14,9 @@
 //! [syscall module in user crate](../../user/syscall/index.html).
 
 mod gen;
+
 pub use gen::*;
-use crate::process::{TrapFrame, Register, my_proc, fork, exec};
+use crate::process::{TrapFrame, Register, my_proc, fork, exec, exit};
 use crate::{info, panic, print, println};
 use crate::page;
 use crate::mem::{align_val, page_down};
@@ -102,7 +103,12 @@ fn sys_exec() -> i32 {
 
 /// exit syscall entry
 fn sys_exit() -> i32 {
-    unimplemented!()
+    let code;
+    {
+        let p = my_proc();
+        code = argint(&p.trapframe, 0);
+    }
+    exit(code);
 }
 
 /// Process all syscall

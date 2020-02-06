@@ -14,6 +14,7 @@ use crate::spinlock::Mutex;
 use crate::syscall;
 use crate::process::Register::a0;
 use crate::arch::{hart_id, sp};
+use crate::jump::*;
 
 #[no_mangle]
 extern "C" fn m_trap() -> () {
@@ -177,7 +178,7 @@ extern "C" fn kerneltrap() {
 
 /// Called by `uservec` in `trampoline.S`, return from user space.
 #[no_mangle]
-pub extern "C" fn usertrap() {
+pub extern "C" fn usertrap() -> ! {
     use riscv::register::*;
     if sstatus::read().spp() != sstatus::SPP::User {
         panic!("not from user mode");
@@ -256,7 +257,6 @@ pub fn usertrapret() -> ! {
     // jump to trampoline.S at the top of memory, which 
     // switches to the user page table, restores user registers,
     // and switches to user mode with sret.
-    // println!("jumping to trampoline 0x{:x} 0x{:x}...", trap_frame_addr , TRAPFRAME_START);
     trampoline_userret(TRAPFRAME_START, satp_val)
 }
 

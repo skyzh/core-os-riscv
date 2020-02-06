@@ -37,6 +37,7 @@ mod plic;
 mod clint;
 mod syscall;
 mod start;
+mod jump;
 
 #[no_mangle]
 extern "C" fn eh_personality() {}

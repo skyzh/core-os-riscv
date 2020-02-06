@@ -39,15 +39,29 @@ pub fn swtch(current: &mut Context, next: Context) {
     unsafe { __swtch(current, &next); }
 }
 
-/// give up CPU to scheduler
-pub fn yield_cpu() {
+/// switch to scheduler context
+pub fn sched() {
     let c = my_cpu();
     let p = my_proc();
-    let ctx = core::mem::replace(&mut c.scheduler_context, Context::zero());
-    p.state = ProcessState::RUNNABLE;
-    
+
+    if p.state == ProcessState::RUNNING {
+        panic!("process running");
+    }
+
     if crate::arch::intr_get() {
         panic!("yield interruptable");
     }
+
+    let ctx = core::mem::replace(&mut c.scheduler_context, Context::zero());
+
+    let intena = c.intr_lock.is_enabled_before;
     swtch(&mut p.context, ctx);
+    c.intr_lock.is_enabled_before = intena;
+}
+
+/// give up CPU to scheduler
+pub fn yield_cpu() {
+    let p = my_proc();
+    p.state = ProcessState::RUNNABLE;
+    sched();
 }

@@ -6,9 +6,10 @@
 //! RISC-V hart boot and initialize
 
 use riscv::{asm, register::*};
-use crate::arch::hart_id;
+use crate::arch::{hart_id, wait_forever};
 use crate::{clint, plic, mem, uart, process, spinlock, trap};
 use crate::info;
+use crate::jump::*;
 
 /// Initialize kernel page table and drivers in machine mode,
 /// and prepare to switch to supervisor mode
@@ -74,5 +75,5 @@ extern "C" fn kmain() -> ! {
         unsafe { trap::init(); }
         plic::init();
     }
-    process::scheduler()
+    return_to(process::scheduler())
 }

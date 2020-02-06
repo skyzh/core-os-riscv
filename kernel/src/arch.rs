@@ -104,6 +104,11 @@ pub fn __sync_lock_release(a: &u32) {
     unsafe { asm!("amoswap.w zero, zero, ($0)" :: "r"(a) :: "volatile"); }
 }
 
+#[inline(always)]
+pub unsafe fn w_ra(x: usize) {
+    asm!("mv ra, $0" :: "r"(x) :: "volatile");
+}
+
 extern "C" { fn __sp() -> usize; }
 
 pub fn sp() -> usize {

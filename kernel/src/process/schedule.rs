@@ -12,6 +12,7 @@ use crate::{info, println};
 use crate::panic;
 use alloc::boxed::Box;
 use core::borrow::BorrowMut;
+use crate::jump::*;
 
 /// Find a runnable process whose pid >= `from_pid`
 fn find_next_runnable_proc(from_pid: usize) -> Option<Box<Process>> {
@@ -58,7 +59,6 @@ pub fn scheduler() -> ! {
             swtch(&mut c.scheduler_context, *ctx);
 //            info!("scheduler {}: come back", arch::hart_id());
             let mut p = core::mem::replace(&mut c.process, None).unwrap();
-            p.state = ProcessState::RUNNABLE;
             lst_pid = p.pid as usize + 1;
             if lst_pid >= NMAXPROCS {
                 lst_pid = 0;
