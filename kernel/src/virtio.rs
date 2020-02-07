@@ -73,7 +73,7 @@ impl VIRTIO_FEATURE {
     }
 }
 
-pub const DESC_NUM: u32 = 8;
+pub const DESC_NUM: usize = 8;
 
 #[repr(C)]
 pub struct VRingDesc {
@@ -119,7 +119,7 @@ pub const VIRTIO_BLK_T_OUT: usize = 1;
 pub struct UsedArea {
     pub flags: u16,
     pub id: u16,
-    pub elems: [VRingUsedElem; DESC_NUM as usize],
+    pub elems: [VRingUsedElem; DESC_NUM],
 }
 
 impl UsedArea {
@@ -127,30 +127,30 @@ impl UsedArea {
         Self {
             flags: 0,
             id: 0,
-            elems: [VRingUsedElem::new(); DESC_NUM as usize],
+            elems: [VRingUsedElem::new(); DESC_NUM],
         }
     }
 }
 
-const AVAIL_SZ: usize = (PAGE_SIZE - DESC_NUM as usize * core::mem::size_of::<VRingDesc>()) / core::mem::size_of::<u16>();
+const AVAIL_SZ: usize = (PAGE_SIZE - DESC_NUM * core::mem::size_of::<VRingDesc>()) / core::mem::size_of::<u16>();
 
 #[repr(C)]
 #[repr(align(4096))]
 pub struct VirtIO {
-    pub desc: [VRingDesc; DESC_NUM as usize],
+    pub desc: [VRingDesc; DESC_NUM],
     pub avail: [u16; AVAIL_SZ],
-    pub used: [UsedArea; DESC_NUM as usize],
-    pub free: [bool; DESC_NUM as usize],
+    pub used: [UsedArea; DESC_NUM],
+    pub free: [bool; DESC_NUM],
     pub used_idx: u16,
 }
 
 impl VirtIO {
     pub const fn new() -> Self {
         Self {
-            desc: [VRingDesc::new(); DESC_NUM as usize],
+            desc: [VRingDesc::new(); DESC_NUM],
             avail: [0; AVAIL_SZ],
-            used: [UsedArea::new(); DESC_NUM as usize],
-            free: [false; DESC_NUM as usize],
+            used: [UsedArea::new(); DESC_NUM],
+            free: [false; DESC_NUM],
             used_idx: 0,
         }
     }
@@ -199,16 +199,37 @@ impl VirtIO {
         if max == 0 {
             panic!("virtio disk has no queue");
         }
-        if max < DESC_NUM {
+        if max < DESC_NUM as u32 {
             panic!("virtio disk max queue too short {} < {}", max, DESC_NUM);
         }
-        QUEUE_NUM.ptr().write_volatile(DESC_NUM);
+        QUEUE_NUM.ptr().write_volatile(DESC_NUM as u32);
 
         QUEUE_PFN.ptr().write_volatile(((self as *mut _ as usize) >> PAGE_ORDER) as u32);
 
-        for i in 0..DESC_NUM as usize {
+        for i in 0..DESC_NUM {
             self.free[i] = true;
         }
+    }
+    
+    fn alloc_desc(&mut self) -> Option<usize> {
+        for i in 0..DESC_NUM {
+            if self.free[i] {
+                self.free[i] = false;
+                return Some(i);
+            }
+        }
+        None
+    }
+    
+    fn free_desc(&mut self, i: usize) {
+        if i >= DESC_NUM {
+            panic!("invalid desc");
+        }
+        if self.free[i] {
+            panic!("already free");
+        }
+        self.desc[i].addr = 0;
+        self.free[i] = true;
     }
 }
 

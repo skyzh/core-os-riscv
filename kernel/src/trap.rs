@@ -18,14 +18,6 @@ use crate::jump::*;
 use crate::intr::devintr;
 use crate::intr::Intr::Timer;
 
-#[no_mangle]
-extern "C" fn m_trap() -> () {
-    use riscv::register::*;
-    if sstatus::read().spp() != sstatus::SPP::Supervisor {
-        panic!("not from supervisor mode");
-    }
-}
-
 /// Process interrupt from supervisor mode
 #[no_mangle]
 extern "C" fn kerneltrap() {

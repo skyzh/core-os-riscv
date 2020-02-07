@@ -16,10 +16,15 @@ use crate::page::{Page, Table, EntryAttributes};
 use crate::process::Register::a0;
 use crate::fs;
 use crate::jump::*;
+use crate::spinlock::{Mutex, MutexGuard};
 
 #[derive(PartialEq)]
 pub enum ProcessState {
-    UNUSED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE
+    UNUSED,
+    SLEEPING,
+    RUNNABLE,
+    RUNNING,
+    ZOMBIE,
 }
 
 #[repr(C)]
@@ -31,7 +36,8 @@ pub struct Process {
     pub state: ProcessState,
     pub kstack: usize,
     pub kstack_sp: usize,
-    pub pid: i32
+    pub pid: i32,
+    pub channel: usize,
 }
 
 impl Process {
@@ -53,14 +59,15 @@ impl Process {
             state: ProcessState::UNUSED,
             kstack: kstack,
             kstack_sp: kstack + PAGE_SIZE * 1024,
-            pid
+            pid,
+            channel: 0,
         };
 
         // map trampoline
         p.pgtable.kernel_map(
             TRAMPOLINE_START,
             TRAMPOLINE_TEXT_START(),
-            page::EntryAttributes::RX as usize
+            page::EntryAttributes::RX as usize,
         );
 
         let trapframe = &*p.trapframe as *const _ as usize;
@@ -68,7 +75,7 @@ impl Process {
         p.pgtable.kernel_map(
             TRAPFRAME_START,
             trapframe,
-            page::EntryAttributes::RW as usize
+            page::EntryAttributes::RW as usize,
         );
         p.context.regs[ContextRegisters::ra as usize] = forkret as usize;
         p.context.regs[ContextRegisters::sp as usize] = p.kstack + PAGE_SIZE;
@@ -93,9 +100,9 @@ pub extern "C" fn forkret() -> ! {
 /// be stripped with objdump, as specified in Makefile.
 fn init_code() -> &'static [u8] {
     #[cfg(debug_assertions)]
-    let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/debug/initcode");
+        let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/debug/initcode");
     #[cfg(not(debug_assertions))]
-    let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/release/initcode");
+        let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/release/initcode");
     x
 }
 
@@ -142,6 +149,7 @@ pub fn fork() -> i32 {
 }
 
 pub const USER_STACK_PAGE: usize = 4;
+
 /// map user stack in `pgtable` at `stack_begin` and returns `sp`
 pub fn map_stack(pgtable: &mut Table, stack_begin: usize) -> usize {
     for i in 0..USER_STACK_PAGE {
@@ -149,7 +157,7 @@ pub fn map_stack(pgtable: &mut Table, stack_begin: usize) -> usize {
         pgtable.map(
             stack_begin + i * PAGE_SIZE,
             stack,
-            page::EntryAttributes::URW as usize
+            page::EntryAttributes::URW as usize,
         );
     }
 
@@ -163,7 +171,7 @@ pub fn exec(path: &str) {
     p.pgtable.unmap_user();
     let entry = crate::elf::parse_elf(
         content,
-        &mut p.pgtable
+        &mut p.pgtable,
     );
     // map user stack
     let sp = map_stack(&mut p.pgtable, 0x80001000);
@@ -173,12 +181,46 @@ pub fn exec(path: &str) {
 
 /// exit syscall
 pub fn exit(status: i32) -> ! {
-    let p = my_proc();
-    if p.pid == 0 {
-        panic!("init exiting");
+    {
+        let p = my_proc();
+        if p.pid == 0 {
+            panic!("init exiting");
+        }
+        p.state = ProcessState::ZOMBIE;
     }
-    p.state = ProcessState::ZOMBIE;
     arch::intr_off();
     sched();
     unreachable!();
+}
+
+
+/// put this process into sleep state
+pub fn sleep<'a, T, U>(channel: &T, spin: &'a Mutex<U>, lck: MutexGuard<'a, U>) -> MutexGuard<'a, U> {
+    let p = my_proc();
+    p.channel = channel as *const _ as usize;
+    p.state = ProcessState::SLEEPING;
+
+
+    drop(lck);
+
+    sched();
+
+    p.channel = 0;
+
+    spin.lock()
+}
+
+/// wakeup process on channel
+pub fn wakeup<T>(channel: &T) {
+    let channel = channel as *const _ as usize;
+    let mut pool = PROCS_POOL.lock();
+    for i in 0..NMAXPROCS {
+        if pool[i].0 {
+            if let Some(p) = pool[i].1.as_mut() {
+                if p.state == ProcessState::SLEEPING && p.channel == channel {
+                    p.state = ProcessState::RUNNABLE;
+                }
+            }
+        }
+    }
 }

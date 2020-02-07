@@ -41,6 +41,7 @@ mod jump;
 mod virtio;
 mod intr;
 mod test;
+mod sleeplock;
 
 #[no_mangle]
 extern "C" fn eh_personality() {}

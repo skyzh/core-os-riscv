@@ -93,9 +93,7 @@ impl Plic {
         let pend = PLIC_PENDING as *const u32;
         let actual_id = 1 << id;
         let pend_ids;
-        unsafe {
-            pend_ids = pend.read_volatile();
-        }
+        pend_ids = pend.read_volatile();
         actual_id & pend_ids != 0
     }
 
@@ -153,13 +151,13 @@ pub fn PLIC() -> &'static mut Plic { unsafe { &mut __PLIC } }
 ///
 /// This function should only be called from boot hart
 pub unsafe fn init() {
-    let mut plic = PLIC();
+    let plic = PLIC();
     plic.init(UART0_IRQ);
     plic.init(VIRTIO0_IRQ);
 }
 
 pub fn hartinit() {
-    let mut plic = PLIC();
+    let plic = PLIC();
     plic.enable(UART0_IRQ);
     plic.enable(VIRTIO0_IRQ);
     plic.set_threshold(0);
