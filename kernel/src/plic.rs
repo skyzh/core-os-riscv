@@ -81,15 +81,15 @@ impl Plic {
     }
 
     /// Initialize PLIC. Enable interrupt.
-    pub fn init(&mut self, id: u32) {
+    pub unsafe fn init(&mut self, id: u32) {
         let enables = PLIC_BASE as *mut u32;
-        unsafe {
-            enables.add(id as usize).write_volatile(1);
-        }
+        enables.add(id as usize).write_volatile(1);
     }
 
     /// See if a given interrupt id is pending.
-    pub fn is_pending(&mut self, id: u32) -> bool {
+    ///
+    /// Should only be called with lock.
+    pub unsafe fn is_pending(&mut self, id: u32) -> bool {
         let pend = PLIC_PENDING as *const u32;
         let actual_id = 1 << id;
         let pend_ids;
@@ -143,23 +143,23 @@ impl Plic {
 }
 
 /// PLIC driver object
-static __PLIC: Mutex<Plic> = Mutex::new(Plic::new(), "plic driver");
+static mut __PLIC: Plic = Plic::new();
 
 /// Global function to get an instance of PLIC driver
 #[allow(non_snake_case)]
-pub fn PLIC() -> &'static Mutex<Plic> { &__PLIC }
+pub fn PLIC() -> &'static mut Plic { unsafe { &mut __PLIC } }
 
 /// Initialize PLIC
 ///
 /// This function should only be called from boot hart
 pub unsafe fn init() {
-    let mut plic = PLIC().get();
+    let mut plic = PLIC();
     plic.init(UART0_IRQ);
     plic.init(VIRTIO0_IRQ);
 }
 
 pub fn hartinit() {
-    let mut plic = PLIC().lock();
+    let mut plic = PLIC();
     plic.enable(UART0_IRQ);
     plic.enable(VIRTIO0_IRQ);
     plic.set_threshold(0);

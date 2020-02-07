@@ -222,3 +222,9 @@ pub fn VIRTIO() -> &'static Mutex<VirtIO> { &__VIRTIO }
 pub unsafe fn init() {
     VIRTIO().get().init();
 }
+
+
+/// virtual io interrupt
+pub fn virtiointr() {
+
+}

@@ -11,10 +11,15 @@
 #![feature(const_generics)]
 
 use user::println;
-use user::syscall::exit;
+use user::syscall::{exit, fork, exec};
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
+    let p = fork();
+    if p == 0 {
+        println!("forking test2...");
+        exec("/test2", &["test1", "test2"]);
+    }
     println!("test1 running...");
     exit(0);
 }

@@ -18,7 +18,7 @@ pub unsafe extern "C" fn _start() -> ! {
     println!("ready to fork!");
     let p = fork();
     if p == 0 {
-        println!("subprocess calling test1");
+        println!("calling test1...");
         exec("/test1", &["test1", "test2"]);
     } else {
         loop {}

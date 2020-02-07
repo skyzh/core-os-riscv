@@ -9,6 +9,7 @@ use core::convert::TryInto;
 use core::fmt::Write;
 use core::fmt::Error;
 use crate::spinlock::Mutex;
+use crate::{println, print};
 
 /// UART base address on QEMU RISC-V
 pub const UART_BASE_ADDR: usize = 0x1000_0000;
@@ -130,6 +131,28 @@ impl Uart {
     }
 }
 
+/// Process UART interrupt. Should only be called when interrupt.
+pub fn uartintr() {
+    let mut uart = UART().lock();
+    if let Some(c) = uart.get() {
+        drop(uart);
+        match c {
+            8 => {
+                // This is a backspace, so we
+                // essentially have to write a space and
+                // backup again:
+                print!("{} {}", 8 as char, 8 as char);
+            }
+            10 | 13 => {
+                // Newline or carriage-return
+                println!();
+            }
+            _ => {
+                print!("{}", c as char);
+            }
+        }
+    }
+}
 
 /// UART driver object
 static __UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR), "uart driver");

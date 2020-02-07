@@ -15,6 +15,8 @@ use crate::syscall;
 use crate::process::Register::a0;
 use crate::arch::{hart_id, sp};
 use crate::jump::*;
+use crate::intr::devintr;
+use crate::intr::Intr::Timer;
 
 #[no_mangle]
 extern "C" fn m_trap() -> () {
@@ -49,78 +51,13 @@ extern "C" fn kerneltrap() {
     if arch::intr_get() {
         panic!("interrupt not disabled");
     }
-    if is_async {
-        // Asynchronous trap
-        match cause_num {
-            1 => {
-                // Timer interrupt
-                // machine-mode timer interrupt ->
-                // supervisor-mode software interrupt
 
-                // acknowledge that this interrupt has been processed
-                arch::w_sip(arch::r_sip() & !2);
-                let p = &my_cpu().process;
-                if let Some(p) = p {
-                    if p.state == process::ProcessState::RUNNING {
-                        yield_cpu();
-                    }
-                }
-            },
-            9 => {
-                // Machine external (interrupt from Platform Interrupt Controller (PLIC))
-                // println!("Machine external interrupt CPU#{}", hart);
-                // We will check the next interrupt. If the interrupt isn't available, this will
-                // give us None. However, that would mean we got a spurious interrupt, unless we
-                // get an interrupt from a non-PLIC source. This is the main reason that the PLIC
-                // hardwires the id 0 to 0, so that we can use it as an error case.
-                let mut plic = crate::plic::PLIC().lock();
-                if let Some(interrupt) = plic.next() {
-                    // If we get here, we've got an interrupt from the claim register. The PLIC will
-                    // automatically prioritize the next interrupt, so when we get it from claim, it
-                    // will be the next in priority order.
-                    match interrupt {
-                        10 => { // Interrupt 10 is the UART interrupt.
-                            // We would typically set this to be handled out of the interrupt context,
-                            // but we're testing here! C'mon!
-                            // We haven't yet used the singleton pattern for my_uart, but remember, this
-                            // just simply wraps 0x1000_0000 (UART).
-                            let mut my_uart = crate::uart::UART().lock();
-                            // If we get here, the UART better have something! If not, what happened??
-                            if let Some(c) = my_uart.get() {
-                                drop(my_uart);
-                                // If you recognize this code, it used to be in the lib.rs under kmain(). That
-                                // was because we needed to poll for UART data. Now that we have interrupts,
-                                // here it goes!
-                                match c {
-                                    8 => {
-                                        // This is a backspace, so we
-                                        // essentially have to write a space and
-                                        // backup again:
-                                        print!("{} {}", 8 as char, 8 as char);
-                                    }
-                                    10 | 13 => {
-                                        // Newline or carriage-return
-                                        println!();
-                                    }
-                                    _ => {
-                                        print!("{}", c as char);
-                                    }
-                                }
-                            }
-                        }
-                        // Non-UART interrupts go here and do nothing.
-                        _ => {
-                            println!("Non-UART external interrupt: {}", interrupt);
-                        }
-                    }
-                    // We've claimed it, so now say that we've handled it. This resets the interrupt pending
-                    // and allows the UART to interrupt again. Otherwise, the UART will get "stuck".
-                    plic.complete(interrupt);
-                }
-            }
-            _ => {
-                panic!("Unhandled async trap CPU#{} -> {}\n", hart, cause_num);
-            }
+    let mut dev_intr = None;
+
+    if is_async {
+        dev_intr = devintr();
+        if dev_intr.is_none() {
+            panic!("Unhandled async trap CPU#{} -> {}\n", hart, cause_num);
         }
     } else {
         // Synchronous trap
@@ -172,6 +109,15 @@ extern "C" fn kerneltrap() {
         }
     };
 
+    if dev_intr == Some(Timer) {
+        let p = &my_cpu().process;
+        if let Some(p) = p {
+            if p.state == process::ProcessState::RUNNING {
+                yield_cpu();
+            }
+        }
+    }
+
     register::sepc::write(epc);
     arch::w_sstatus(sstatus_bits);
 }
@@ -189,14 +135,22 @@ pub extern "C" fn usertrap() -> ! {
     let p = my_proc();
     p.trapframe.epc = sepc::read();
     let scause = scause::read().bits();
+
+    let mut intr = None;
     if scause == 8 {
         p.trapframe.epc += 4;
         arch::intr_on();
         p.trapframe.regs[a0 as usize] = syscall::syscall() as usize;
-    } else if scause == 0x8000000000000001 {
-        yield_cpu();
     } else {
-        panic!("unexpected scause {:x}", scause);
+        intr = devintr();
+        match intr {
+            None => panic!("unexpected scause {:x}", scause),
+            _ => ()
+        }
+    }
+
+    if intr == Some(Timer) {
+        yield_cpu();
     }
 
     usertrapret();
@@ -254,7 +208,7 @@ pub fn usertrapret() -> ! {
         let root_ppn = &mut *p.pgtable as *mut page::Table as usize;
         satp_val = crate::arch::build_satp(8, 0, root_ppn);
     }
-    // jump to trampoline.S at the top of memory, which 
+    // jump to trampoline.S at the top of memory, which
     // switches to the user page table, restores user registers,
     // and switches to user mode with sret.
     trampoline_userret(TRAPFRAME_START, satp_val)
