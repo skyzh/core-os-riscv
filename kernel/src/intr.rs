@@ -18,6 +18,7 @@ pub enum Intr {
     Device
 }
 
+/// Process device interrupts
 pub fn devintr() -> Option<Intr> {
     let cause = scause::read();
 
@@ -45,4 +46,3 @@ pub fn devintr() -> Option<Intr> {
         None
     }
 }
-

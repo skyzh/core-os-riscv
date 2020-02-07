@@ -40,6 +40,7 @@ mod start;
 mod jump;
 mod virtio;
 mod intr;
+mod test;
 
 #[no_mangle]
 extern "C" fn eh_personality() {}

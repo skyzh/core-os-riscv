@@ -225,6 +225,20 @@ pub unsafe fn init() {
 
 
 /// virtual io interrupt
-pub fn virtiointr() {
+pub fn virtiointr() {}
 
+pub mod tests {
+    use super::*;
+
+    pub fn tests() -> &'static [(&'static str, fn())] {
+        &[("memory layout", test_memory_layout)]
+    }
+
+    /// Test virtio memory layout
+    pub fn test_memory_layout() {
+        let virtio = VIRTIO().lock();
+        assert_eq!(&virtio.desc as *const _ as usize % PAGE_SIZE, 0);
+        assert_eq!(&virtio.used as *const _ as usize % PAGE_SIZE, 0);
+        assert_eq!(&virtio.used as *const _ as usize - &virtio.desc as *const _ as usize, PAGE_SIZE);
+    }
 }
