@@ -172,6 +172,11 @@ pub unsafe fn init() {
         EntryAttributes::RW as usize,
     );
     pgtable.kernel_map(
+        VIRTIO_MMIO_BASE,
+        VIRTIO_MMIO_BASE,
+        EntryAttributes::RW as usize,
+    );
+    pgtable.kernel_map(
         TRAMPOLINE_START,
         TRAMPOLINE_TEXT_START(),
         EntryAttributes::RX as usize,
@@ -204,6 +209,7 @@ use crate::plic::PLIC_BASE;
 use crate::clint::CLINT_BASE;
 use crate::arch::hart_id;
 use crate::process::my_cpu;
+use crate::virtio::VIRTIO_MMIO_BASE;
 
 struct OsAllocator {}
 

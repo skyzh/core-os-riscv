@@ -6,10 +6,7 @@
 //! virt-io driver
 
 use crate::spinlock::Mutex;
-use crate::virtio::VIRTIO_MMIO::{MAGIC_VALUE, VERSION, DEVICE_ID, VENDOR_ID, STATUS, DEVICE_FEATURES, GUEST_PAGE_SIZE, QUEUE_SEL, QUEUE_NUM_MAX, QUEUE_NUM, QUEUE_PFN, QUEUE_NOTIFY};
 use crate::panic;
-use crate::virtio::VIRTIO_CONFIG_S::{ACKNOWLDGE, DRIVER, FEATURES_OK, DRIVER_OK};
-use crate::virtio::VIRTIO_FEATURE::{BLK_F_RO, BLK_F_SCSI, BLK_F_CONFIG_WCE, BLK_F_MQ, F_ANY_LAYOUT, RING_F_EVENT_IDX, RING_F_INDIRECT_DESC};
 use crate::symbols::{PAGE_SIZE, PAGE_ORDER};
 use crate::process::{wakeup, sleep};
 use alloc::boxed::Box;
@@ -196,6 +193,9 @@ impl VirtIO {
     }
 
     pub unsafe fn init(&mut self) {
+        use VIRTIO_MMIO::*;
+        use VIRTIO_CONFIG_S::*;
+        use VIRTIO_FEATURE::*;
         if MAGIC_VALUE.ptr().read_volatile() != 0x74726976 {
             panic!("cannot find virtio disk: magic value");
         }
@@ -301,6 +301,8 @@ impl VirtIO {
     }
 
     fn rw(&mut self, mut b: Box<Buf>, write: bool) -> Box<Buf> {
+        use VIRTIO_MMIO::*;
+
         let sector = b.blockno as usize * (BSIZE / 512);
 
         let idx: [usize; 3] = loop {
@@ -352,9 +354,13 @@ impl VirtIO {
 
             unsafe { QUEUE_NOTIFY.ptr().write_volatile(0); }
 
+            crate::arch::intr_on();
+
             while info.buf.disk == 1 {
                 // sleep lock
             }
+
+            crate::arch::intr_off();
         }
 
         let result = core::mem::replace(&mut self.info[idx[0]], None);
@@ -388,7 +394,8 @@ pub unsafe fn init() {
 
 /// virtual io interrupt
 pub fn virtiointr() {
-    let mut disk = VIRTIO().lock();
+    use crate::info;
+    let mut disk = unsafe { VIRTIO().get() };
     while disk.used_idx as usize % DESC_NUM != disk.used[0].id as usize % DESC_NUM {
         let id = disk.used[0].elems[disk.used_idx as usize].id as usize;
 
