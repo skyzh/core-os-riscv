@@ -12,8 +12,10 @@ use crate::process::{wakeup, sleep};
 use alloc::boxed::Box;
 use crate::arch::__sync_synchronize;
 
+/// VIRTIO base address on QEMU RISC-V
 pub const VIRTIO_MMIO_BASE: usize = 0x10001000;
 
+/// VIRTIO MMIO address offset
 #[allow(non_camel_case_types)]
 pub enum VIRTIO_MMIO {
     MAGIC_VALUE = 0x0,
@@ -36,9 +38,11 @@ pub enum VIRTIO_MMIO {
 }
 
 impl VIRTIO_MMIO {
+    /// Get address of MMIO from enum
     pub const fn val(self) -> usize {
         self as usize + VIRTIO_MMIO_BASE
     }
+    /// Get pointer to MMIO register from enum
     pub const fn ptr(self) -> *mut u32 {
         self.val() as _
     }
@@ -132,32 +136,46 @@ impl UsedArea {
     }
 }
 
-const AVAIL_SZ: usize = (PAGE_SIZE - DESC_NUM * core::mem::size_of::<VRingDesc>()) / core::mem::size_of::<u16>();
-
 pub struct InflightOp {
     pub buf: Box<Buf>,
     pub status: usize,
 }
 
+/// Size of avail array
+const AVAIL_SZ: usize = (PAGE_SIZE - DESC_NUM * core::mem::size_of::<VRingDesc>()) / core::mem::size_of::<u16>();
+
 #[repr(C)]
 #[repr(align(4096))]
 pub struct VirtIO {
+    /// VIRTIO MMIO descriptor register
     pub desc: [VRingDesc; DESC_NUM],
+    /// VIRTIO MMIO descriptor avail register (padding to page size)
     pub avail: [u16; AVAIL_SZ],
+    /// VIRTIO MMIO descriptor used register
     pub used: [UsedArea; DESC_NUM],
+
+    /// is descriptor free
     pub free: [bool; DESC_NUM],
+    /// used index of used array
     pub used_idx: u16,
+    /// in-flight operations
     pub info: [Option<InflightOp>; DESC_NUM],
 }
 
+/// VIRTIO buffer size
 const BSIZE: usize = 1024;
 
+/// VIRTIO Buffer
 #[repr(C)]
 pub struct Buf {
     pub valid: bool,
+    /// TODO: this can be removed
     pub disk: i32,
+    /// device ID
     pub dev: u32,
+    /// block number
     pub blockno: u32,
+    /// buffer data
     pub data: [u8; BSIZE],
 }
 
@@ -192,6 +210,9 @@ impl VirtIO {
         }
     }
 
+    /// Initialize VIRTIO driver.
+    ///
+    /// Should be called in booting hart.
     pub unsafe fn init(&mut self) {
         use VIRTIO_MMIO::*;
         use VIRTIO_CONFIG_S::*;
@@ -251,6 +272,7 @@ impl VirtIO {
         }
     }
 
+    /// Allocate one descriptor
     fn alloc_desc(&mut self) -> Option<usize> {
         for i in 0..DESC_NUM {
             if self.free[i] {
@@ -261,6 +283,7 @@ impl VirtIO {
         None
     }
 
+    /// Free one descriptor
     fn free_desc(&mut self, i: usize) {
         if i >= DESC_NUM {
             panic!("invalid desc");
@@ -273,6 +296,7 @@ impl VirtIO {
         // wakeup(&self.free[0]);
     }
 
+    /// Allocate three descriptors, return array of indices
     fn alloc3_desc(&mut self) -> Option<[usize; 3]> {
         let mut idx = [0; 3];
         for i in 0..3 {
@@ -289,6 +313,7 @@ impl VirtIO {
         Some(idx)
     }
 
+    /// Free descriptor chain
     fn free_chain(&mut self, mut i: usize) {
         loop {
             self.free_desc(i);
@@ -300,6 +325,7 @@ impl VirtIO {
         }
     }
 
+    /// Read-write operation
     fn rw(&mut self, mut b: Box<Buf>, write: bool) -> Box<Buf> {
         use VIRTIO_MMIO::*;
 
@@ -368,6 +394,7 @@ impl VirtIO {
         result.unwrap().buf
     }
 
+    /// Read from device and block number
     pub fn read(&mut self, dev: u32, blockno: u32) -> Box<Buf> {
         let mut buf = box Buf::new();
         buf.dev = dev;
@@ -375,6 +402,7 @@ impl VirtIO {
         self.rw(buf, false)
     }
 
+    /// Write buffer to disk
     pub fn write(&mut self, buf: Box<Buf>) {
         self.rw(buf, true);
     }
@@ -392,7 +420,7 @@ pub unsafe fn init() {
 }
 
 
-/// virtual io interrupt
+/// VIRTIO interrupt
 pub fn virtiointr() {
     use crate::info;
     let mut disk = unsafe { VIRTIO().get() };
@@ -432,13 +460,21 @@ pub mod tests {
         assert_eq!(&virtio.used as *const _ as usize % PAGE_SIZE, 0);
         assert_eq!(&virtio.used as *const _ as usize - &virtio.desc as *const _ as usize, PAGE_SIZE);
     }
-    use crate::print;
+
+    use crate::{print, println};
+
     /// Test read and write
     pub fn test_rw() {
         let mut virtio = VIRTIO().lock();
         let b = virtio.read(1, 0);
-        for i in 0..b.data.len() {
-            print!("{:x}", b.data[i]);
+        unsafe { println!("size: {}", core::ptr::read(b.data.as_ptr() as *const usize)); }
+        for i in 8..b.data.len() {
+            let d = b.data[i];
+            if d == 0 {
+                break;
+            }
+            print!("{}", b.data[i] as char);
         }
+        println!("");
     }
 }

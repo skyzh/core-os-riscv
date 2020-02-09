@@ -86,11 +86,13 @@ impl<T> Mutex<T> {
 }
 
 impl<T: ?Sized> Mutex<T> {
+    /// Obtain lock by test_and_set
     fn obtain_lock(&self) {
         while arch::__sync_lock_test_and_set(&self.lock, 1) != 0 {}
         arch::__sync_synchronize();
     }
 
+    /// Lock mutex and return a guard
     pub fn lock(&self) -> MutexGuard<T> {
         let intr_lock = my_cpu().intr_lock.lock();
         // panic_println!("{} lock on {}", self.name, arch::hart_id());
@@ -110,6 +112,7 @@ impl<T: ?Sized> Mutex<T> {
         }
     }
 
+    /// Test if lock is held by current hart
     unsafe fn holding(&self) -> bool {
         let _intr_lock = my_cpu().intr_lock.lock();
         if self.lock == 1 && *self.hart.get() == arch::hart_id() as i64 {
@@ -118,7 +121,8 @@ impl<T: ?Sized> Mutex<T> {
         false
     }
 
-    pub(crate) unsafe fn get(&self) -> &mut T {
+    /// Directly get mutex data regardless whether it is locked or not
+    pub unsafe fn get(&self) -> &mut T {
         &mut *self.data.get()
     }
 }

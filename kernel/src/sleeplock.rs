@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+//! A lock which puts current process into sleep and allows interrupt
+
 use crate::spinlock::{Mutex, MutexGuard};
 use crate::process::{sleep, my_proc, wakeup};
 
