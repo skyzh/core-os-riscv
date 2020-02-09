@@ -34,11 +34,11 @@ impl SleepLock {
             name
         }
     }
-    
+
     pub fn acquire(&mut self) -> SleepLockGuard {
         let mut lk = self.spin.lock();
         while lk.locked {
-            lk = sleep(&self.spin, &self.spin, lk);
+            lk = sleep(&self, &self.spin, lk);
         }
         lk.locked = true;
         lk.pid = my_proc().pid;
@@ -58,6 +58,6 @@ impl Drop for SleepLockGuard<'_> {
         let mut lk = self.lock.spin.lock();
         lk.locked = false;
         lk.pid = 0;
-        wakeup(&self.lock.spin);
+        wakeup(&self.lock);
     }
 }
