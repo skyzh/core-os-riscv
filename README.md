@@ -74,8 +74,9 @@ The main goal of this project is to make an xv6-like operating system with the R
     - [x] UART drivers
     - [x] Machine-mode Timer Interrupt
     - [x] External interrupt
-    - [ ] (WIP) Virt-io driver
-    - [ ] Handle signals in a Rust way
+    - [x] Spinlock-based Virt-IO driver
+    - [ ] Sleeplock-based Virt-IO driver (#2)
+    - [ ] Handle signals in a Rust way (#1)
 * Process and Scheduling
     - [x] Switch to User-mode
     - [x] Process
