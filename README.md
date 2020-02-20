@@ -75,8 +75,8 @@ The main goal of this project is to make an xv6-like operating system with the R
     - [x] Machine-mode Timer Interrupt
     - [x] External interrupt
     - [x] Spinlock-based Virt-IO driver
-    - [ ] Sleeplock-based Virt-IO driver (#2)
-    - [ ] Handle signals in a Rust way (#1)
+    - [ ] Sleeplock-based Virt-IO driver ([#2](https://github.com/skyzh/core-os-riscv/issues/2))
+    - [ ] Handle signals in a Rust way ([#1](https://github.com/skyzh/core-os-riscv/issues/1))
 * Process and Scheduling
     - [x] Switch to User-mode
     - [x] Process
