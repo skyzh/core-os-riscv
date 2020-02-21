@@ -117,9 +117,6 @@ multiple boards.
 
 For how these projects are related to core-os, refer to [#3](https://github.com/skyzh/core-os-riscv/issues/3).
 
-## Known Issues
+## License
 
-* Issue of `!`: function of `!` return type may interfere with RAII (objects won't be dropped). 
-If function of return type `!` is called, there may be memory leak. Rust should drop 
-all objects before calling these functions. I implemented this with `return_to` function
-in `jump.rs` by rewriting ra instead of directly calling these functions.
+MIT
