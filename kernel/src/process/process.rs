@@ -11,7 +11,7 @@ use crate::arch;
 use crate::println;
 use crate::trap::usertrapret;
 use alloc::boxed::Box;
-use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu, sched};
+use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu, sched, ProcInPool};
 use crate::page::{Page, Table, EntryAttributes};
 use crate::process::Register::a0;
 use crate::fs;
@@ -125,8 +125,9 @@ pub fn init_proc() {
 pub fn find_available_pid() -> Option<i32> {
     let pool = PROCS_POOL.lock();
     for i in 0..NMAXPROCS {
-        if pool[i].0 == false {
-            return Some(i as i32);
+        match &pool[i] {
+            ProcInPool::NoProc => return Some(i as i32),
+            _ => {}
         }
     }
     None
@@ -215,12 +216,12 @@ pub fn wakeup<T>(channel: &T) {
     let channel = channel as *const _ as usize;
     let mut pool = PROCS_POOL.lock();
     for i in 0..NMAXPROCS {
-        if pool[i].0 {
-            if let Some(p) = pool[i].1.as_mut() {
+        match &mut pool[i] {
+            ProcInPool::Pooling(p) =>
                 if p.state == ProcessState::SLEEPING && p.channel == channel {
                     p.state = ProcessState::RUNNABLE;
                 }
-            }
+            _ => {}
         }
     }
 }

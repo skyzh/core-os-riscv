@@ -5,18 +5,23 @@
 
 //! Process and scheduling
 mod trapframe;
+
 pub use trapframe::*;
 
 mod cpu;
+
 pub use cpu::*;
 
 mod process;
+
 pub use process::*;
 
 mod context;
+
 pub use context::*;
 
 mod schedule;
+
 pub use schedule::*;
 
 use crate::symbols::*;
@@ -28,6 +33,19 @@ use core::borrow::BorrowMut;
 
 /// An array holding all CPU information
 static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
+
+/// Enum describing a process in process pool
+///
+/// NoProc: No process associated with this pid
+/// Scheduled: This process is scheduled on one CPU
+/// Pooling: This process is not being scheduled
+/// BeingSlept: This process holds a sleep lock and is to be put back
+pub enum ProcInPool {
+    NoProc,
+    Scheduled,
+    Pooling(Box<Process>),
+    BeingSlept,
+}
 
 /// An array holding all process information.
 /// 
@@ -48,10 +66,9 @@ static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
 ///     }
 /// }
 /// ```
-pub static PROCS_POOL: Mutex<[(bool, Option<Box<Process>>); NMAXPROCS]> = Mutex::new([(false, None); NMAXPROCS], "proc pool");
+pub static PROCS_POOL: Mutex<[ProcInPool; NMAXPROCS]> = Mutex::new([ProcInPool::NoProc; NMAXPROCS], "proc pool");
 
-pub unsafe fn init() {
-}
+pub unsafe fn init() {}
 
 /// Get CPU object of current hart.
 pub fn my_cpu() -> &'static mut CPU {

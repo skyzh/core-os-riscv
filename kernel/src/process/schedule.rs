@@ -7,7 +7,7 @@ use crate::arch::wait_forever;
 use crate::arch;
 use crate::trap::usertrapret;
 use crate::symbols::*;
-use crate::process::{PROCS_POOL, ProcessState, swtch, Register, Context, my_cpu, Process};
+use crate::process::{ProcInPool, PROCS_POOL, ProcessState, swtch, Register, Context, my_cpu, Process};
 use crate::{info, println};
 use crate::panic;
 use alloc::boxed::Box;
@@ -18,14 +18,15 @@ use crate::jump::*;
 fn find_next_runnable_proc(from_pid: usize) -> Option<Box<Process>> {
     let mut pool = PROCS_POOL.lock();
     for pid in from_pid..NMAXPROCS {
-        let p = &mut pool[pid];
-        if let (occupied, Some(_p)) = p {
-            if !*occupied {
-                continue;
-            }
-            if _p.state == ProcessState::RUNNABLE {
-                let p = core::mem::replace(p, (true, None));
-                return p.1;
+        let in_pool = &mut pool[pid];
+        let schedule_this = match in_pool {
+            ProcInPool::Pooling(p) => p.state == ProcessState::RUNNABLE,
+            _ => false
+        };
+        if schedule_this {
+            let p = core::mem::replace(in_pool, ProcInPool::Scheduled);
+            if let ProcInPool::Pooling(p) = p {
+                return Some(p);
             }
         }
     }
@@ -36,11 +37,11 @@ fn find_next_runnable_proc(from_pid: usize) -> Option<Box<Process>> {
 pub fn put_back_proc(p: Box<Process>) {
     let mut pool = PROCS_POOL.lock();
     let p_in_pool = &mut pool[p.pid as usize];
-    if p_in_pool.1.is_none() {
-        *p_in_pool = (true, Some(p));
-        return;
+    match p_in_pool {
+        ProcInPool::Scheduled => { core::mem::replace(p_in_pool, ProcInPool::Pooling(p)); }
+        ProcInPool::NoProc => { core::mem::replace(p_in_pool, ProcInPool::Pooling(p)); }
+        _ => { panic!("pid {} already occupied", p.pid); }
     }
-    panic!("pid {} already occupied", p.pid);
 }
 
 /// Kernel scheduler
