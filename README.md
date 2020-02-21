@@ -106,19 +106,16 @@ multiple boards.
 
 ## Reference
 
-[1] https://github.com/rust-embedded/rust-raspi3-OS-tutorials
+* https://github.com/rust-embedded/rust-raspi3-OS-tutorials
+* https://github.com/bztsrc/raspi3-tutorial/
+* https://os.phil-opp.com/
+* http://osblog.stephenmarz.com/
+* https://github.com/mit-pdos/xv6-riscv/
+* https://pdos.csail.mit.edu/6.828/2012/labs
+* https://gist.github.com/cb372/5f6bf16ca0682541260ae52fc11ea3bb
+* https://github.com/rcore-os/rCore
 
-[2] https://github.com/bztsrc/raspi3-tutorial/
-
-[3] https://os.phil-opp.com/
-
-[4] http://osblog.stephenmarz.com/
-
-[5] https://github.com/mit-pdos/xv6-riscv/
-
-[6] https://pdos.csail.mit.edu/6.828/2012/labs
-
-[7] https://gist.github.com/cb372/5f6bf16ca0682541260ae52fc11ea3bb
+For how these projects are related to core-os, refer to [#3](https://github.com/skyzh/core-os-riscv/issues/3).
 
 ## Known Issues
 
