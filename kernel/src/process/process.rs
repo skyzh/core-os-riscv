@@ -11,7 +11,7 @@ use crate::arch;
 use crate::println;
 use crate::trap::usertrapret;
 use alloc::boxed::Box;
-use crate::process::{put_back_proc, my_proc, PROCS_POOL, PROCS_POOL_SLEEP, my_cpu, sched, ProcInPool};
+use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu, sched, ProcInPool};
 use crate::page::{Page, Table, EntryAttributes};
 use crate::process::Register::a0;
 use crate::fs;
@@ -197,6 +197,7 @@ pub fn exit(status: i32) -> ! {
     unreachable!();
 }
 
+pub static PROCS_POOL_SLEEP: Mutex<()> = Mutex::new((), "proc pool sleep");
 
 /// put this process into sleep state
 pub fn sleep<'a, T, U>(channel: *const T, lck: MutexGuard<'a, U>) -> MutexGuard<'a, U> {

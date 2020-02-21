@@ -95,6 +95,7 @@ multiple boards.
     - [x] Real spinlock instead of nulllock
     - [ ] Implement simple fs
 * Miscellaneous
+    - [ ] Replace Makefile with pure Rust toolchain (cargo build script)
     - [ ] Use Option instead of panic!
     - [ ] Eliminate use of unsafe
     - [ ] Documentation
