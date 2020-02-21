@@ -49,7 +49,7 @@ extern "C" fn eh_personality() {}
 /// Panic handler
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    panic_println!("Aborting: ");
+    panic_println!("hart {} aborting: ", arch::hart_id());
     if let Some(p) = info.location() {
         panic_println!(
 			"line {}, file {}: {}",

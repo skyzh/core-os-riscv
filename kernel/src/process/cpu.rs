@@ -47,6 +47,7 @@ impl CPU {
 pub struct IntrLock {
     pub is_enabled_before: bool,
     pub cnt: UnsafeCell<isize>,
+    pub hart_id: usize,
 }
 
 impl IntrLock {
@@ -54,6 +55,7 @@ impl IntrLock {
         Self {
             is_enabled_before: false,
             cnt: UnsafeCell::new(0),
+            hart_id: 23333,
         }
     }
 
@@ -63,9 +65,13 @@ impl IntrLock {
         unsafe {
             if *self.cnt.get() == 0 {
                 self.is_enabled_before = enabled;
+                self.hart_id = arch::hart_id();
             } else {
                 if enabled {
                     panic!("lock held but intr enabled");
+                }
+                if self.hart_id != arch::hart_id() {
+                    panic!("lock on different hart");
                 }
             }
             *self.cnt.get() += 1;
@@ -85,6 +91,9 @@ impl<'a> Drop for IntrLockGuard<'_> {
             panic!("{} intr enabled", hart_id());
         }
         unsafe {
+            if hart_id() != self.lock.hart_id {
+                panic!("unlock on different hart");
+            }
             let cnt = self.lock.cnt.get();
             *cnt -= 1;
             if *cnt == 0 {
@@ -98,3 +107,7 @@ impl<'a> Drop for IntrLockGuard<'_> {
         }
     }
 }
+
+unsafe impl Sync for IntrLock {}
+
+unsafe impl Send for IntrLock {}

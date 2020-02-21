@@ -44,7 +44,7 @@ extern "C" fn kerneltrap() {
         panic!("interrupt not disabled");
     }
 
-    let mut dev_intr = None;
+    let dev_intr;
 
     if is_async {
         dev_intr = devintr();

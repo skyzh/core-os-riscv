@@ -60,7 +60,9 @@ I'll continuously add Rust-specific implementations and how I made this project 
 
 ## Roadmap
 
-The main goal of this project is to make an xv6-like operating system with the Rust programming language. And now it's in a very early stage. I'm still working on it.
+The main goal of this project is to make an xv6-like operating system with the Rust programming language.
+And then, I'll separate arch-dependent part and make it into an OS supporting multiple architecture and
+multiple boards.
 
 - [x] Adapt code from http://osblog.stephenmarz.com/
 
@@ -75,7 +77,7 @@ The main goal of this project is to make an xv6-like operating system with the R
     - [x] Machine-mode Timer Interrupt
     - [x] External interrupt
     - [x] Spinlock-based Virt-IO driver
-    - [ ] Sleeplock-based Virt-IO driver ([#2](https://github.com/skyzh/core-os-riscv/issues/2))
+    - [x] Sleeplock-based Virt-IO driver ([#2](https://github.com/skyzh/core-os-riscv/issues/2))
     - [ ] Handle signals in a Rust way ([#1](https://github.com/skyzh/core-os-riscv/issues/1))
 * Process and Scheduling
     - [x] Switch to User-mode

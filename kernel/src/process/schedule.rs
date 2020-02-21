@@ -34,13 +34,13 @@ fn find_next_runnable_proc(from_pid: usize) -> Option<Box<Process>> {
 }
 
 /// Put process back to `PROCS_POOL`
-pub fn put_back_proc(p: Box<Process>) {
+pub fn put_back_proc(mut p: Box<Process>) {
     let mut pool = PROCS_POOL.lock();
     let p_in_pool = &mut pool[p.pid as usize];
+    p.drop_on_put_back = None;
     match p_in_pool {
-        ProcInPool::Scheduled => { core::mem::replace(p_in_pool, ProcInPool::Pooling(p)); }
-        ProcInPool::NoProc => { core::mem::replace(p_in_pool, ProcInPool::Pooling(p)); }
-        _ => { panic!("pid {} already occupied", p.pid); }
+        ProcInPool::Pooling(_) => { panic!("pid {} already occupied", p.pid); }
+        _ => { core::mem::replace(p_in_pool, ProcInPool::Pooling(p)); }
     }
 }
 

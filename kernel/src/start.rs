@@ -61,8 +61,6 @@ extern "C" fn kmain() -> ! {
         info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
         unsafe { process::init(); }
         process::init_proc();
-        info!("running tests...");
-        crate::test::run_tests();
         unsafe {
             asm!("fence");
             MAY_BOOT = true

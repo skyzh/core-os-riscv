@@ -14,6 +14,11 @@ mod syscall_internal;
 
 use core::panic::PanicInfo;
 
+#[cfg(target_pointer_width = "32")]
+const HEX_WIDTH: usize = 10;
+#[cfg(target_pointer_width = "64")]
+const HEX_WIDTH: usize = 20;
+
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}

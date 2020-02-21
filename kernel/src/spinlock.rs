@@ -39,6 +39,7 @@ use crate::{arch, panic, process::IntrLockGuard};
 use crate::process::my_cpu;
 use crate::panic_println;
 use crate::arch::hart_id;
+use alloc::rc::Weak;
 
 /// A RISC-V Mutex.
 pub struct Mutex<T: ?Sized> {
@@ -60,6 +61,10 @@ pub struct MutexGuard<'a, T: ?Sized + 'a> {
     mutex: &'a Mutex<T>,
     data: &'a mut T,
     intr_lock: IntrLockGuard<'a>,
+}
+
+pub struct WeakMutexGuard<'a, T: ?Sized + 'a> {
+    mutex: &'a Mutex<T>
 }
 
 unsafe impl<T: ?Sized + Send> Sync for Mutex<T> {}
@@ -108,7 +113,7 @@ impl<T: ?Sized> Mutex<T> {
             lock: &self.lock,
             mutex: self,
             data: unsafe { &mut *self.data.get() },
-            intr_lock
+            intr_lock,
         }
     }
 
@@ -146,5 +151,21 @@ impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
         arch::__sync_synchronize();
         arch::__sync_lock_release(&self.lock);
         // panic_println!("{} unlock on {}", self.mutex.name, arch::hart_id());
+    }
+}
+
+impl<'a, T: ?Sized> MutexGuard<'a, T> {
+    /// Temporarily unlock Mutex by obtaining a weak guard
+    pub fn into_weak(self) -> WeakMutexGuard<'a, T> {
+        WeakMutexGuard {
+            mutex: self.mutex
+        }
+    }
+}
+
+impl<'a, T: ?Sized> WeakMutexGuard<'a, T> {
+    /// Temporarily unlock Mutex by obtaining a weak guard
+    pub fn into_guard(self) -> MutexGuard<'a, T> {
+        self.mutex.lock()
     }
 }

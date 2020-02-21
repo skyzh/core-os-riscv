@@ -29,7 +29,7 @@ pub const PAGE_ORDER: usize = 12;
 pub const PAGE_SIZE: usize = 1 << PAGE_ORDER;
 
 /// Maximum virtual address supported on Sv39
-pub const MAXVA: usize = (1 << (9 + 9 + 9 + 12 - 1));
+pub const MAXVA: usize = 1 << (9 + 9 + 9 + 12 - 1);
 
 /// Address to map kernel and user trampoline
 pub const TRAMPOLINE_START: usize = MAXVA - PAGE_SIZE;

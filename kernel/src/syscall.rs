@@ -97,6 +97,10 @@ fn sys_exec() -> i32 {
             core::str::from_utf8(slice).unwrap()
         };
     }
+    if path == "/init" {
+        info!("running tests before init...");
+        crate::test::run_tests();
+    }
     exec(path);
     0
 }

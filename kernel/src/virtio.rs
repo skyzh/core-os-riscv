@@ -5,8 +5,8 @@
 
 //! virt-io driver
 
-use crate::spinlock::Mutex;
-use crate::panic;
+use crate::spinlock::{Mutex, MutexGuard};
+use crate::{panic, info};
 use crate::symbols::{PAGE_SIZE, PAGE_ORDER};
 use crate::process::{wakeup, sleep};
 use alloc::boxed::Box;
@@ -146,7 +146,7 @@ const AVAIL_SZ: usize = (PAGE_SIZE - DESC_NUM * core::mem::size_of::<VRingDesc>(
 
 #[repr(C)]
 #[repr(align(4096))]
-pub struct VirtIO {
+pub struct VirtIOData {
     /// VIRTIO MMIO descriptor register
     pub desc: [VRingDesc; DESC_NUM],
     /// VIRTIO MMIO descriptor avail register (padding to page size)
@@ -161,6 +161,8 @@ pub struct VirtIO {
     /// in-flight operations
     pub info: [Option<InflightOp>; DESC_NUM],
 }
+
+pub struct VirtIO(Mutex<VirtIOData>);
 
 /// VIRTIO buffer size
 const BSIZE: usize = 1024;
@@ -198,16 +200,72 @@ pub struct BlkOutHdr {
     sector: usize,
 }
 
+impl VirtIOData {
+    /// Free one descriptor
+    fn free_desc(&mut self, i: usize) {
+        if i >= DESC_NUM {
+            panic!("invalid desc");
+        }
+        if self.free[i] {
+            panic!("already free");
+        }
+        self.desc[i].addr = 0;
+        self.free[i] = true;
+        wakeup(&self.free[0]);
+    }
+
+    /// Allocate one descriptor
+    fn alloc_desc(&mut self) -> Option<usize> {
+        for i in 0..DESC_NUM {
+            if self.free[i] {
+                self.free[i] = false;
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    /// Allocate three descriptors, return array of indices
+    fn alloc3_desc(&mut self) -> Option<[usize; 3]> {
+        let mut idx = [0; 3];
+        for i in 0..3 {
+            match self.alloc_desc() {
+                Some(x) => idx[i] = x,
+                None => {
+                    for j in 0..i {
+                        self.free_desc(idx[j]);
+                    }
+                    return None;
+                }
+            }
+        }
+        Some(idx)
+    }
+
+    /// Free descriptor chain
+    fn free_chain(&mut self, mut i: usize) {
+        loop {
+            self.free_desc(i);
+            if self.desc[i].flags & VRING_DESC_F_NEXT != 0 {
+                i = self.desc[i].next as usize;
+            } else {
+                break;
+            }
+        }
+    }
+}
+
 impl VirtIO {
     pub const fn new() -> Self {
-        Self {
-            desc: [VRingDesc::new(); DESC_NUM],
-            avail: [0; AVAIL_SZ],
-            used: [UsedArea::new(); DESC_NUM],
-            free: [false; DESC_NUM],
-            used_idx: 0,
-            info: [None; DESC_NUM],
-        }
+        Self(
+            Mutex::new(VirtIOData {
+                desc: [VRingDesc::new(); DESC_NUM],
+                avail: [0; AVAIL_SZ],
+                used: [UsedArea::new(); DESC_NUM],
+                free: [false; DESC_NUM],
+                used_idx: 0,
+                info: [None; DESC_NUM],
+            }, "vdisk"))
     }
 
     /// Initialize VIRTIO driver.
@@ -217,6 +275,9 @@ impl VirtIO {
         use VIRTIO_MMIO::*;
         use VIRTIO_CONFIG_S::*;
         use VIRTIO_FEATURE::*;
+
+        let mut vio = self.0.get();
+
         if MAGIC_VALUE.ptr().read_volatile() != 0x74726976 {
             panic!("cannot find virtio disk: magic value");
         }
@@ -265,63 +326,10 @@ impl VirtIO {
         }
         QUEUE_NUM.ptr().write_volatile(DESC_NUM as u32);
 
-        QUEUE_PFN.ptr().write_volatile(((self as *mut _ as usize) >> PAGE_ORDER) as u32);
+        QUEUE_PFN.ptr().write_volatile(((vio as *mut _ as usize) >> PAGE_ORDER) as u32);
 
         for i in 0..DESC_NUM {
-            self.free[i] = true;
-        }
-    }
-
-    /// Allocate one descriptor
-    fn alloc_desc(&mut self) -> Option<usize> {
-        for i in 0..DESC_NUM {
-            if self.free[i] {
-                self.free[i] = false;
-                return Some(i);
-            }
-        }
-        None
-    }
-
-    /// Free one descriptor
-    fn free_desc(&mut self, i: usize) {
-        if i >= DESC_NUM {
-            panic!("invalid desc");
-        }
-        if self.free[i] {
-            panic!("already free");
-        }
-        self.desc[i].addr = 0;
-        self.free[i] = true;
-        // wakeup(&self.free[0]);
-    }
-
-    /// Allocate three descriptors, return array of indices
-    fn alloc3_desc(&mut self) -> Option<[usize; 3]> {
-        let mut idx = [0; 3];
-        for i in 0..3 {
-            match self.alloc_desc() {
-                Some(x) => idx[i] = x,
-                None => {
-                    for j in 0..i {
-                        self.free_desc(idx[j]);
-                    }
-                    return None;
-                }
-            }
-        }
-        Some(idx)
-    }
-
-    /// Free descriptor chain
-    fn free_chain(&mut self, mut i: usize) {
-        loop {
-            self.free_desc(i);
-            if self.desc[i].flags & VRING_DESC_F_NEXT != 0 {
-                i = self.desc[i].next as usize;
-            } else {
-                break;
-            }
+            vio.free[i] = true;
         }
     }
 
@@ -331,10 +339,13 @@ impl VirtIO {
 
         let sector = b.blockno as usize * (BSIZE / 512);
 
+        let mut vio = self.0.lock();
+
         let idx: [usize; 3] = loop {
-            if let Some(idx) = self.alloc3_desc() {
+            if let Some(idx) = vio.alloc3_desc() {
                 break idx;
             }
+            vio = sleep(&vio.free[0] as *const _, vio);
         };
 
         let buf0 = BlkOutHdr {
@@ -343,54 +354,53 @@ impl VirtIO {
             blk_type: if write { VIRTIO_BLK_T_OUT } else { VIRTIO_BLK_T_IN },
         };
 
-        let desc0 = &mut self.desc[idx[0]];
+        let desc0 = &mut vio.desc[idx[0]];
         desc0.addr = &buf0 as *const _ as usize;
         desc0.len = core::mem::size_of::<BlkOutHdr>() as u32;
         desc0.flags = VRING_DESC_F_NEXT;
         desc0.next = idx[1] as u16;
 
-        let desc1 = &mut self.desc[idx[1]];
+        let desc1 = &mut vio.desc[idx[1]];
         desc1.addr = b.data.as_mut_ptr() as usize;
         desc1.len = BSIZE as u32;
         desc1.flags = if write { 0 } else { VRING_DESC_F_WRITE };
         desc1.flags |= VRING_DESC_F_NEXT;
         desc1.next = idx[2] as u16;
 
-        let desc2 = &mut self.desc[idx[2]];
-
         b.disk = 1;
-        self.info[idx[0]] = Some(InflightOp {
+        vio.info[idx[0]] = Some(InflightOp {
             buf: b,
             status: 0,
         });
 
         {
-            let info = self.info[idx[0]].as_mut().unwrap();
+            let addr = &vio.info[idx[0]].as_ref().unwrap().status as *const usize as usize;
+            {
+                let desc2 = &mut vio.desc[idx[2]];
 
-            desc2.addr = &mut info.status as *mut _ as usize;
-            desc2.len = 1;
-            desc2.flags = VRING_DESC_F_WRITE;
-            desc2.next = 0;
+                desc2.addr = addr;
+                desc2.len = 1;
+                desc2.flags = VRING_DESC_F_WRITE;
+                desc2.next = 0;
+            }
 
-            self.avail[2 + self.avail[1] as usize % DESC_NUM] = idx[0] as u16;
+            let idx_id = 2 + vio.avail[1] as usize % DESC_NUM;
+            vio.avail[idx_id] = idx[0] as u16;
 
             __sync_synchronize();
 
-            self.avail[1] = self.avail[1] + 1;
+            vio.avail[1] = vio.avail[1] + 1;
 
             unsafe { QUEUE_NOTIFY.ptr().write_volatile(0); }
 
-            crate::arch::intr_on();
-
-            while info.buf.disk == 1 {
-                // sleep lock
+            let buf_addr = &*vio.info[idx[0]].as_ref().unwrap().buf as *const _;
+            while vio.info[idx[0]].as_ref().unwrap().buf.disk == 1 {
+                vio = sleep(buf_addr, vio);
             }
-
-            crate::arch::intr_off();
         }
 
-        let result = core::mem::replace(&mut self.info[idx[0]], None);
-        self.free_chain(idx[0]);
+        let result = core::mem::replace(&mut vio.info[idx[0]], None);
+        vio.free_chain(idx[0]);
         result.unwrap().buf
     }
 
@@ -409,21 +419,21 @@ impl VirtIO {
 }
 
 /// VirtIO driver object
-static __VIRTIO: Mutex<VirtIO> = Mutex::new(VirtIO::new(), "virtio");
+static mut __VIRTIO: VirtIO = VirtIO::new();
 
 /// Global function to get an instance of VirtIO driver
 #[allow(non_snake_case)]
-pub fn VIRTIO() -> &'static Mutex<VirtIO> { &__VIRTIO }
+pub fn VIRTIO() -> &'static mut VirtIO { unsafe { &mut __VIRTIO } }
 
 pub unsafe fn init() {
-    VIRTIO().get().init();
+    VIRTIO().init();
 }
 
 
 /// VIRTIO interrupt
 pub fn virtiointr() {
     use crate::info;
-    let mut disk = unsafe { VIRTIO().get() };
+    let mut disk = unsafe { VIRTIO().0.get() };
     while disk.used_idx as usize % DESC_NUM != disk.used[0].id as usize % DESC_NUM {
         let id = disk.used[0].elems[disk.used_idx as usize].id as usize;
 
@@ -438,6 +448,8 @@ pub fn virtiointr() {
         }
 
         info.buf.disk = 0;
+
+        wakeup(&*info.buf);
 
         disk.used_idx = ((disk.used_idx + 1) as usize % DESC_NUM) as u16;
     }
@@ -455,7 +467,7 @@ pub mod tests {
 
     /// Test virtio memory layout
     pub fn test_memory_layout() {
-        let virtio = VIRTIO().lock();
+        let virtio = VIRTIO().0.lock();
         assert_eq!(&virtio.desc as *const _ as usize % PAGE_SIZE, 0);
         assert_eq!(&virtio.used as *const _ as usize % PAGE_SIZE, 0);
         assert_eq!(&virtio.used as *const _ as usize - &virtio.desc as *const _ as usize, PAGE_SIZE);
@@ -465,7 +477,7 @@ pub mod tests {
 
     /// Test read and write
     pub fn test_rw() {
-        let mut virtio = VIRTIO().lock();
+        let virtio = VIRTIO();
         let b = virtio.read(1, 0);
         unsafe { println!("size: {}", core::ptr::read(b.data.as_ptr() as *const usize)); }
         for i in 8..b.data.len() {

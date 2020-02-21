@@ -4,14 +4,14 @@
 // https://opensource.org/licenses/MIT
 
 use super::{TrapFrame, Context, Register, ContextRegisters};
-use crate::{page, panic, info};
+use crate::{page, panic, info, warn};
 use crate::symbols::*;
 use crate::mem;
 use crate::arch;
 use crate::println;
 use crate::trap::usertrapret;
 use alloc::boxed::Box;
-use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu, sched, ProcInPool};
+use crate::process::{put_back_proc, my_proc, PROCS_POOL, PROCS_POOL_SLEEP, my_cpu, sched, ProcInPool};
 use crate::page::{Page, Table, EntryAttributes};
 use crate::process::Register::a0;
 use crate::fs;
@@ -19,6 +19,7 @@ use crate::jump::*;
 use crate::spinlock::{Mutex, MutexGuard};
 
 #[derive(PartialEq)]
+#[derive(Debug)]
 pub enum ProcessState {
     UNUSED,
     SLEEPING,
@@ -38,6 +39,7 @@ pub struct Process {
     pub kstack_sp: usize,
     pub pid: i32,
     pub channel: usize,
+    pub drop_on_put_back: Option<MutexGuard<'static, ()>>,
 }
 
 impl Process {
@@ -61,6 +63,7 @@ impl Process {
             kstack_sp: kstack + PAGE_SIZE * 1024,
             pid,
             channel: 0,
+            drop_on_put_back: None,
         };
 
         // map trampoline
@@ -196,32 +199,54 @@ pub fn exit(status: i32) -> ! {
 
 
 /// put this process into sleep state
-pub fn sleep<'a, T, U>(channel: &T, spin: &'a Mutex<U>, lck: MutexGuard<'a, U>) -> MutexGuard<'a, U> {
+pub fn sleep<'a, T, U>(channel: *const T, lck: MutexGuard<'a, U>) -> MutexGuard<'a, U> {
     let p = my_proc();
     p.channel = channel as *const _ as usize;
     p.state = ProcessState::SLEEPING;
 
+    // set proc in proc pool as being slept, avoiding lost-wakeup issue
+    {
+        let mut pool = PROCS_POOL.lock();
+        let p_in_pool = &mut pool[p.pid as usize];
+        match p_in_pool {
+            ProcInPool::Scheduled => {}
+            _ => panic!("invalid proc pool state")
+        }
+        *p_in_pool = ProcInPool::BeingSlept;
+    }
+    p.drop_on_put_back = Some(PROCS_POOL_SLEEP.lock());
 
-    drop(lck);
+    // temporarily unlock spinlock
+    let weak_lock = lck.into_weak();
 
     sched();
 
     p.channel = 0;
 
-    spin.lock()
+    return weak_lock.into_guard();
 }
 
 /// wakeup process on channel
-pub fn wakeup<T>(channel: &T) {
+pub fn wakeup<T>(channel: *const T) {
+    // info!("wakeup {:x}", channel as usize);
     let channel = channel as *const _ as usize;
     let mut pool = PROCS_POOL.lock();
-    for i in 0..NMAXPROCS {
+    let mut i = 0;
+    while i < NMAXPROCS {
         match &mut pool[i] {
-            ProcInPool::Pooling(p) =>
+            ProcInPool::Pooling(p) => {
+                // info!("channel of {} = {:x}", p.pid, p.channel);
                 if p.state == ProcessState::SLEEPING && p.channel == channel {
                     p.state = ProcessState::RUNNABLE;
                 }
-            _ => {}
+                i += 1;
+            }
+            ProcInPool::BeingSlept => {
+                let weak_lock = pool.into_weak();
+                PROCS_POOL_SLEEP.lock();
+                pool = weak_lock.into_guard();
+            }
+            _ => { i += 1; }
         }
     }
 }

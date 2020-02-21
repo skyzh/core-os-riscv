@@ -11,7 +11,7 @@ use crate::process::{sleep, my_proc, wakeup};
 /// locked, pid
 struct SleepLockInfo {
     pub locked: bool,
-    pub pid: i32
+    pub pid: i32,
 }
 
 impl SleepLockInfo {
@@ -22,10 +22,10 @@ impl SleepLockInfo {
 
 pub struct SleepLock {
     spin: Mutex<SleepLockInfo>,
-    name: &'static str
+    name: &'static str,
 }
 
-pub struct SleepLockGuard <'a> {
+pub struct SleepLockGuard<'a> {
     lock: &'a SleepLock,
 }
 
@@ -33,14 +33,14 @@ impl SleepLock {
     pub const fn new(name: &'static str) -> Self {
         Self {
             spin: Mutex::new(SleepLockInfo::new(false, 0), "sleep lock"),
-            name
+            name,
         }
     }
 
     pub fn acquire(&mut self) -> SleepLockGuard {
         let mut lk = self.spin.lock();
         while lk.locked {
-            lk = sleep(&self, &self.spin, lk);
+            lk = sleep(&self, lk);
         }
         lk.locked = true;
         lk.pid = my_proc().pid;

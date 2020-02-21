@@ -67,6 +67,7 @@ pub enum ProcInPool {
 /// }
 /// ```
 pub static PROCS_POOL: Mutex<[ProcInPool; NMAXPROCS]> = Mutex::new([ProcInPool::NoProc; NMAXPROCS], "proc pool");
+pub static PROCS_POOL_SLEEP: Mutex<()> = Mutex::new((), "proc pool sleep");
 
 pub unsafe fn init() {}
 
