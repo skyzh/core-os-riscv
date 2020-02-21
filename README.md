@@ -7,6 +7,8 @@ and is now being made to have an xv6-like structure.
 
 You may browse this repo with [Sourcegraph](https://sourcegraph.com/github.com/skyzh/core-os-riscv).
 
+![image](https://user-images.githubusercontent.com/4198311/75010448-1fa76080-54b8-11ea-80b5-cf41af044fe3.png)
+
 ## Build Instructions
 
 ### macOS
