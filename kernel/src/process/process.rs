@@ -197,9 +197,23 @@ pub fn exit(status: i32) -> ! {
     unreachable!();
 }
 
+
+/// A Mutex that will be locked if a process is being slept but not yet put back into `PROCS_POOL`.
 pub static PROCS_POOL_SLEEP: Mutex<()> = Mutex::new((), "proc pool sleep");
 
 /// put this process into sleep state
+///
+/// `channel` is an identifier of sleep lock channel. `wakeup` should be called with the same
+/// channel to properly wakeup previously slept process.
+///
+/// `lck` is the spinlock to be temporarily unlocked.
+///
+/// Returns the `lck` spinlock.
+///
+/// ## Technical Details
+///
+/// To avoid the lost wakeup issue, process must hold a global lock `PROCS_POOL_SLEEP`.
+/// This lock will be dropped after the process is put back into process pool.
 pub fn sleep<'a, T, U>(channel: *const T, lck: MutexGuard<'a, U>) -> MutexGuard<'a, U> {
     let p = my_proc();
     p.channel = channel as *const _ as usize;
@@ -228,6 +242,13 @@ pub fn sleep<'a, T, U>(channel: *const T, lck: MutexGuard<'a, U>) -> MutexGuard<
 }
 
 /// wakeup process on channel
+///
+/// `channel` is an identifier of sleep lock channel. Should be the same as in `sleep`.
+///
+/// If `wakeup` finds a position in `PROCS_POOL` is `BeingSlept`, which means that a process
+/// is to be slept, but not yet being put back into the pool, `wakeup` will temporarily unlock
+/// `PROCS_POOL` lock and wait for `PROCS_POOL_SLEEP` to be unlocked, so that there won't be
+/// lost wakeup issues.
 pub fn wakeup<T>(channel: *const T) {
     // info!("wakeup {:x}", channel as usize);
     let channel = channel as *const _ as usize;
