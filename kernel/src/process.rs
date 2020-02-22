@@ -36,10 +36,13 @@ static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
 
 /// Enum describing a process in process pool
 ///
-/// NoProc: No process associated with this pid
-/// Scheduled: This process is scheduled on one CPU
-/// Pooling: This process is not being scheduled
-/// BeingSlept: This process holds a sleep lock and is to be put back
+/// `NoProc`: No process associated with this pid
+///
+/// `Scheduled`: This process is scheduled on one CPU
+/// 
+/// `Pooling`: This process is not being scheduled
+///
+/// `BeingSlept`: This process holds a sleep lock and is to be put back
 pub enum ProcInPool {
     NoProc,
     Scheduled,

@@ -92,12 +92,16 @@ multiple boards.
     - [x] Multi-core support
     - [x] Use initcode instead of init binary
     - [ ] Allocator and stdlib in user-space
+    - [ ] (WIP) Implement wait syscall
+    - [ ] Simple shell
 * Filesystem
     - [x] Fake fs and exec system call
     - [x] Real spinlock instead of nulllock
-    - [ ] Implement simple fs
+    - [ ] (WIP) Implement simple fs ([#5](https://github.com/skyzh/core-os-riscv/issues/5))
+    - [ ] (WIP) Implement read, write, open, close, dup, etc. syscalls ([#5](https://github.com/skyzh/core-os-riscv/issues/5))
+    - [ ] Implement pipe
 * Miscellaneous
-    - [ ] Replace Makefile with pure Rust toolchain (cargo build script)
+    - [ ] (WIP) Replace Makefile with pure Rust toolchain (cargo build script)
     - [ ] Use Option instead of panic!
     - [ ] Eliminate use of unsafe
     - [ ] Documentation
