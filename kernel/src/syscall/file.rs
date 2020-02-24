@@ -27,7 +27,7 @@ pub fn sys_read() -> i32 {
     let mut p = my_proc();
     // TODO: sz is not always less than a page
     let sz = arguint(&p.trapframe, 2);
-    let mut content = arg_ptr_mut(&p.pgtable, &p.trapframe, 1, sz);
+    let content = arg_ptr_mut(&p.pgtable, &p.trapframe, 1, sz);
     let u8_slice = unsafe { core::slice::from_raw_parts_mut(content, sz) };
     let mut file = argfd(&mut p, 0).lock();
     file.read(u8_slice)
@@ -46,7 +46,7 @@ fn next_available_fd<T>(files: &[Option<T>]) -> Option<usize> {
 
 /// open syscall, currently only support `/console` file.
 pub fn sys_open() -> i32 {
-    let mut p = my_proc();
+    let p = my_proc();
     let sz = arguint(&p.trapframe, 1);
     let content = argptr(&p.pgtable, &p.trapframe, 0, sz);
     let path = core::str::from_utf8(unsafe { core::slice::from_raw_parts(content, sz) }).unwrap();
@@ -69,7 +69,7 @@ pub fn sys_close() -> i32 {
 
 /// dup syscall
 pub fn sys_dup() -> i32 {
-    let mut p = my_proc();
+    let p = my_proc();
     let old_fd = arguint(&p.trapframe, 0);
     let fd = match next_available_fd(&p.files) {
         Some(fd) => fd,

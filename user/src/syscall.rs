@@ -16,7 +16,7 @@
 use crate::syscall_internal::*;
 use core::ptr::null;
 
-/// Exit current process with exit code `code`
+/// Exit current process with exit code `code`.
 /// 
 /// # Examples
 ///

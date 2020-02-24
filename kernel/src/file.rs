@@ -10,9 +10,9 @@ use core::ops::DerefMut;
 
 /// File trait
 pub trait File : Send + Sync {
-    /// read from file to content and returns number of characters read
+    /// Read from file to content and returns number of characters (<= `content.len()`) read.
     fn read(&mut self, content: &mut [u8]) -> i32;
-    /// write content to file and returns number of characters written
+    /// Write content to file and returns number of characters written.
     fn write(&mut self, content: &[u8]) -> i32;
 }
 
