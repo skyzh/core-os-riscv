@@ -99,7 +99,7 @@ multiple boards.
     - [x] Real spinlock instead of nulllock
     - [ ] (WIP) Implement simple fs ([#5](https://github.com/skyzh/core-os-riscv/issues/5))
     - [x] Implement read, write, open, close, dup, etc. syscalls
-    - [ ] Implement file-related syscalls on file system and eliminate use of Mutex ([#5](https://github.com/skyzh/core-os-riscv/issues/5))
+    - [ ] (WIP) Implement file-related syscalls on file system and eliminate use of Mutex ([#5](https://github.com/skyzh/core-os-riscv/issues/5))
     - [ ] Implement pipe
 * Miscellaneous
     - [ ] (WIP) Replace Makefile with pure Rust toolchain (cargo build script)
