@@ -10,7 +10,9 @@ use core::ops::DerefMut;
 
 /// File trait
 pub trait File : Send + Sync {
+    /// read from file to content and returns number of characters read
     fn read(&mut self, content: &mut [u8]) -> i32;
+    /// write content to file and returns number of characters written
     fn write(&mut self, content: &[u8]) -> i32;
 }
 
@@ -18,6 +20,7 @@ pub trait File : Send + Sync {
 pub struct Console {}
 
 impl File for Console {
+    /// read from console
     fn read(&mut self, content: &mut [u8]) -> i32 {
         let mut uart = UART().lock();
         for i in 0..content.len() {
@@ -29,6 +32,7 @@ impl File for Console {
         return content.len() as i32;
     }
 
+    /// write to console
     fn write(&mut self, content: &[u8]) -> i32 {
         let mut uart = UART().lock();
         for i in 0..content.len() {

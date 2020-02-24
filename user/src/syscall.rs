@@ -79,6 +79,16 @@ pub fn exec(path: &str, args: &[&str]) -> ! {
     }
 }
 
+/// Write `content` to file descriptor `fd`.
+///
+/// Returns number of characters written. A negative return value means error while writing.
+///
+/// # Examples
+/// ```
+/// use user::syscall::write;
+/// use user::constant::STDOUT;
+/// write(STDOUT, "Hello, World!");
+/// ```
 pub fn write(fd: i32, content: &str) -> i32 {
     unsafe {
         __write(fd,
@@ -87,6 +97,10 @@ pub fn write(fd: i32, content: &str) -> i32 {
     }
 }
 
+/// Read `content` from file descriptor `fd`.
+///
+/// You may read a maximum of `content.len()` characters from `fd`.
+/// Returns number of characters read.
 pub fn read(fd: i32, content: &mut str) -> i32 {
     unsafe {
         __read(fd,
@@ -95,16 +109,42 @@ pub fn read(fd: i32, content: &mut str) -> i32 {
     }
 }
 
+/// Open file of `path` with `mode`.
+///
+/// This function returns file descriptor. Negative value means error.
+///
+/// # Examples
+/// ```
+/// use user::syscall::open;
+/// let fd = open("/console", 0);
+/// ```
 pub fn open(path: &str, mode: i32) -> i32 {
     unsafe {
         __open(path.as_ptr(), path.len() as i32, mode)
     }
 }
 
+/// Close a file with file descriptor `fd`.
+///
+/// # Examples
+/// ```
+/// use user::syscall::close;
+/// close(0);
+/// ```
 pub fn close(fd: i32) -> i32 {
     unsafe { __close(fd) }
 }
 
+/// Duplicate file descriptor `fd`.
+///
+/// Returns new file descriptor.
+///
+/// # Examples
+/// ```
+/// use user::syscall::dup;
+/// use user::constant::STDIN;
+/// let fd = dup(STDIN);
+/// ```
 pub fn dup(fd: i32) -> i32 {
     unsafe { __dup(fd) }
 }

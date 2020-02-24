@@ -22,6 +22,7 @@ pub fn sys_write() -> i32 {
     file.write(u8_slice)
 }
 
+/// read syscall
 pub fn sys_read() -> i32 {
     let mut p = my_proc();
     // TODO: sz is not always less than a page
@@ -32,6 +33,7 @@ pub fn sys_read() -> i32 {
     file.read(u8_slice)
 }
 
+/// find a available file descriptor from files array in process
 fn next_available_fd<T>(files: &[Option<T>]) -> Option<usize> {
     for i in 0..files.len() {
         match files[i] {
@@ -42,6 +44,7 @@ fn next_available_fd<T>(files: &[Option<T>]) -> Option<usize> {
     return None;
 }
 
+/// open syscall, currently only support `/console` file.
 pub fn sys_open() -> i32 {
     let mut p = my_proc();
     let sz = arguint(&p.trapframe, 1);
@@ -59,10 +62,12 @@ pub fn sys_open() -> i32 {
     return fd as i32;
 }
 
+/// close syscall
 pub fn sys_close() -> i32 {
     unimplemented!()
 }
 
+/// dup syscall
 pub fn sys_dup() -> i32 {
     let mut p = my_proc();
     let old_fd = arguint(&p.trapframe, 0);

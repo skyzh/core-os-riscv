@@ -55,7 +55,7 @@ pub fn arguint(tf: &TrapFrame, pos: usize) -> usize {
     sz as usize
 }
 
-/// Get the `pos`th argument as a pointer from syscall, return kernel-space pointer
+/// Get the `pos`th argument as a pointer from syscall, return kernel-space pointer (involve security issues!)
 pub fn argptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *const u8 {
     let ptr = argraw(tf, pos);
     let pg_begin = page_down(ptr);
@@ -66,6 +66,7 @@ pub fn argptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *
     unsafe { (paddr as *const u8).add(ptr - pg_begin) }
 }
 
+/// Get the `pos`th argument as a pointer from syscall, return kernel-space mutable pointer (involve security issues!)
 pub fn arg_ptr_mut(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *mut u8 {
     argptr(pgtable, tf, pos, sz) as *mut u8
 }

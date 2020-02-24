@@ -10,6 +10,7 @@
 
 pub mod print;
 pub mod syscall;
+pub mod constant;
 mod syscall_internal;
 
 use core::panic::PanicInfo;
