@@ -14,13 +14,19 @@
 //! [syscall module in user crate](../../user/syscall/index.html).
 
 mod gen;
+mod file;
 
 pub use gen::*;
-use crate::process::{TrapFrame, Register, my_proc, fork, exec, exit};
+use crate::process::{TrapFrame, Register, my_proc, fork, exec, exit, Process};
 use crate::{info, panic, print, println};
 use crate::page;
 use crate::mem::{align_val, page_down};
 use crate::symbols::{PAGE_ORDER, PAGE_SIZE};
+use file::*;
+use alloc::sync::Arc;
+use crate::file::File;
+use alloc::boxed::Box;
+use crate::spinlock::Mutex;
 
 /// Get the `pos`th argument from syscall
 pub fn argraw(tf: &TrapFrame, pos: usize) -> usize {
@@ -60,22 +66,18 @@ pub fn argptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *
     unsafe { (paddr as *const u8).add(ptr - pg_begin) }
 }
 
-/// write syscall
-fn sys_write() -> i32 {
-    let fd;
-    let content;
-    let sz;
-    {
-        let p = my_proc();
-        fd = argint(&p.trapframe, 0);
-        sz = arguint(&p.trapframe, 2);
-        content = argptr(&p.pgtable, &p.trapframe, 1, sz);
-        // println!("fd={}, sz={}, content=0x{:x}", fd, sz, content as usize);
+pub fn arg_ptr_mut(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *mut u8 {
+    argptr(pgtable, tf, pos, sz) as *mut u8
+}
+
+
+/// Get file corresponding to a file descriptor
+pub fn argfd(p: &mut Process, pos: usize) -> &mut Arc<Mutex<dyn File>> {
+    let fd = argraw(&p.trapframe, pos);
+    match &mut p.files[fd] {
+        Some(x) => return x,
+        None => panic!("invalid file handler {}", fd)
     }
-    for i in 0..sz {
-        print!("{}", unsafe { *content.add(i) } as char);
-    }
-    sz as i32
 }
 
 /// fork syscall entry
@@ -125,9 +127,13 @@ pub fn syscall() -> i32 {
     }
     match syscall_id {
         SYS_WRITE => sys_write(),
+        SYS_READ => sys_read(),
         SYS_FORK => sys_fork(),
         SYS_EXEC => sys_exec(),
         SYS_EXIT => sys_exit(),
+        SYS_DUP => sys_dup(),
+        SYS_OPEN => sys_open(),
+        SYS_CLOSE => sys_close(),
         _ => unreachable!()
     }
 }

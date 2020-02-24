@@ -98,7 +98,8 @@ multiple boards.
     - [x] Fake fs and exec system call
     - [x] Real spinlock instead of nulllock
     - [ ] (WIP) Implement simple fs ([#5](https://github.com/skyzh/core-os-riscv/issues/5))
-    - [ ] (WIP) Implement read, write, open, close, dup, etc. syscalls ([#5](https://github.com/skyzh/core-os-riscv/issues/5))
+    - [x] Implement read, write, open, close, dup, etc. syscalls
+    - [ ] Implement file-related syscalls on file system and eliminate use of Mutex ([#5](https://github.com/skyzh/core-os-riscv/issues/5))
     - [ ] Implement pipe
 * Miscellaneous
     - [ ] (WIP) Replace Makefile with pure Rust toolchain (cargo build script)
@@ -108,7 +109,8 @@ multiple boards.
     - [ ] High-level abstractions (driver, vm, etc.)
     - [ ] Port to aarch64 and deploy on Raspi
     - [x] Rewrite and credit code from other sources
-    - [ ] Security issues
+    - [ ] RISC-V codegen issues ([#6](https://github.com/skyzh/core-os-riscv/issues/6))
+    - [ ] Security issues ([#7](https://github.com/skyzh/core-os-riscv/issues/7))
 
 ## Reference
 

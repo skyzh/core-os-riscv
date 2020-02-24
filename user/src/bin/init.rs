@@ -11,10 +11,13 @@
 #![feature(const_generics)]
 
 use user::println;
-use user::syscall::{fork, exec};
+use user::syscall::{fork, exec, open, dup};
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
+    open("/console", 0);
+    dup(0);
+    dup(0);
     println!("ready to fork!");
     let p = fork();
     if p == 0 {

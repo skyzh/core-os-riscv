@@ -42,6 +42,7 @@ mod virtio;
 mod intr;
 mod test;
 mod sleeplock;
+mod file;
 
 #[no_mangle]
 extern "C" fn eh_personality() {}

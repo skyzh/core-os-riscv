@@ -17,6 +17,8 @@ use crate::process::Register::a0;
 use crate::fs;
 use crate::jump::*;
 use crate::spinlock::{Mutex, MutexGuard};
+use alloc::sync::Arc;
+use crate::file::File;
 
 #[derive(PartialEq)]
 #[derive(Debug)]
@@ -40,6 +42,7 @@ pub struct Process {
     pub pid: i32,
     pub channel: usize,
     pub drop_on_put_back: Option<MutexGuard<'static, ()>>,
+    pub files: [Option<Arc<Mutex<dyn File>>>; 256]
 }
 
 impl Process {
@@ -64,6 +67,7 @@ impl Process {
             pid,
             channel: 0,
             drop_on_put_back: None,
+            files: [None; 256]
         };
 
         // map trampoline

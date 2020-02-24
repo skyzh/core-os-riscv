@@ -21,4 +21,5 @@ extern "C" {
     pub fn __open(path: *const u8, sz: i32, mode: i32) -> i32;
     pub fn __close(fd: i32) -> i32;
     pub fn __dup(fd: i32) -> i32;
+    pub fn __wait(pid: i32) -> i32;
 }

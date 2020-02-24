@@ -108,3 +108,7 @@ pub fn close(fd: i32) -> i32 {
 pub fn dup(fd: i32) -> i32 {
     unsafe { __dup(fd) }
 }
+
+pub fn wait(pid: i32) -> i32 {
+    unsafe { __wait(pid) }
+}
