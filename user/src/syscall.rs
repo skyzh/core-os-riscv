@@ -104,3 +104,7 @@ pub fn open(path: &str, mode: i32) -> i32 {
 pub fn close(fd: i32) -> i32 {
     unsafe { __close(fd) }
 }
+
+pub fn dup(fd: i32) -> i32 {
+    unsafe { __dup(fd) }
+}
