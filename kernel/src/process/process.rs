@@ -150,6 +150,12 @@ pub fn fork() -> i32 {
     let pgtable = p.pgtable.clone();
     let trapframe = box *p.trapframe.clone();
     let mut fork_p = Process::from_exist(f_pid, pgtable, trapframe);
+    for i in 0..fork_p.files.len() {
+        fork_p.files[i] = match &p.files[i] {
+            Some(x) => Some(x.clone()),
+            None => None
+        }
+    }
     fork_p.trapframe.regs[a0 as usize] = 0;
     fork_p.state = ProcessState::RUNNABLE;
     put_back_proc(box fork_p);
