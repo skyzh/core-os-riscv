@@ -13,7 +13,7 @@
 //!
 //! Usage of syscalls is listed in their corresponding sub-page.
 
-use crate::syscall_internal::{__exit, __fork, __write, __exec};
+use crate::syscall_internal::*;
 use core::ptr::null;
 
 /// Exit current process with exit code `code`
@@ -82,7 +82,25 @@ pub fn exec(path: &str, args: &[&str]) -> ! {
 pub fn write(fd: i32, content: &str) -> i32 {
     unsafe {
         __write(fd,
-                content.as_bytes().as_ptr() as *const u8,
+                content.as_ptr(),
                 content.len() as i32)
     }
+}
+
+pub fn read(fd: i32, content: &mut str) -> i32 {
+    unsafe {
+        __read(fd,
+                content.as_mut_ptr(),
+                content.len() as i32)
+    }
+}
+
+pub fn open(path: &str, mode: i32) -> i32 {
+    unsafe {
+        __open(path.as_ptr(), path.len() as i32, mode)
+    }
+}
+
+pub fn close(fd: i32) -> i32 {
+    unsafe { __close(fd) }
 }
