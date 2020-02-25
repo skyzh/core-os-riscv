@@ -21,6 +21,7 @@ pub fn sys_write() -> i32 {
     let file = argfd(&p, 0);
     match (*file).as_ref() {
         File::Device(dev) => dev.write(u8_slice),
+        File::FsFile(file) => file.write(u8_slice),
         _ => { unimplemented!(); }
     }
 }
@@ -35,6 +36,7 @@ pub fn sys_read() -> i32 {
     let file = argfd(&p, 0);
     match (*file).as_ref() {
         File::Device(dev) => dev.read(u8_slice),
+        File::FsFile(file) => file.read(u8_slice),
         _ => { unimplemented!(); }
     }
 }
@@ -54,6 +56,7 @@ fn next_available_fd<T>(files: &[Option<T>]) -> Option<usize> {
 pub fn sys_open() -> i32 {
     let p = my_proc();
     let sz = arguint(&p.trapframe, 1);
+    let mode = arguint(&p.trapframe, 2);
     let content = argptr(&p.pgtable, &p.trapframe, 0, sz);
     let path = core::str::from_utf8(unsafe { core::slice::from_raw_parts(content, sz) }).unwrap();
     let fd = match next_available_fd(&p.files) {
@@ -63,14 +66,17 @@ pub fn sys_open() -> i32 {
     if path == "/console" {
         p.files[fd] = Some(Arc::new(File::Device(box Console {})));
     } else {
-        p.files[fd] = Some(Arc::new(File::FsFile(FsFile::open(path))));
+        p.files[fd] = Some(Arc::new(File::FsFile(FsFile::open(path, mode))));
     }
     return fd as i32;
 }
 
 /// close syscall
 pub fn sys_close() -> i32 {
-    unimplemented!()
+    let p = my_proc();
+    let fd = argint(&p.trapframe, 0) as usize;
+    p.files[fd] = None;
+    0
 }
 
 /// dup syscall

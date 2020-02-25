@@ -10,7 +10,11 @@ use crate::{print, println};
 
 pub struct FsFile {
     offset: usize,
-    sz: usize
+    sz: usize,
+    read_offset: usize,
+    write_offset: usize,
+    readable: bool,
+    writable: bool
 }
 
 const HEADER_SIZE: usize = 1024;
@@ -45,11 +49,26 @@ impl FsFile {
         }
         None
     }
-    pub fn open(path: &str) -> Self {
+
+    pub fn open(path: &str, mode: usize) -> Self {
         let virtio = VIRTIO();
         let (offset, sz) = Self::get_file_info(virtio, path).unwrap();
         Self {
-            offset, sz
+            offset, sz,
+            read_offset: 0,
+            write_offset: 0,
+            readable: true,
+            writable: true
         }
+    }
+
+    pub fn read(&self, content: &mut [u8]) -> i32 {
+        if !self.readable { return -1; }
+        return 0;
+    }
+
+    pub fn write(&self, content: &[u8]) -> i32 {
+        if !self.writable { return -1; }
+        return 0;
     }
 }

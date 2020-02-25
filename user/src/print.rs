@@ -16,7 +16,7 @@ impl StdIO {
 
 impl Write for StdIO {
     fn write_str(&mut self, out: &str) -> Result<(), Error> {
-        syscall::write(1, out);
+        syscall::write(1, out.as_bytes());
         Ok(())
     }
 }
