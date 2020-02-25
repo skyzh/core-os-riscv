@@ -73,9 +73,9 @@ pub fn arg_ptr_mut(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize)
 
 
 /// Get file corresponding to a file descriptor
-pub fn argfd(p: &mut Process, pos: usize) -> &mut Arc<Mutex<dyn File>> {
+pub fn argfd(p: &Process, pos: usize) -> &Arc<File> {
     let fd = argraw(&p.trapframe, pos);
-    match &mut p.files[fd] {
+    match &p.files[fd] {
         Some(x) => return x,
         None => panic!("invalid file handler {}", fd)
     }

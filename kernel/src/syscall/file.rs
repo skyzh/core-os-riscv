@@ -13,24 +13,30 @@ use crate::spinlock::Mutex;
 
 /// write syscall
 pub fn sys_write() -> i32 {
-    let mut p = my_proc();
+    let p = my_proc();
     // TODO: sz is not always less than a page
     let sz = arguint(&p.trapframe, 2);
     let content = argptr(&p.pgtable, &p.trapframe, 1, sz);
     let u8_slice = unsafe { core::slice::from_raw_parts(content, sz) };
-    let mut file = argfd(&mut p, 0).lock();
-    file.write(u8_slice)
+    let file = argfd(&p, 0);
+    match (*file).as_ref() {
+        File::Device(dev) => dev.write(u8_slice),
+        _ => { unimplemented!(); }
+    }
 }
 
 /// read syscall
 pub fn sys_read() -> i32 {
-    let mut p = my_proc();
+    let p = my_proc();
     // TODO: sz is not always less than a page
     let sz = arguint(&p.trapframe, 2);
     let content = arg_ptr_mut(&p.pgtable, &p.trapframe, 1, sz);
     let u8_slice = unsafe { core::slice::from_raw_parts_mut(content, sz) };
-    let mut file = argfd(&mut p, 0).lock();
-    file.read(u8_slice)
+    let file = argfd(&p, 0);
+    match (*file).as_ref() {
+        File::Device(dev) => dev.read(u8_slice),
+        _ => { unimplemented!(); }
+    }
 }
 
 /// find a available file descriptor from files array in process
@@ -55,7 +61,7 @@ pub fn sys_open() -> i32 {
         None => { return -1; }
     };
     if path == "/console" {
-        p.files[fd] = Some(Arc::new(Mutex::new(Console {}, "file lock")))
+        p.files[fd] = Some(Arc::new(File::Device(box Console {})));
     } else {
         panic!("unsupported file: {}", path);
     }

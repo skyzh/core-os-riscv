@@ -42,7 +42,7 @@ pub struct Process {
     pub pid: i32,
     pub channel: usize,
     pub drop_on_put_back: Option<MutexGuard<'static, ()>>,
-    pub files: [Option<Arc<Mutex<dyn File>>>; 256]
+    pub files: [Option<Arc<File>>; 256]
 }
 
 impl Process {

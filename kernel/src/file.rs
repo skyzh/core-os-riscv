@@ -7,21 +7,30 @@
 
 use crate::uart::UART;
 use core::ops::DerefMut;
+use alloc::boxed::Box;
 
-/// File trait
-pub trait File : Send + Sync {
-    /// Read from file to content and returns number of characters (<= `content.len()`) read.
-    fn read(&mut self, content: &mut [u8]) -> i32;
-    /// Write content to file and returns number of characters written.
-    fn write(&mut self, content: &[u8]) -> i32;
+/// File in core-os
+pub enum File {
+    Device(Box<dyn Device>),
+    FsFile,
 }
 
-/// Console file
+/// Device trait
+///
+/// All device should implement their own synchronize mechanisms.
+pub trait Device: Send + Sync {
+    /// Read from file to content and returns number of characters (<= `content.len()`) read.
+    fn read(&self, content: &mut [u8]) -> i32;
+    /// Write content to file and returns number of characters written.
+    fn write(&self, content: &[u8]) -> i32;
+}
+
+/// Console device
 pub struct Console {}
 
-impl File for Console {
+impl Device for Console {
     /// read from console
-    fn read(&mut self, content: &mut [u8]) -> i32 {
+    fn read(&self, content: &mut [u8]) -> i32 {
         let mut uart = UART().lock();
         for i in 0..content.len() {
             match uart.get() {
@@ -33,7 +42,7 @@ impl File for Console {
     }
 
     /// write to console
-    fn write(&mut self, content: &[u8]) -> i32 {
+    fn write(&self, content: &[u8]) -> i32 {
         let mut uart = UART().lock();
         for i in 0..content.len() {
             uart.put(content[i]);
