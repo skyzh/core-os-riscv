@@ -89,7 +89,7 @@ pub fn exec(path: &str, args: &[&str]) -> ! {
 /// use user::constant::STDOUT;
 /// write(STDOUT, "Hello, World!");
 /// ```
-pub fn write(fd: i32, content: &str) -> i32 {
+pub fn write(fd: i32, content: &[u8]) -> i32 {
     unsafe {
         __write(fd,
                 content.as_ptr(),
@@ -101,7 +101,7 @@ pub fn write(fd: i32, content: &str) -> i32 {
 ///
 /// You may read a maximum of `content.len()` characters from `fd`.
 /// Returns number of characters read.
-pub fn read(fd: i32, content: &mut str) -> i32 {
+pub fn read(fd: i32, content: &mut [u8]) -> i32 {
     unsafe {
         __read(fd,
                 content.as_mut_ptr(),
