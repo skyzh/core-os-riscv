@@ -3,50 +3,19 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-//! File trait and file in core-os including file in filesystem, device, pipe and symbol link
+//! File in core-os including file in filesystem, device, pipe and symbol link
 
-use crate::uart::UART;
-use core::ops::DerefMut;
+mod device;
+pub use device::*;
+
+mod fsfile;
+pub use fsfile::*;
+
 use alloc::boxed::Box;
 
 /// File in core-os
 pub enum File {
     Device(Box<dyn Device>),
-    FsFile,
-}
-
-/// Device trait
-///
-/// All device should implement their own synchronize mechanisms.
-pub trait Device: Send + Sync {
-    /// Read from file to content and returns number of characters (<= `content.len()`) read.
-    fn read(&self, content: &mut [u8]) -> i32;
-    /// Write content to file and returns number of characters written.
-    fn write(&self, content: &[u8]) -> i32;
-}
-
-/// Console device
-pub struct Console {}
-
-impl Device for Console {
-    /// read from console
-    fn read(&self, content: &mut [u8]) -> i32 {
-        let mut uart = UART().lock();
-        for i in 0..content.len() {
-            match uart.get() {
-                Some(ch) => { content[i] = ch; }
-                _ => { return i as i32; }
-            }
-        }
-        return content.len() as i32;
-    }
-
-    /// write to console
-    fn write(&self, content: &[u8]) -> i32 {
-        let mut uart = UART().lock();
-        for i in 0..content.len() {
-            uart.put(content[i]);
-        }
-        return content.len() as i32;
-    }
+    FsFile(FsFile),
+    Pipe
 }

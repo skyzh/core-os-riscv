@@ -7,7 +7,7 @@
 
 use crate::process::my_proc;
 use crate::syscall::{argint, arguint, argptr, argfd, arg_ptr_mut};
-use crate::file::{File, Console};
+use crate::file::{File, Console, FsFile};
 use alloc::sync::Arc;
 use crate::spinlock::Mutex;
 
@@ -63,7 +63,7 @@ pub fn sys_open() -> i32 {
     if path == "/console" {
         p.files[fd] = Some(Arc::new(File::Device(box Console {})));
     } else {
-        panic!("unsupported file: {}", path);
+        p.files[fd] = Some(Arc::new(File::FsFile(FsFile::open(path))));
     }
     return fd as i32;
 }

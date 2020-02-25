@@ -12,11 +12,17 @@ inline unsigned align_val(unsigned val) {
     return (val + o) & ~o;
 }
 
+struct File {
+    ssize_t offset;
+    ssize_t size;
+    string name;
+};
+
 int main(int argc, char** argv) {
     cout << "Making simple filesystem..." << endl;
     cout << "Using " << argv[1] << " as target image" << endl;
     ofstream hdd(argv[1], ios::binary | ios::out);
-    vector<pair<ssize_t, string>> files;
+    vector<File> files;
     ssize_t cum_sz = header_size;
     for (int i = 2; i < argc; i++) {
         string filename(argv[i]);
@@ -26,7 +32,7 @@ int main(int argc, char** argv) {
         ifstream file(filename, ios::binary | ios::in);
         file.seekg(0, ios::end);
         auto sz = file.tellg();
-        files.push_back(make_pair(sz, fsname));
+        files.push_back({ cum_sz, sz, fsname });
         file.seekg(sz);
         hdd.seekp(cum_sz);
         cout << "Write file of size " << sz << " to pos " << cum_sz << endl;
@@ -37,11 +43,13 @@ int main(int argc, char** argv) {
     cout << "Writing header..." << endl;
     cout << "Little endian, ssize_t=" << sizeof(ssize_t) << endl;
     for (int i = 0; i < files.size(); i++) {
-        auto p = &files[i];
+        auto &p = files[i];
         hdd.seekp(i * 1024);
-        ssize_t sz = p->first;
+        ssize_t sz = p.size;
+        ssize_t offset = p.offset;
         hdd.write((char*) &sz, sizeof(ssize_t));
-        hdd.write(p->second.c_str(), p->second.length() + 1);
+        hdd.write((char*) &offset, sizeof(ssize_t));
+        hdd.write(p.name.c_str(), p.name.length() + 1);
     }
     cout << files.size() << " files written." << endl;
     return 0;

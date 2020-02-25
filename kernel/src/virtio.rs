@@ -487,6 +487,6 @@ pub mod tests {
             }
             print!("{}", b.data[i] as char);
         }
-        println!("");
+        println!();
     }
 }

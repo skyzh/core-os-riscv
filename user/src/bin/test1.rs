@@ -11,11 +11,15 @@
 #![feature(const_generics)]
 
 use user::println;
-use user::syscall::{exit, fork, exec};
+use user::syscall::{exit, fork, exec, open, read};
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
     let p = fork();
+    let fd = open("/test1", 0);
+    let mut data : str;
+    read(fd, &mut data);
+    println!("{}", data);
     if p == 0 {
         println!("forking test2...");
         exec("/test2", &["test1", "test2"]);
