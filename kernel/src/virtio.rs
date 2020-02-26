@@ -11,6 +11,7 @@ use crate::symbols::{PAGE_SIZE, PAGE_ORDER};
 use crate::process::{wakeup, sleep};
 use alloc::boxed::Box;
 use crate::arch::__sync_synchronize;
+use crate::uart::UART;
 
 /// VIRTIO base address on QEMU RISC-V
 pub const VIRTIO_MMIO_BASE: usize = 0x10001000;
@@ -165,7 +166,7 @@ pub struct VirtIOData {
 pub struct VirtIO(Mutex<VirtIOData>);
 
 /// VIRTIO buffer size
-const BSIZE: usize = 1024;
+pub const BSIZE: usize = 1024;
 
 /// VIRTIO Buffer
 #[repr(C)]
@@ -433,7 +434,7 @@ pub unsafe fn init() {
 /// VIRTIO interrupt
 pub fn virtiointr() {
     use crate::info;
-    let mut disk = unsafe { VIRTIO().0.get() };
+    let mut disk = VIRTIO().0.lock();
     while disk.used_idx as usize % DESC_NUM != disk.used[0].id as usize % DESC_NUM {
         let id = disk.used[0].elems[disk.used_idx as usize].id as usize;
 
@@ -480,7 +481,8 @@ pub mod tests {
         let virtio = VIRTIO();
         let b = virtio.read(1, 0);
         unsafe { println!("size: {}", core::ptr::read(b.data.as_ptr() as *const usize)); }
-        for i in 8..b.data.len() {
+        unsafe { println!("offset: {}", core::ptr::read(b.data.as_ptr().add(8) as *const usize)); }
+        for i in 16..b.data.len() {
             let d = b.data[i];
             if d == 0 {
                 break;

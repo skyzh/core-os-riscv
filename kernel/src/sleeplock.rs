@@ -7,6 +7,7 @@
 
 use crate::spinlock::{Mutex, MutexGuard};
 use crate::process::{sleep, my_proc, wakeup};
+use crate::info;
 
 /// locked, pid
 struct SleepLockInfo {

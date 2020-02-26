@@ -42,12 +42,12 @@ pub fn argraw(tf: &TrapFrame, pos: usize) -> usize {
 }
 
 /// Get the `pos`th argument as i32 from syscall
-pub fn argint(tf: &TrapFrame, pos: usize) -> i32 {
+pub fn arg_int(tf: &TrapFrame, pos: usize) -> i32 {
     argraw(tf, pos) as i32
 }
 
 /// Get the `pos`th argument as usize from syscall
-pub fn arguint(tf: &TrapFrame, pos: usize) -> usize {
+pub fn arg_uint(tf: &TrapFrame, pos: usize) -> usize {
     let sz = argraw(tf, pos) as i32;
     if sz < 0 {
         panic!("invalid unsigned int");
@@ -56,7 +56,7 @@ pub fn arguint(tf: &TrapFrame, pos: usize) -> usize {
 }
 
 /// Get the `pos`th argument as a pointer from syscall, return kernel-space pointer (involve security issues!)
-pub fn argptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *const u8 {
+pub fn arg_ptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *const u8 {
     let ptr = argraw(tf, pos);
     let pg_begin = page_down(ptr);
     if ptr + sz >= pg_begin + PAGE_SIZE {
@@ -68,12 +68,12 @@ pub fn argptr(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *
 
 /// Get the `pos`th argument as a pointer from syscall, return kernel-space mutable pointer (involve security issues!)
 pub fn arg_ptr_mut(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize) -> *mut u8 {
-    argptr(pgtable, tf, pos, sz) as *mut u8
+    arg_ptr(pgtable, tf, pos, sz) as *mut u8
 }
 
 
 /// Get file corresponding to a file descriptor
-pub fn argfd(p: &Process, pos: usize) -> &Arc<File> {
+pub fn arg_fd(p: &Process, pos: usize) -> &Arc<File> {
     let fd = argraw(&p.trapframe, pos);
     match &p.files[fd] {
         Some(x) => return x,
@@ -91,8 +91,8 @@ fn sys_exec() -> i32 {
     let path;
     {
         let p = my_proc();
-        let sz = arguint(&p.trapframe, 1);
-        let ptr = argptr(&p.pgtable, &p.trapframe, 0, sz);
+        let sz = arg_uint(&p.trapframe, 1);
+        let ptr = arg_ptr(&p.pgtable, &p.trapframe, 0, sz);
         path = unsafe {
             // First, we build a &[u8]...
             let slice = core::slice::from_raw_parts(ptr, sz);
@@ -113,7 +113,7 @@ fn sys_exit() -> i32 {
     let code;
     {
         let p = my_proc();
-        code = argint(&p.trapframe, 0);
+        code = arg_int(&p.trapframe, 0);
     }
     exit(code);
 }

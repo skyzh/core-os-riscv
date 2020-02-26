@@ -101,6 +101,8 @@ multiple boards.
     - [x] Implement read, write, open, close, dup, etc. syscalls
     - [ ] (WIP) Implement file-related syscalls on file system and eliminate use of Mutex ([#5](https://github.com/skyzh/core-os-riscv/issues/5))
     - [ ] Implement pipe
+    - [ ] Copyin and Copyout implementation
+    - [ ] Don't use Box in fs implementation
 * Miscellaneous
     - [ ] (WIP) Replace Makefile with pure Rust toolchain (cargo build script)
     - [ ] Use Option instead of panic!

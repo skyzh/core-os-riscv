@@ -17,14 +17,14 @@ use user::constant::STDOUT;
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
     let p = fork();
-    let fd = open("/test1", 0);
-    let mut data = [0; 32];
-    read(fd, &mut data);
-    write(STDOUT, &data);
     if p == 0 {
         println!("forking test2...");
         exec("/test2", &["test1", "test2"]);
     }
     println!("test1 running...");
+    let fd = open("/README.md", 0);
+    let mut data = [0; 32];
+    read(fd, &mut data);
+    write(STDOUT, &data);
     exit(0);
 }

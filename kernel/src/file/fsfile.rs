@@ -5,7 +5,7 @@
 
 //! File on file system
 
-use crate::virtio::{VIRTIO, VirtIO};
+use crate::virtio::{VIRTIO, VirtIO, BSIZE};
 use crate::{print, println};
 
 pub struct FsFile {
@@ -64,11 +64,14 @@ impl FsFile {
 
     pub fn read(&self, content: &mut [u8]) -> i32 {
         if !self.readable { return -1; }
-        return 0;
+        let virtio = VIRTIO();
+        let result = virtio.read(1, ((self.offset + self.read_offset) / BSIZE) as u32);
+        content.copy_from_slice(&result.data[0..content.len()]);
+        return content.len() as i32;
     }
 
     pub fn write(&self, content: &[u8]) -> i32 {
         if !self.writable { return -1; }
-        return 0;
+        unimplemented!()
     }
 }

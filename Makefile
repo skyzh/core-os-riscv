@@ -92,7 +92,7 @@ target/mkfs: fs/fs.cpp
 
 $(QEMU_DRIVE): $(UPROGS) target/mkfs
 	dd if=/dev/zero of=$@ count=32 bs=1048576
-	./target/mkfs hdd.img $(UPROGS)
+	./target/mkfs hdd.img $(UPROGS) ./README.md
 
 userobjdump: $(USERPROG)
 	cargo objdump --target $(TARGET) -- -disassemble -no-show-raw-insn -print-imm-hex $<
