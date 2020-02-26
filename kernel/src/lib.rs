@@ -24,7 +24,6 @@ use alloc::prelude::v1::*;
 
 mod arch;
 mod elf;
-mod fs;
 mod mem;
 mod spinlock;
 mod page;

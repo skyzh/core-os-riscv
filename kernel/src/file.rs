@@ -5,11 +5,11 @@
 
 //! File in core-os including file in filesystem, device, pipe and symbol link
 
-mod device;
-pub use device::*;
+pub mod device;
+pub use device::{Device, Console};
 
-mod fsfile;
-pub use fsfile::*;
+pub mod fsfile;
+pub use fsfile::FsFile;
 
 use alloc::boxed::Box;
 

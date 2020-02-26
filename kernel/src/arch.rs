@@ -26,6 +26,7 @@ pub fn build_satp(mode: usize, asid: usize, addr: usize) -> usize {
 
 /// Enable interrupt
 pub fn intr_on() {
+    use crate::panic_println;
     unsafe {
         sie::set_sext();
         sie::set_ssoft();
@@ -36,6 +37,7 @@ pub fn intr_on() {
 
 /// Turn off interrupt
 pub fn intr_off() {
+    use crate::panic_println;
     unsafe {
         sstatus::clear_sie();
     }
@@ -109,10 +111,11 @@ pub unsafe fn w_ra(x: usize) {
     asm!("mv ra, $0" :: "r"(x) :: "volatile");
 }
 
-extern "C" { fn __sp() -> usize; }
 
 pub fn sp() -> usize {
-    unsafe { __sp() }
+    let mut sp: usize = 0;
+    unsafe { asm!("mv $0, sp" : "=r"(sp) ::: "volatile"); }
+    sp
 }
 
 pub fn wait_forever() -> ! {

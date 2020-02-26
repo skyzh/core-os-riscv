@@ -12,6 +12,7 @@ use crate::process::{wakeup, sleep};
 use alloc::boxed::Box;
 use crate::arch::__sync_synchronize;
 use crate::uart::UART;
+use core::sync::atomic::Ordering;
 
 /// VIRTIO base address on QEMU RISC-V
 pub const VIRTIO_MMIO_BASE: usize = 0x10001000;
@@ -139,7 +140,7 @@ impl UsedArea {
 
 pub struct InflightOp {
     pub buf: Box<Buf>,
-    pub status: usize,
+    pub status: u8,
 }
 
 /// Size of avail array
@@ -349,24 +350,35 @@ impl VirtIO {
             vio = sleep(&vio.free[0] as *const _, vio);
         };
 
+        // info!("3 desc: {:?}", idx);
+
         let buf0 = BlkOutHdr {
             reserved: 0,
             sector,
             blk_type: if write { VIRTIO_BLK_T_OUT } else { VIRTIO_BLK_T_IN },
         };
 
-        let desc0 = &mut vio.desc[idx[0]];
-        desc0.addr = &buf0 as *const _ as usize;
-        desc0.len = core::mem::size_of::<BlkOutHdr>() as u32;
-        desc0.flags = VRING_DESC_F_NEXT;
-        desc0.next = idx[1] as u16;
 
-        let desc1 = &mut vio.desc[idx[1]];
-        desc1.addr = b.data.as_mut_ptr() as usize;
-        desc1.len = BSIZE as u32;
-        desc1.flags = if write { 0 } else { VRING_DESC_F_WRITE };
-        desc1.flags |= VRING_DESC_F_NEXT;
-        desc1.next = idx[2] as u16;
+        // VIRTIO 5.2.6.4
+        // MUST use a single 8-byte descriptor containing type, reserved and sector,
+        // followed by descriptors for data, then finally a separate 1-byte descriptor for status.
+
+        {
+            let desc0 = &mut vio.desc[idx[0]];
+            desc0.addr = &buf0 as *const _ as usize;
+            desc0.len = core::mem::size_of::<BlkOutHdr>() as u32;
+            desc0.flags = VRING_DESC_F_NEXT;
+            desc0.next = idx[1] as u16;
+        }
+
+        {
+            let desc1 = &mut vio.desc[idx[1]];
+            desc1.addr = b.data.as_mut_ptr() as usize;
+            desc1.len = BSIZE as u32;
+            desc1.flags = if write { 0 } else { VRING_DESC_F_WRITE };
+            desc1.flags |= VRING_DESC_F_NEXT;
+            desc1.next = idx[2] as u16;
+        }
 
         b.disk = 1;
         vio.info[idx[0]] = Some(InflightOp {
@@ -375,7 +387,7 @@ impl VirtIO {
         });
 
         {
-            let addr = &vio.info[idx[0]].as_ref().unwrap().status as *const usize as usize;
+            let addr = &vio.info[idx[0]].as_ref().unwrap().status as *const _ as usize;
             {
                 let desc2 = &mut vio.desc[idx[2]];
 
@@ -388,19 +400,22 @@ impl VirtIO {
             let idx_id = 2 + vio.avail[1] as usize % DESC_NUM;
             vio.avail[idx_id] = idx[0] as u16;
 
+            core::sync::atomic::compiler_fence(Ordering::SeqCst);
             __sync_synchronize();
 
             vio.avail[1] = vio.avail[1] + 1;
 
             unsafe { QUEUE_NOTIFY.ptr().write_volatile(0); }
-
+            // info!("{:x}", &vio.info[idx[0]].as_ref().unwrap().status as *const _ as usize);
             let buf_addr = &*vio.info[idx[0]].as_ref().unwrap().buf as *const _;
+            // info!("sleep {:x} id={}", buf_addr as usize, vio.info[idx[0]].as_ref().unwrap().status);
             while vio.info[idx[0]].as_ref().unwrap().buf.disk == 1 {
                 vio = sleep(buf_addr, vio);
             }
         }
-
         let result = core::mem::replace(&mut vio.info[idx[0]], None);
+        unsafe { vio.info[idx[0]] = core::mem::zeroed(); }
+        vio.info[idx[0]] = None;
         vio.free_chain(idx[0]);
         result.unwrap().buf
     }
@@ -436,6 +451,7 @@ pub fn virtiointr() {
     use crate::info;
     let mut disk = VIRTIO().0.lock();
     while disk.used_idx as usize % DESC_NUM != disk.used[0].id as usize % DESC_NUM {
+
         let id = disk.used[0].elems[disk.used_idx as usize].id as usize;
 
         if disk.info[id].is_none() {
@@ -444,8 +460,10 @@ pub fn virtiointr() {
 
         let info = disk.info[id].as_mut().unwrap();
 
+        // info!("processing 0x{:x}", &*info.buf as *const _ as usize);
+
         if info.status != 0 {
-            panic!("virtio_disk_intr status");
+            panic!("virtio_disk_intr status status={} id={}", info.status, id);
         }
 
         info.buf.disk = 0;

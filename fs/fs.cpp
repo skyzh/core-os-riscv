@@ -39,6 +39,7 @@ int main(int argc, char** argv) {
         cum_sz += align_val(sz);
         file.seekg(0);
         for (int i = 0; i < sz; i++) hdd.put(file.get());
+        for (int i = sz; i < align_val(sz); i++) hdd.put(0);
     }
     cout << "Writing header..." << endl;
     cout << "Little endian, ssize_t=" << sizeof(ssize_t) << endl;

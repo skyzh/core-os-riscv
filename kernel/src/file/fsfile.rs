@@ -75,3 +75,30 @@ impl FsFile {
         unimplemented!()
     }
 }
+
+pub mod tests {
+    use super::*;
+
+    pub fn tests() -> &'static [(&'static str, fn())] {
+        &[
+            ("open", test_open),
+            ("read", test_read)
+        ]
+    }
+
+    use crate::{print, println};
+
+    /// Test open
+    pub fn test_open() {
+        let f = FsFile::open("/test.txt", 0);
+    }
+
+    /// Test read
+    pub fn test_read() {
+        let f = FsFile::open("/test.txt", 0);
+        let mut content = [0; 10];
+        assert_eq!(f.read(&mut content), 10);
+        assert_eq!(content, [48, 49, 50, 51, 52, 53, 54, 55, 56, 56]);
+    }
+}
+

@@ -14,7 +14,6 @@ use alloc::boxed::Box;
 use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu, sched, ProcInPool};
 use crate::page::{Page, Table, EntryAttributes};
 use crate::process::Register::a0;
-use crate::fs;
 use crate::jump::*;
 use crate::spinlock::{Mutex, MutexGuard};
 use alloc::sync::Arc;
@@ -181,7 +180,8 @@ pub fn map_stack(pgtable: &mut Table, stack_begin: usize) -> usize {
 /// exec syscall
 pub fn exec(path: &str) {
     let p = my_proc();
-    let content = fs::get_file(path);
+    unimplemented!();
+    let content = &[];
     p.pgtable.unmap_user();
     let entry = crate::elf::parse_elf(
         content,
