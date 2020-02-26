@@ -7,7 +7,7 @@ and is now being made to have an xv6-like structure.
 
 You may browse this repo with [Sourcegraph](https://sourcegraph.com/github.com/skyzh/core-os-riscv).
 
-![image](https://user-images.githubusercontent.com/4198311/75010448-1fa76080-54b8-11ea-80b5-cf41af044fe3.png)
+![image](https://user-images.githubusercontent.com/4198311/75318060-54def480-58a4-11ea-9051-604cb9dbae7f.png)
 
 ## Build Instructions
 
@@ -94,6 +94,7 @@ multiple boards.
     - [ ] Allocator and stdlib in user-space
     - [ ] (WIP) Implement wait syscall
     - [ ] Simple shell
+    - [ ] (WIP) Investigate frequent kernel panic ([#8](https://github.com/skyzh/core-os-riscv/issues/8))
 * Filesystem
     - [x] Fake fs and exec system call
     - [x] Real spinlock instead of nulllock
