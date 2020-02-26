@@ -22,7 +22,7 @@ pub unsafe extern "C" fn _start() -> ! {
         exec("/test2", &["test1", "test2"]);
     }
     println!("test1 running...");
-    let fd = open("/README.md", 0);
+    let fd = open("/test.txt", 0);
     let mut data = [0; 32];
     read(fd, &mut data);
     write(STDOUT, &data);

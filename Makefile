@@ -1,5 +1,5 @@
-TYPE=debug
-RELEASE_FLAG=
+TYPE=release
+RELEASE_FLAG=--release
 K=kernel/src
 U=user/src
 TARGET=riscv64gc-unknown-none-elf
@@ -71,7 +71,10 @@ qemu: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) $(QEMUOPTS)
 
 qemudbg: all $(QEMU_DRIVE)
-	$(QEMU_BINARY) $(QEMUOPTS) -d int
+	$(QEMU_BINARY) $(QEMUOPTS) -d int -D qemu.log
+
+qemuasm: all $(QEMU_DRIVE)
+	$(QEMU_BINARY) $(QEMUOPTS) -d int,in_asm -D qemu.log
 
 qemugdb: all $(QEMU_DRIVE)
 	$(QEMU_BINARY) $(QEMUOPTS) -S -gdb tcp::1234

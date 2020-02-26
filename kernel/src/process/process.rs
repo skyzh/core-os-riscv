@@ -17,7 +17,7 @@ use crate::process::Register::a0;
 use crate::jump::*;
 use crate::spinlock::{Mutex, MutexGuard};
 use alloc::sync::Arc;
-use crate::file::File;
+use crate::file::{File, FsFile};
 
 #[derive(PartialEq)]
 #[derive(Debug)]
@@ -41,7 +41,7 @@ pub struct Process {
     pub pid: i32,
     pub channel: usize,
     pub drop_on_put_back: Option<MutexGuard<'static, ()>>,
-    pub files: [Option<Arc<File>>; 256]
+    pub files: [Option<Arc<File>>; 256],
 }
 
 impl Process {
@@ -66,7 +66,7 @@ impl Process {
             pid,
             channel: 0,
             drop_on_put_back: None,
-            files: [None; 256]
+            files: [None; 256],
         };
 
         // map trampoline
@@ -180,13 +180,30 @@ pub fn map_stack(pgtable: &mut Table, stack_begin: usize) -> usize {
 /// exec syscall
 pub fn exec(path: &str) {
     let p = my_proc();
-    unimplemented!();
-    let content = &[];
+    info!("loading elf {}", path);
+    let mut content: Box<[u8; 131072]> = box [0; 131072];
+    {
+        let f = FsFile::open(path, 0);
+        let mut blk = [0; 1024];
+        let mut i = 0;
+        while f.read(&mut blk) == 1024 {
+            // content[i..i + 1024].copy_from_slice(&blk);
+            for j in 0..1024 {
+                content[i + j] = blk[j];
+            }
+            i += 1024;
+            if i + 1024 >= content.len() {
+                panic!("elf file too large!");
+            }
+        }
+    }
+    info!("parsing...");
     p.pgtable.unmap_user();
     let entry = crate::elf::parse_elf(
-        content,
+        &*content,
         &mut p.pgtable,
     );
+    info!("done");
     // map user stack
     let sp = map_stack(&mut p.pgtable, 0x80001000);
     p.trapframe.epc = entry as usize;
@@ -224,7 +241,7 @@ pub static PROCS_POOL_SLEEP: Mutex<()> = Mutex::new((), "proc pool sleep");
 ///
 /// To avoid the lost wakeup issue, process must hold a global lock `PROCS_POOL_SLEEP`.
 /// This lock will be dropped after the process is put back into process pool.
-pub fn sleep<'a, T, U>(channel: *const T, lck: MutexGuard<'a, U>) -> MutexGuard<'a, U> {
+pub fn sleep<T, U>(channel: *const T, lck: MutexGuard<U>) -> MutexGuard<U> {
     let p = my_proc();
     p.channel = channel as *const _ as usize;
     p.state = ProcessState::SLEEPING;
@@ -243,6 +260,7 @@ pub fn sleep<'a, T, U>(channel: *const T, lck: MutexGuard<'a, U>) -> MutexGuard<
 
     // temporarily unlock spinlock
     let weak_lock = lck.into_weak();
+    // info!("sleep on {:x}", channel as usize);
 
     sched();
 
@@ -267,7 +285,7 @@ pub fn wakeup<T>(channel: *const T) {
     while i < NMAXPROCS {
         match &mut pool[i] {
             ProcInPool::Pooling(p) => {
-                // info!("channel of {} = {:x}", p.pid, p.channel);
+                // if p.state == ProcessState::SLEEPING { info!("channel of {} = {:x}", p.pid, p.channel); }
                 if p.state == ProcessState::SLEEPING && p.channel == channel {
                     p.state = ProcessState::RUNNABLE;
                 }

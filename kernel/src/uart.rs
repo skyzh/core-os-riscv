@@ -149,6 +149,9 @@ pub fn uartintr() {
             }
             _ => {
                 print!("{}", c as char);
+                if c == 97 {
+                    crate::process::debug();
+                }
             }
         }
     }

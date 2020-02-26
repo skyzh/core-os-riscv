@@ -9,6 +9,7 @@ use core::time::Duration;
 use crate::panic;
 use riscv::register::*;
 use crate::symbols::*;
+use core::sync::atomic::Ordering;
 
 /// Get current time from MMIO
 pub fn time() -> Duration {
@@ -92,6 +93,7 @@ pub fn w_sstatus(x: usize) {
 
 #[inline(always)]
 pub fn __sync_synchronize() {
+    core::sync::atomic::compiler_fence(Ordering::SeqCst);
     unsafe { asm!("fence"); }
 }
 

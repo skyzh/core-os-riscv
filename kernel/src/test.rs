@@ -21,7 +21,6 @@ pub fn run_tests() {
         for (name, func) in tests {
             info!("    {}", name);
             func();
-            // info!("      \x1b[0;32mok\x1b[0m");
         }
     }
     info!("\x1b[0;32mall tests passed!\x1b[0m");

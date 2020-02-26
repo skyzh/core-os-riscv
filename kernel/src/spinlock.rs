@@ -100,7 +100,6 @@ impl<T: ?Sized> Mutex<T> {
     /// Lock mutex and return a guard
     pub fn lock(&self) -> MutexGuard<T> {
         let intr_lock = my_cpu().intr_lock.lock();
-        // panic_println!("{} lock on {}", self.name, arch::hart_id());
         if unsafe { self.holding() } {
             panic!("lock {}: hart {} already holding the lock!", self.name, arch::hart_id());
         }

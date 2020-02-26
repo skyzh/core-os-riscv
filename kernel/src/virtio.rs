@@ -400,7 +400,6 @@ impl VirtIO {
             let idx_id = 2 + vio.avail[1] as usize % DESC_NUM;
             vio.avail[idx_id] = idx[0] as u16;
 
-            core::sync::atomic::compiler_fence(Ordering::SeqCst);
             __sync_synchronize();
 
             vio.avail[1] = vio.avail[1] + 1;

@@ -30,6 +30,7 @@ use crate::arch;
 use alloc::boxed::Box;
 use core::mem::MaybeUninit;
 use core::borrow::BorrowMut;
+use crate::arch::hart_id;
 
 /// An array holding all CPU information
 static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
@@ -112,4 +113,23 @@ pub fn my_cpu() -> &'static mut CPU {
 pub fn my_proc() -> &'static mut Process {
     let proc_cpu = my_cpu();
     proc_cpu.process.as_mut().unwrap()
+}
+
+use crate::println;
+
+pub fn debug() {
+    for i in 0..NCPUS {
+        match unsafe { &CPUS[i].process } {
+            Some(x) => { println!("{} running on hart {}", x.pid, i); }
+            _ => {}
+        }
+    }
+    let pool = unsafe { PROCS_POOL.get() };
+    for i in 0..NMAXPROCS {
+        match &pool[i] {
+            ProcInPool::Pooling(x) => { println!("{} pooling with state {:?}", x.pid, x.state); }
+            ProcInPool::BeingSlept => { println!("{} being slept", i); }
+            _ => {}
+        }
+    }
 }
