@@ -94,7 +94,8 @@ multiple boards.
     - [ ] Allocator and stdlib in user-space
     - [ ] (WIP) Implement wait syscall
     - [ ] Simple shell
-    - [ ] **(WIP) Investigate frequent kernel panic ([#8](https://github.com/skyzh/core-os-riscv/issues/8))** (I'm mad about this one. I don't know what triggered kernel panic. The kernel just stop at kernelvec.)
+    - [x] Investigate frequent kernel panic ([#8](https://github.com/skyzh/core-os-riscv/issues/8))
+    - [ ] Reimplement process scheduling system ([#9](https://github.com/skyzh/core-os-riscv/issues/9))
 * Filesystem
     - [x] Fake fs and exec system call
     - [x] Real spinlock instead of nulllock

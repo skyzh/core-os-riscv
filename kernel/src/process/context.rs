@@ -55,6 +55,7 @@ pub fn sched() {
     let ctx = core::mem::replace(&mut c.scheduler_context, Context::zero());
 
     let intena = c.intr_lock.is_enabled_before;
+
     swtch(&mut p.context, ctx);
     c.intr_lock.is_enabled_before = intena;
 }

@@ -1,5 +1,5 @@
-TYPE=release
-RELEASE_FLAG=--release
+TYPE=debug
+RELEASE_FLAG=
 K=kernel/src
 U=user/src
 TARGET=riscv64gc-unknown-none-elf

@@ -102,10 +102,12 @@ extern "C" fn kerneltrap() {
     };
 
     if dev_intr == Some(Timer) {
-        let p = &my_cpu().process;
-        if let Some(p) = p {
-            if p.state == process::ProcessState::RUNNING {
-                yield_cpu();
+        if my_cpu().scheduler_context.regs[0] != 0 {
+            let p = &my_cpu().process;
+            if let Some(p) = p {
+                if p.state == process::ProcessState::RUNNING {
+                    yield_cpu();
+                }
             }
         }
     }
