@@ -62,6 +62,8 @@ I'll continuously add Rust-specific implementations and how I made this project 
 
 ## Roadmap
 
+**Update** I haven't maintained this project for a while, as I'm busy with my course-works. The long-term plan of this project is that, I'll leverage Rust async features to schedule kernel threads, therefore eliminating the need of sleeplock.
+
 The main goal of this project is to make an xv6-like operating system with the Rust programming language.
 And then, I'll separate arch-dependent part and make it into an OS supporting multiple architecture and
 multiple boards.
