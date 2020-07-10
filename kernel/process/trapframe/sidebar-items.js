@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Register","Mapping between register name and trapframe `regs` array index"]],"struct":[["TrapFrame","Trap frame contains information for switching to and switching back from user space"]]});

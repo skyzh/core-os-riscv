@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["CLINT_BASE",""],["CLINT_MTIMECMP_BASE",""],["CLINT_MTIME_BASE",""]],"fn":[["CLINT_MTIMECMP",""],["debug",""],["timer_init","Initialize machine-mode timer interrupt"]],"static":[["MSCRATCH0","space for timer trap to save information."]]});

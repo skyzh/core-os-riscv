@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["find_next_runnable_proc","Find a runnable process whose pid >= `from_pid`"],["put_back_proc","Put process back to `PROCS_POOL`"],["scheduler","Kernel scheduler"]]});

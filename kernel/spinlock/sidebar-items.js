@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Mutex","A RISC-V Mutex."],["MutexGuard","A guard to which the protected data can be accessed"],["WeakMutexGuard",""]]});

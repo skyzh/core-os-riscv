@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Console","Console device"]],"trait":[["Device","Device trait"]]});

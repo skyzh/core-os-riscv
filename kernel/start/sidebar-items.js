@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["kinit","Initialize kernel page table and drivers in machine mode, and prepare to switch to supervisor mode"],["kmain","Initialize hart, start first process and begin scheduling"]],"static":[["MAY_BOOT","Controls whether other harts may start boot procedure"]]});

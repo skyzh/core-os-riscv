@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ContextRegisters",""]],"fn":[["__swtch","__swtch in `swtch.S`"],["sched","switch to scheduler context"],["swtch","switch context"],["yield_cpu","give up CPU to scheduler"]],"struct":[["Context","Kernel context"]]});

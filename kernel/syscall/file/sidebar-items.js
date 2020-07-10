@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["next_available_fd","find a available file descriptor from files array in process"],["sys_close","close syscall"],["sys_dup","dup syscall"],["sys_open","open syscall, currently only support `/console` file."],["sys_read","read syscall"],["sys_write","write syscall"]]});

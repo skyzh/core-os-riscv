@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["TABLE_ENTRY_CNT",""]],"enum":[["EntryAttributes",""]],"static":[["KERNEL_PGTABLE","Kernel page table"]],"struct":[["Entry",""],["PPN",""],["Page",""],["Table",""],["VPN",""]]});

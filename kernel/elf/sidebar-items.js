@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["ELF_MAGIC",""],["ELF_PROG_FLAG_EXEC",""],["ELF_PROG_FLAG_READ",""],["ELF_PROG_FLAG_WRITE",""],["ELF_PROG_LOAD",""]],"fn":[["load_segment",""],["parse_elf",""]],"struct":[["ELFHeader",""],["ProgramHeader",""]]});
