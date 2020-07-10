@@ -14,6 +14,7 @@
 #![feature(alloc_error_handler)]
 #![feature(box_syntax)]
 #![feature(alloc_prelude)]
+#![feature(llvm_asm)]
 #![allow(dead_code)]
 #![allow(unused_imports)]
 

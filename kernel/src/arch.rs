@@ -53,7 +53,7 @@ pub fn intr_get() -> bool {
 #[allow(unused_assignments)]
 pub fn hart_id() -> usize {
     let mut hart_id: usize = 0;
-    unsafe { asm!("mv $0, tp" : "=r"(hart_id) ::: "volatile"); }
+    unsafe { llvm_asm!("mv $0, tp" : "=r"(hart_id) ::: "volatile"); }
     hart_id
 }
 
@@ -61,20 +61,20 @@ pub fn hart_id() -> usize {
 #[allow(unused_assignments)]
 pub fn r_sip() -> usize {
     let mut sip: usize = 0;
-    unsafe { asm!("csrr $0, sip" : "=r"(sip) ::: "volatile"); }
+    unsafe { llvm_asm!("csrr $0, sip" : "=r"(sip) ::: "volatile"); }
     sip
 }
 
 #[inline]
 pub fn w_sip(x: usize) {
-    unsafe { asm!("csrw sip, $0" :: "r"(x) :: "volatile"); }
+    unsafe { llvm_asm!("csrw sip, $0" :: "r"(x) :: "volatile"); }
 }
 
 #[inline]
 #[allow(unused_assignments)]
 pub fn r_sstatus() -> usize {
     let mut x: usize = 0;
-    unsafe { asm!("csrr $0, sstatus" : "=r"(x) ::: "volatile"); }
+    unsafe { llvm_asm!("csrr $0, sstatus" : "=r"(x) ::: "volatile"); }
     x
 }
 
@@ -82,13 +82,13 @@ pub fn r_sstatus() -> usize {
 #[allow(unused_assignments)]
 pub fn r_satp() -> usize {
     let mut x: usize = 0;
-    unsafe { asm!("csrr $0, satp" : "=r"(x) ::: "volatile"); }
+    unsafe { llvm_asm!("csrr $0, satp" : "=r"(x) ::: "volatile"); }
     x
 }
 
 #[inline]
 pub fn w_sstatus(x: usize) {
-    unsafe { asm!("csrw sstatus, $0" :: "r"(x) :: "volatile"); }
+    unsafe { llvm_asm!("csrw sstatus, $0" :: "r"(x) :: "volatile"); }
 }
 
 #[inline(always)]
@@ -99,24 +99,24 @@ pub fn __sync_synchronize() {
 
 #[inline(always)]
 pub fn __sync_lock_test_and_set(a: &u32, mut b: u32) -> u32 {
-    unsafe { asm!("amoswap.w.aq $0, $1, ($2)" :"=r"(b): "r"(b), "r"(a) :: "volatile"); }
+    unsafe { llvm_asm!("amoswap.w.aq $0, $1, ($2)" :"=r"(b): "r"(b), "r"(a) :: "volatile"); }
     b
 }
 
 #[inline(always)]
 pub fn __sync_lock_release(a: &u32) {
-    unsafe { asm!("amoswap.w zero, zero, ($0)" :: "r"(a) :: "volatile"); }
+    unsafe { llvm_asm!("amoswap.w zero, zero, ($0)" :: "r"(a) :: "volatile"); }
 }
 
 #[inline(always)]
 pub unsafe fn w_ra(x: usize) {
-    asm!("mv ra, $0" :: "r"(x) :: "volatile");
+    llvm_asm!("mv ra, $0" :: "r"(x) :: "volatile");
 }
 
 
 pub fn sp() -> usize {
     let mut sp: usize = 0;
-    unsafe { asm!("mv $0, sp" : "=r"(sp) ::: "volatile"); }
+    unsafe { llvm_asm!("mv $0, sp" : "=r"(sp) ::: "volatile"); }
     sp
 }
 

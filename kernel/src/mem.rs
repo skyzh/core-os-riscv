@@ -196,7 +196,7 @@ pub fn hartinit() {
     let root_ppn = &KERNEL_PGTABLE as *const Table as usize;
     let satp_val = arch::build_satp(8, 0, root_ppn);
     unsafe {
-        asm!("csrw satp, $0" :: "r"(satp_val));
+        llvm_asm!("csrw satp, $0" :: "r"(satp_val));
         asm::sfence_vma(0, 0);
     }
 }
