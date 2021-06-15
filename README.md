@@ -29,7 +29,7 @@ Then, install Rust and related components.
 ```bash
 cargo default nightly
 cargo install cargo-xbuild cargo-binutils
-rustup component add rust-src llvm-tools-preview rustfmt rls rust-analysis
+rustup component add rust-src llvm-tools-preview rustfmt
 rustup target add riscv64gc-unknown-none-elf
 ```
 
