@@ -5,8 +5,8 @@
 
 //! Test runner
 
-use crate::virtio;
 use crate::info;
+use crate::virtio;
 
 type TestSuite = fn() -> &'static [(&'static str, fn())];
 
@@ -14,7 +14,8 @@ type TestSuite = fn() -> &'static [(&'static str, fn())];
 pub fn run_tests() {
     let suites = [
         ("virtio", crate::virtio::tests::tests as TestSuite),
-        ("fsfile", crate::file::fsfile::tests::tests as TestSuite)];
+        ("fsfile", crate::file::fsfile::tests::tests as TestSuite),
+    ];
     for (name, suite) in &suites {
         let tests = suite();
         info!("  {}", name);

@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Alex Chi
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
@@ -10,9 +10,9 @@
 #![feature(format_args_nl)]
 #![feature(const_generics)]
 
-use user::println;
-use user::syscall::{exit, fork, exec, open, read, write};
 use user::constant::STDOUT;
+use user::println;
+use user::syscall::{exec, exit, fork, open, read, write};
 
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {

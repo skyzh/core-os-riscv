@@ -7,19 +7,19 @@
 //! (This module may be viewed as memory layout definitions)
 
 mod gen;
-pub use gen::*;
-use core::ops::Range;
 use crate::println;
+use core::ops::Range;
+pub use gen::*;
 
 extern "C" {
-	/// `uservec` function in `trampoline.S`
-	pub fn uservec();
-	/// `userret` function in `trampoline.S`
-	pub fn userret();
-	/// `kernelvec` function in `kernelvec.S`
-	pub fn kernelvec();
-	/// `m_trap_vector` function in `trap.S`
-	pub fn timervec();
+    /// `uservec` function in `trampoline.S`
+    pub fn uservec();
+    /// `userret` function in `trampoline.S`
+    pub fn userret();
+    /// `kernelvec` function in `kernelvec.S`
+    pub fn kernelvec();
+    /// `m_trap_vector` function in `trap.S`
+    pub fn timervec();
 }
 
 /// Page order
@@ -38,7 +38,7 @@ pub const TRAMPOLINE_START: usize = MAXVA - PAGE_SIZE;
 pub const TRAPFRAME_START: usize = TRAMPOLINE_START - PAGE_SIZE;
 
 /// Maximum supported CPU on machine
-pub const NCPUS : usize = 8;
+pub const NCPUS: usize = 8;
 
 /// Maximum process on machine.
 pub const NMAXPROCS: usize = 256;
@@ -54,17 +54,18 @@ pub unsafe fn bss_range() -> Range<*mut usize> {
 }
 
 pub fn print_map_symbols() {
-	println!("TEXT:   0x{:x} -> 0x{:x}", TEXT_START(), TEXT_END());
-	println!("RODATA: 0x{:x} -> 0x{:x}", RODATA_START(), RODATA_END());
-	println!("DATA:   0x{:x} -> 0x{:x}", DATA_START(), DATA_END());
-	println!("BSS:    0x{:x} -> 0x{:x}", BSS_START(), BSS_END());
-	println!(
-		"STACK:  0x{:x} -> 0x{:x}",
-		KERNEL_STACK_START(), KERNEL_STACK_END()
-	);
-	println!(
-		"HEAP:   0x{:x} -> 0x{:x}",
-		HEAP_START(),
-		HEAP_START() + HEAP_SIZE()
-	);
+    println!("TEXT:   0x{:x} -> 0x{:x}", TEXT_START(), TEXT_END());
+    println!("RODATA: 0x{:x} -> 0x{:x}", RODATA_START(), RODATA_END());
+    println!("DATA:   0x{:x} -> 0x{:x}", DATA_START(), DATA_END());
+    println!("BSS:    0x{:x} -> 0x{:x}", BSS_START(), BSS_END());
+    println!(
+        "STACK:  0x{:x} -> 0x{:x}",
+        KERNEL_STACK_START(),
+        KERNEL_STACK_END()
+    );
+    println!(
+        "HEAP:   0x{:x} -> 0x{:x}",
+        HEAP_START(),
+        HEAP_START() + HEAP_SIZE()
+    );
 }

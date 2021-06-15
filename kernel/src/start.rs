@@ -5,11 +5,11 @@
 
 //! RISC-V hart boot and initialize
 
-use riscv::{asm, register::*};
 use crate::arch::{hart_id, wait_forever};
-use crate::{clint, plic, mem, uart, process, spinlock, trap, virtio};
 use crate::info;
 use crate::jump::*;
+use crate::{clint, mem, plic, process, spinlock, trap, uart, virtio};
+use riscv::{asm, register::*};
 
 /// Initialize kernel page table and drivers in machine mode,
 /// and prepare to switch to supervisor mode
@@ -42,14 +42,22 @@ static mut MAY_BOOT: bool = false;
 #[no_mangle]
 extern "C" fn kmain() -> ! {
     if hart_id() == 0 {
-        unsafe { uart::init(); }
+        unsafe {
+            uart::init();
+        }
         info!("booting core-os on hart {}...", hart_id());
         info!("  UART... \x1b[0;32minitialized\x1b[0m");
-        unsafe { mem::init(); }
+        unsafe {
+            mem::init();
+        }
         info!("  kernel page table... \x1b[0;32minitialized\x1b[0m");
-        unsafe { virtio::init(); }
+        unsafe {
+            virtio::init();
+        }
         info!("  virt-io... \x1b[0;32minitialized\x1b[0m");
-        unsafe { plic::init(); }
+        unsafe {
+            plic::init();
+        }
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
         mem::hartinit();
         info!("kernel page table configured");
@@ -57,9 +65,13 @@ extern "C" fn kmain() -> ! {
         info!("  Timer... \x1b[0;32minitialized\x1b[0m");
         plic::hartinit();
         info!("  PLIC... \x1b[0;32minitialized\x1b[0m");
-        unsafe { trap::hartinit(); }
+        unsafe {
+            trap::hartinit();
+        }
         info!("  Interrupt... \x1b[0;32minitialized\x1b[0m");
-        unsafe { process::init(); }
+        unsafe {
+            process::init();
+        }
         process::init_proc();
         unsafe {
             asm!("fence");
@@ -73,7 +85,9 @@ extern "C" fn kmain() -> ! {
         }
         info!("hart {} booting", hart_id());
         mem::hartinit();
-        unsafe { trap::hartinit(); }
+        unsafe {
+            trap::hartinit();
+        }
         plic::hartinit();
     }
     process::scheduler()

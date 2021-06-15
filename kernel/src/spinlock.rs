@@ -29,17 +29,17 @@
 
 //! A RISC-V Mutex
 
-use core::cell::UnsafeCell;
-use core::marker::Sync;
-use core::ops::{Drop, Deref, DerefMut};
-use core::fmt;
-use core::option::Option::{self, None, Some};
-use core::default::Default;
-use crate::{arch, panic, process::IntrLockGuard};
-use crate::process::my_cpu;
-use crate::panic_println;
 use crate::arch::hart_id;
+use crate::panic_println;
+use crate::process::my_cpu;
+use crate::{arch, panic, process::IntrLockGuard};
 use alloc::rc::Weak;
+use core::cell::UnsafeCell;
+use core::default::Default;
+use core::fmt;
+use core::marker::Sync;
+use core::ops::{Deref, DerefMut, Drop};
+use core::option::Option::{self, None, Some};
 
 /// A RISC-V Mutex.
 pub struct Mutex<T: ?Sized> {
@@ -64,7 +64,7 @@ pub struct MutexGuard<'a, T: ?Sized + 'a> {
 }
 
 pub struct WeakMutexGuard<'a, T: ?Sized + 'a> {
-    mutex: &'a Mutex<T>
+    mutex: &'a Mutex<T>,
 }
 
 unsafe impl<T: ?Sized + Send> Sync for Mutex<T> {}
@@ -101,13 +101,19 @@ impl<T: ?Sized> Mutex<T> {
     pub fn lock(&self) -> MutexGuard<T> {
         let intr_lock = my_cpu().intr_lock.lock();
         if unsafe { self.holding() } {
-            panic!("lock {}: hart {} already holding the lock!", self.name, arch::hart_id());
+            panic!(
+                "lock {}: hart {} already holding the lock!",
+                self.name,
+                arch::hart_id()
+            );
         }
         self.obtain_lock();
         if self.lock != 1 {
             panic!("lock {}: not locked!", self.name);
         }
-        unsafe { *self.hart.get() = arch::hart_id() as i64; }
+        unsafe {
+            *self.hart.get() = arch::hart_id() as i64;
+        }
         MutexGuard {
             lock: &self.lock,
             mutex: self,
@@ -133,20 +139,30 @@ impl<T: ?Sized> Mutex<T> {
 
 impl<'a, T: ?Sized> Deref for MutexGuard<'a, T> {
     type Target = T;
-    fn deref<'b>(&'b self) -> &'b T { &*self.data }
+    fn deref<'b>(&'b self) -> &'b T {
+        &*self.data
+    }
 }
 
 impl<'a, T: ?Sized> DerefMut for MutexGuard<'a, T> {
-    fn deref_mut<'b>(&'b mut self) -> &'b mut T { &mut *self.data }
+    fn deref_mut<'b>(&'b mut self) -> &'b mut T {
+        &mut *self.data
+    }
 }
 
 impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
     /// The dropping of the MutexGuard will release the lock it was created from.
     fn drop(&mut self) {
         if unsafe { !self.mutex.holding() } {
-            panic!("lock {}: unlock from another hart {}!", self.mutex.name, arch::hart_id());
+            panic!(
+                "lock {}: unlock from another hart {}!",
+                self.mutex.name,
+                arch::hart_id()
+            );
         }
-        unsafe { *self.mutex.hart.get() = -1; }
+        unsafe {
+            *self.mutex.hart.get() = -1;
+        }
         arch::__sync_synchronize();
         arch::__sync_lock_release(&self.lock);
         // panic_println!("{} unlock on {}", self.mutex.name, arch::hart_id());
@@ -156,9 +172,7 @@ impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
 impl<'a, T: ?Sized> MutexGuard<'a, T> {
     /// Temporarily unlock Mutex by obtaining a weak guard
     pub fn into_weak(self) -> WeakMutexGuard<'a, T> {
-        WeakMutexGuard {
-            mutex: self.mutex
-        }
+        WeakMutexGuard { mutex: self.mutex }
     }
 }
 

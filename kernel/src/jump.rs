@@ -20,6 +20,8 @@ fn never_return() -> ! {
 #[inline(always)]
 pub fn return_to(func: fn() -> !) -> ! {
     let fn_addr = func as *const () as usize;
-    unsafe { crate::arch::w_ra(fn_addr); }
+    unsafe {
+        crate::arch::w_ra(fn_addr);
+    }
     never_return()
 }

@@ -6,11 +6,11 @@
 //! Paging implementaion and page table abstraction
 
 use crate::mem::{self, ALLOC};
-use crate::spinlock::Mutex;
-use crate::{print, println, panic};
-use crate::symbols::*;
-use alloc::boxed::Box;
 use crate::process::my_cpu;
+use crate::spinlock::Mutex;
+use crate::symbols::*;
+use crate::{panic, print, println};
+use alloc::boxed::Box;
 
 const TABLE_ENTRY_CNT: usize = 512;
 
@@ -23,13 +23,13 @@ pub struct Table {
 #[repr(C)]
 #[repr(align(4096))]
 pub struct Page {
-    pub data: [u8; PAGE_SIZE]
+    pub data: [u8; PAGE_SIZE],
 }
 
 impl Page {
     pub fn new() -> Box<Self> {
         Box::new(Self {
-            data: [0; PAGE_SIZE]
+            data: [0; PAGE_SIZE],
         })
     }
 }
@@ -121,7 +121,9 @@ impl PPN {
     }
     pub fn clone_page(&self) -> Box<Page> {
         let mut pg = Page::new();
-        unsafe { core::ptr::copy(self.0 as *const u8, pg.data.as_mut_ptr(), PAGE_SIZE); }
+        unsafe {
+            core::ptr::copy(self.0 as *const u8, pg.data.as_mut_ptr(), PAGE_SIZE);
+        }
         pg
     }
 }
@@ -234,7 +236,16 @@ impl Table {
                         for _j in 0..(2 - level) {
                             print!(".");
                         }
-                        println!("{}: 0x{:X} -> 0x{:X}  {}{}{}{}", i, vaddr, v.paddr().0, u_flag, r_flag, w_flag, x_flag);
+                        println!(
+                            "{}: 0x{:X} -> 0x{:X}  {}{}{}{}",
+                            i,
+                            vaddr,
+                            v.paddr().0,
+                            u_flag,
+                            r_flag,
+                            w_flag,
+                            x_flag
+                        );
                     }
                 }
             }
@@ -306,7 +317,7 @@ impl Table {
         box pgtable
     }
 
-     pub fn unmap_user(&mut self) {
+    pub fn unmap_user(&mut self) {
         for i in 0..self.len() {
             let v = &mut self.entries[i];
             if v.is_v() {

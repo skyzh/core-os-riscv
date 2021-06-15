@@ -24,23 +24,25 @@ mod schedule;
 
 pub use schedule::*;
 
-use crate::symbols::*;
-use crate::spinlock::Mutex;
 use crate::arch;
-use alloc::boxed::Box;
-use core::mem::MaybeUninit;
-use core::borrow::BorrowMut;
 use crate::arch::hart_id;
+use crate::spinlock::Mutex;
+use crate::symbols::*;
+use alloc::boxed::Box;
+use core::borrow::BorrowMut;
+use core::mem::MaybeUninit;
+
+const CPU_ZERO: CPU = CPU::zero();
 
 /// An array holding all CPU information
-static mut CPUS: [CPU; NCPUS] = [CPU::zero(); NCPUS];
+static mut CPUS: [CPU; NCPUS] = [CPU_ZERO; NCPUS];
 
 /// Enum describing a process in process pool
 ///
 /// `NoProc`: No process associated with this pid
 ///
 /// `Scheduled`: This process is scheduled on one CPU
-/// 
+///
 /// `Pooling`: This process is not being scheduled
 ///
 /// `BeingSlept`: This process holds a sleep lock and is to be put back
@@ -51,8 +53,10 @@ pub enum ProcInPool {
     BeingSlept,
 }
 
+const POOL_NOPROC: ProcInPool = ProcInPool::NoProc;
+
 /// An array holding all process information.
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -70,7 +74,8 @@ pub enum ProcInPool {
 ///     }
 /// }
 /// ```
-pub static PROCS_POOL: Mutex<[ProcInPool; NMAXPROCS]> = Mutex::new([ProcInPool::NoProc; NMAXPROCS], "proc pool");
+pub static PROCS_POOL: Mutex<[ProcInPool; NMAXPROCS]> =
+    Mutex::new([POOL_NOPROC; NMAXPROCS], "proc pool");
 
 pub unsafe fn init() {}
 
@@ -120,15 +125,21 @@ use crate::println;
 pub fn debug() {
     for i in 0..NCPUS {
         match unsafe { &CPUS[i].process } {
-            Some(x) => { println!("{} running on hart {}", x.pid, i); }
+            Some(x) => {
+                println!("{} running on hart {}", x.pid, i);
+            }
             _ => {}
         }
     }
     let pool = unsafe { PROCS_POOL.get() };
     for i in 0..NMAXPROCS {
         match &pool[i] {
-            ProcInPool::Pooling(x) => { println!("{} pooling with state {:?}", x.pid, x.state); }
-            ProcInPool::BeingSlept => { println!("{} being slept", i); }
+            ProcInPool::Pooling(x) => {
+                println!("{} pooling with state {:?}", x.pid, x.state);
+            }
+            ProcInPool::BeingSlept => {
+                println!("{} being slept", i);
+            }
             _ => {}
         }
     }

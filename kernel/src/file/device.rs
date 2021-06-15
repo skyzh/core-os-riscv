@@ -26,8 +26,12 @@ impl Device for Console {
         let mut uart = UART().lock();
         for i in 0..content.len() {
             match uart.get() {
-                Some(ch) => { content[i] = ch; }
-                _ => { return i as i32; }
+                Some(ch) => {
+                    content[i] = ch;
+                }
+                _ => {
+                    return i as i32;
+                }
             }
         }
         return content.len() as i32;

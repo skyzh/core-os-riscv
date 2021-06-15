@@ -4,7 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 //! All syscalls of core-os
-//! 
+//!
 //! Syscalls of core-os are defined and implemented with Rust
 //! primitives (e.g. `str`, `[u8]`). This module will transmute
 //! these Rust primitives into pointers and other machine-specific
@@ -17,7 +17,7 @@ use crate::syscall_internal::*;
 use core::ptr::null;
 
 /// Exit current process with exit code `code`.
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -28,12 +28,12 @@ pub fn exit(code: i32) -> ! {
     unsafe { __exit(code) }
 }
 
-/// Fork current process. 
-/// 
+/// Fork current process.
+///
 /// Child process will get return value of 0.
 /// Parent process (the one calling `fork`) will
 /// get pid of child process.
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -74,7 +74,7 @@ pub fn exec(path: &str, args: &[&str]) -> ! {
             path.len() as i32,
             arg_cnt as i32,
             args_ptr.as_ptr(),
-            args_sz.as_ptr()
+            args_sz.as_ptr(),
         )
     }
 }
@@ -90,11 +90,7 @@ pub fn exec(path: &str, args: &[&str]) -> ! {
 /// write(STDOUT, "Hello, World!");
 /// ```
 pub fn write(fd: i32, content: &[u8]) -> i32 {
-    unsafe {
-        __write(fd,
-                content.as_ptr(),
-                content.len() as i32)
-    }
+    unsafe { __write(fd, content.as_ptr(), content.len() as i32) }
 }
 
 /// Read `content` from file descriptor `fd`.
@@ -102,11 +98,7 @@ pub fn write(fd: i32, content: &[u8]) -> i32 {
 /// You may read a maximum of `content.len()` characters from `fd`.
 /// Returns number of characters read.
 pub fn read(fd: i32, content: &mut [u8]) -> i32 {
-    unsafe {
-        __read(fd,
-                content.as_mut_ptr(),
-                content.len() as i32)
-    }
+    unsafe { __read(fd, content.as_mut_ptr(), content.len() as i32) }
 }
 
 /// Open file of `path` with `mode`.
@@ -119,9 +111,7 @@ pub fn read(fd: i32, content: &mut [u8]) -> i32 {
 /// let fd = open("/console", 0);
 /// ```
 pub fn open(path: &str, mode: i32) -> i32 {
-    unsafe {
-        __open(path.as_ptr(), path.len() as i32, mode)
-    }
+    unsafe { __open(path.as_ptr(), path.len() as i32, mode) }
 }
 
 /// Close a file with file descriptor `fd`.

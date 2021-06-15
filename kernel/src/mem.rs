@@ -1,23 +1,22 @@
 // Copyright (c) 2020 Alex Chi
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
 //! Allocator implementation
 
-use core::ops::Range;
+use crate::arch;
 use crate::info;
-use crate::{println, panic};
-use crate::symbols::*;
-use crate::spinlock::Mutex;
+use crate::mem;
 use crate::page::EntryAttributes;
 use crate::page::{Table, KERNEL_PGTABLE};
-use crate::uart::UART_BASE_ADDR;
 use crate::process::*;
-use riscv::{register::*, asm};
-use crate::mem;
-use crate::arch;
-
+use crate::spinlock::Mutex;
+use crate::symbols::*;
+use crate::uart::UART_BASE_ADDR;
+use crate::{panic, println};
+use core::ops::Range;
+use riscv::{asm, register::*};
 
 /// Maximum number of pages. As QEMU and linker script `kernel.ld`
 /// are set to have 128MB of RAM, maximum number of pages can be calculated.
@@ -50,7 +49,7 @@ pub const fn page_down(val: usize) -> usize {
 
 impl Allocator {
     /// Returns a new allocator instance
-    /// 
+    ///
     /// `base_addr` should be intialized later.
     pub const fn new() -> Self {
         Allocator {
@@ -88,7 +87,9 @@ impl Allocator {
                     for j in 0..page_required {
                         self.page_allocated[i + j] = page_required;
                     }
-                    unsafe { return self.offset_id_of(i); }
+                    unsafe {
+                        return self.offset_id_of(i);
+                    }
                 }
             }
         }
@@ -113,7 +114,10 @@ impl Allocator {
             if size != 0 {
                 let from = self.offset_addr_of(j);
                 let to = self.offset_addr_of(j + size);
-                println!("{} {:X} {:X}-{:X} (pages: {:X})", j, addr as usize, from, to, size);
+                println!(
+                    "{} {:X} {:X}-{:X} (pages: {:X})",
+                    j, addr as usize, from, to, size
+                );
                 j += size;
             } else {
                 j += 1;
@@ -126,7 +130,6 @@ impl Allocator {
 }
 
 static __ALLOC: Mutex<Allocator> = Mutex::new(Allocator::new(), "global allocator");
-
 
 /// Initialize allocator and kernel page table
 /// This function should only be called in boot hart
@@ -141,36 +144,16 @@ pub unsafe fn init() {
     }
 
     let pgtable: &mut Table = &mut *(&KERNEL_PGTABLE as *const _ as *mut _); // to bypass mut ref
-    pgtable.id_map_range(
-        TEXT_START(),
-        TEXT_END(),
-        EntryAttributes::RX as usize,
-    );
-    pgtable.id_map_range(
-        RODATA_START(),
-        RODATA_END(),
-        EntryAttributes::RX as usize,
-    );
-    pgtable.id_map_range(
-        DATA_START(),
-        DATA_END(),
-        EntryAttributes::RW as usize,
-    );
-    pgtable.id_map_range(
-        BSS_START(),
-        BSS_END(),
-        EntryAttributes::RW as usize,
-    );
+    pgtable.id_map_range(TEXT_START(), TEXT_END(), EntryAttributes::RX as usize);
+    pgtable.id_map_range(RODATA_START(), RODATA_END(), EntryAttributes::RX as usize);
+    pgtable.id_map_range(DATA_START(), DATA_END(), EntryAttributes::RW as usize);
+    pgtable.id_map_range(BSS_START(), BSS_END(), EntryAttributes::RW as usize);
     pgtable.id_map_range(
         KERNEL_STACK_START(),
         KERNEL_STACK_END(),
         EntryAttributes::RW as usize,
     );
-    pgtable.kernel_map(
-        UART_BASE_ADDR,
-        UART_BASE_ADDR,
-        EntryAttributes::RW as usize,
-    );
+    pgtable.kernel_map(UART_BASE_ADDR, UART_BASE_ADDR, EntryAttributes::RW as usize);
     pgtable.kernel_map(
         VIRTIO_MMIO_BASE,
         VIRTIO_MMIO_BASE,
@@ -187,9 +170,17 @@ pub unsafe fn init() {
         EntryAttributes::RW as usize,
     );
     // CLINT
-    pgtable.id_map_range(CLINT_BASE, CLINT_BASE + 0x10000, EntryAttributes::RW as usize);
+    pgtable.id_map_range(
+        CLINT_BASE,
+        CLINT_BASE + 0x10000,
+        EntryAttributes::RW as usize,
+    );
     // PLIC
-    pgtable.id_map_range(PLIC_BASE, PLIC_BASE + 0x400000, EntryAttributes::RW as usize);
+    pgtable.id_map_range(
+        PLIC_BASE,
+        PLIC_BASE + 0x400000,
+        EntryAttributes::RW as usize,
+    );
 }
 
 pub fn hartinit() {
@@ -202,14 +193,16 @@ pub fn hartinit() {
 }
 
 #[allow(non_snake_case)]
-pub fn ALLOC() -> &'static Mutex<Allocator> { &__ALLOC }
+pub fn ALLOC() -> &'static Mutex<Allocator> {
+    &__ALLOC
+}
 
-use core::alloc::{GlobalAlloc, Layout};
-use crate::plic::PLIC_BASE;
-use crate::clint::CLINT_BASE;
 use crate::arch::hart_id;
+use crate::clint::CLINT_BASE;
+use crate::plic::PLIC_BASE;
 use crate::process::my_cpu;
 use crate::virtio::VIRTIO_MMIO_BASE;
+use core::alloc::{GlobalAlloc, Layout};
 
 struct OsAllocator {}
 
@@ -236,8 +229,8 @@ pub fn alloc_error(l: Layout) -> ! {
 }
 
 pub unsafe fn zero_volatile<T>(range: Range<*mut T>)
-    where
-        T: From<u8>,
+where
+    T: From<u8>,
 {
     let mut ptr = range.start;
     info!("{:?}", range);

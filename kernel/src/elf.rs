@@ -5,10 +5,10 @@
 
 //! ELF parsing
 
-use crate::panic;
-use crate::mem;
 use crate::arch;
+use crate::mem;
 use crate::page;
+use crate::panic;
 use crate::process;
 use crate::symbols::*;
 use crate::{info, println};
@@ -98,13 +98,7 @@ pub fn parse_elf(a: &[u8], pgtable: &mut page::Table) -> u64 {
     elfhdr.entry
 }
 
-fn load_segment(
-    pgtable: &mut page::Table,
-    vaddr: usize,
-    elf: *const u8,
-    offset: usize,
-    sz: usize,
-) {
+fn load_segment(pgtable: &mut page::Table, vaddr: usize, elf: *const u8, offset: usize, sz: usize) {
     let num_pages = mem::align_val(sz, PAGE_ORDER) / PAGE_SIZE;
     for i in 0..num_pages {
         let mut seg = page::Page::new();
@@ -114,10 +108,6 @@ fn load_segment(
             core::ptr::copy(src, seg.data.as_mut_ptr(), PAGE_SIZE);
         }
         use page::EntryAttributes;
-        pgtable.map(
-            vaddr + i * PAGE_SIZE,
-            seg,
-            EntryAttributes::URX as usize
-        );
+        pgtable.map(vaddr + i * PAGE_SIZE, seg, EntryAttributes::URX as usize);
     }
 }

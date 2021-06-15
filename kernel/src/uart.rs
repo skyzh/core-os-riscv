@@ -1,15 +1,15 @@
 // Copyright (c) 2020 Alex Chi
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
 //! UART driver module
 
-use core::convert::TryInto;
-use core::fmt::Write;
-use core::fmt::Error;
 use crate::spinlock::Mutex;
-use crate::{println, print};
+use crate::{print, println};
+use core::convert::TryInto;
+use core::fmt::Error;
+use core::fmt::Write;
 
 /// UART base address on QEMU RISC-V
 pub const UART_BASE_ADDR: usize = 0x1000_0000;
@@ -31,9 +31,7 @@ impl Write for Uart {
 
 impl Uart {
     pub const fn new(base_address: usize) -> Self {
-        Uart {
-            base_address
-        }
+        Uart { base_address }
     }
 
     /// Initialize UART driver
@@ -162,7 +160,9 @@ static __UART: Mutex<Uart> = Mutex::new(Uart::new(UART_BASE_ADDR), "uart driver"
 
 /// Global function to get an instance of UART driver
 #[allow(non_snake_case)]
-pub fn UART() -> &'static Mutex<Uart> { &__UART }
+pub fn UART() -> &'static Mutex<Uart> {
+    &__UART
+}
 
 pub unsafe fn init() {
     UART().get().init();

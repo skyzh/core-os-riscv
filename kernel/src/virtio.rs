@@ -5,13 +5,13 @@
 
 //! virt-io driver
 
-use crate::spinlock::{Mutex, MutexGuard};
-use crate::{panic, info};
-use crate::symbols::{PAGE_SIZE, PAGE_ORDER};
-use crate::process::{wakeup, sleep};
-use alloc::boxed::Box;
 use crate::arch::__sync_synchronize;
+use crate::process::{sleep, wakeup};
+use crate::spinlock::{Mutex, MutexGuard};
+use crate::symbols::{PAGE_ORDER, PAGE_SIZE};
 use crate::uart::UART;
+use crate::{info, panic};
+use alloc::boxed::Box;
 use core::sync::atomic::Ordering;
 
 /// VIRTIO base address on QEMU RISC-V
@@ -59,7 +59,9 @@ pub enum VIRTIO_CONFIG_S {
 }
 
 impl VIRTIO_CONFIG_S {
-    pub const fn val(self) -> u32 { self as _ }
+    pub const fn val(self) -> u32 {
+        self as _
+    }
 }
 
 #[allow(non_camel_case_types)]
@@ -111,10 +113,7 @@ pub struct VRingUsedElem {
 
 impl VRingUsedElem {
     pub const fn new() -> Self {
-        Self {
-            id: 0,
-            len: 0,
-        }
+        Self { id: 0, len: 0 }
     }
 }
 
@@ -130,10 +129,11 @@ pub struct UsedArea {
 
 impl UsedArea {
     pub const fn new() -> Self {
+        const USED_ITEM: VRingUsedElem = VRingUsedElem::new();
         Self {
             flags: 0,
             id: 0,
-            elems: [VRingUsedElem::new(); DESC_NUM],
+            elems: [USED_ITEM; DESC_NUM],
         }
     }
 }
@@ -144,7 +144,8 @@ pub struct InflightOp {
 }
 
 /// Size of avail array
-const AVAIL_SZ: usize = (PAGE_SIZE - DESC_NUM * core::mem::size_of::<VRingDesc>()) / core::mem::size_of::<u16>();
+const AVAIL_SZ: usize =
+    (PAGE_SIZE - DESC_NUM * core::mem::size_of::<VRingDesc>()) / core::mem::size_of::<u16>();
 
 #[repr(C)]
 #[repr(align(4096))]
@@ -259,24 +260,29 @@ impl VirtIOData {
 
 impl VirtIO {
     pub const fn new() -> Self {
-        Self(
-            Mutex::new(VirtIOData {
-                desc: [VRingDesc::new(); DESC_NUM],
+        const VRING_DESC: VRingDesc = VRingDesc::new();
+        const USED_AREA: UsedArea = UsedArea::new();
+        const INFO: Option<InflightOp> = None;
+        Self(Mutex::new(
+            VirtIOData {
+                desc: [VRING_DESC; DESC_NUM],
                 avail: [0; AVAIL_SZ],
-                used: [UsedArea::new(); DESC_NUM],
+                used: [USED_AREA; DESC_NUM],
                 free: [false; DESC_NUM],
                 used_idx: 0,
-                info: [None; DESC_NUM],
-            }, "vdisk"))
+                info: [INFO; DESC_NUM],
+            },
+            "vdisk",
+        ))
     }
 
     /// Initialize VIRTIO driver.
     ///
     /// Should be called in booting hart.
     pub unsafe fn init(&mut self) {
-        use VIRTIO_MMIO::*;
         use VIRTIO_CONFIG_S::*;
         use VIRTIO_FEATURE::*;
+        use VIRTIO_MMIO::*;
 
         let mut vio = self.0.get();
 
@@ -328,7 +334,9 @@ impl VirtIO {
         }
         QUEUE_NUM.ptr().write_volatile(DESC_NUM as u32);
 
-        QUEUE_PFN.ptr().write_volatile(((vio as *mut _ as usize) >> PAGE_ORDER) as u32);
+        QUEUE_PFN
+            .ptr()
+            .write_volatile(((vio as *mut _ as usize) >> PAGE_ORDER) as u32);
 
         for i in 0..DESC_NUM {
             vio.free[i] = true;
@@ -355,9 +363,12 @@ impl VirtIO {
         let buf0 = BlkOutHdr {
             reserved: 0,
             sector,
-            blk_type: if write { VIRTIO_BLK_T_OUT } else { VIRTIO_BLK_T_IN },
+            blk_type: if write {
+                VIRTIO_BLK_T_OUT
+            } else {
+                VIRTIO_BLK_T_IN
+            },
         };
-
 
         // VIRTIO 5.2.6.4
         // MUST use a single 8-byte descriptor containing type, reserved and sector,
@@ -381,10 +392,7 @@ impl VirtIO {
         }
 
         b.disk = 1;
-        vio.info[idx[0]] = Some(InflightOp {
-            buf: b,
-            status: 0,
-        });
+        vio.info[idx[0]] = Some(InflightOp { buf: b, status: 0 });
 
         {
             let addr = &vio.info[idx[0]].as_ref().unwrap().status as *const _ as usize;
@@ -404,7 +412,9 @@ impl VirtIO {
 
             vio.avail[1] = vio.avail[1] + 1;
 
-            unsafe { QUEUE_NOTIFY.ptr().write_volatile(0); }
+            unsafe {
+                QUEUE_NOTIFY.ptr().write_volatile(0);
+            }
             // info!("{:x}", &vio.info[idx[0]].as_ref().unwrap().status as *const _ as usize);
             let buf_addr = &*vio.info[idx[0]].as_ref().unwrap().buf as *const _;
             // info!("sleep {:x} id={}", buf_addr as usize, vio.info[idx[0]].as_ref().unwrap().status);
@@ -413,7 +423,9 @@ impl VirtIO {
             }
         }
         let result = core::mem::replace(&mut vio.info[idx[0]], None);
-        unsafe { vio.info[idx[0]] = core::mem::zeroed(); }
+        unsafe {
+            vio.info[idx[0]] = core::mem::zeroed();
+        }
         vio.info[idx[0]] = None;
         vio.free_chain(idx[0]);
         result.unwrap().buf
@@ -438,19 +450,19 @@ static mut __VIRTIO: VirtIO = VirtIO::new();
 
 /// Global function to get an instance of VirtIO driver
 #[allow(non_snake_case)]
-pub fn VIRTIO() -> &'static mut VirtIO { unsafe { &mut __VIRTIO } }
+pub fn VIRTIO() -> &'static mut VirtIO {
+    unsafe { &mut __VIRTIO }
+}
 
 pub unsafe fn init() {
     VIRTIO().init();
 }
-
 
 /// VIRTIO interrupt
 pub fn virtiointr() {
     use crate::info;
     let mut disk = VIRTIO().0.lock();
     while disk.used_idx as usize % DESC_NUM != disk.used[0].id as usize % DESC_NUM {
-
         let id = disk.used[0].elems[disk.used_idx as usize].id as usize;
 
         if disk.info[id].is_none() {
@@ -479,7 +491,7 @@ pub mod tests {
     pub fn tests() -> &'static [(&'static str, fn())] {
         &[
             ("memory layout", test_memory_layout),
-            ("read and write", test_rw)
+            ("read and write", test_rw),
         ]
     }
 
@@ -488,7 +500,10 @@ pub mod tests {
         let virtio = VIRTIO().0.lock();
         assert_eq!(&virtio.desc as *const _ as usize % PAGE_SIZE, 0);
         assert_eq!(&virtio.used as *const _ as usize % PAGE_SIZE, 0);
-        assert_eq!(&virtio.used as *const _ as usize - &virtio.desc as *const _ as usize, PAGE_SIZE);
+        assert_eq!(
+            &virtio.used as *const _ as usize - &virtio.desc as *const _ as usize,
+            PAGE_SIZE
+        );
     }
 
     use crate::{print, println};
@@ -497,8 +512,15 @@ pub mod tests {
     pub fn test_rw() {
         let virtio = VIRTIO();
         let b = virtio.read(1, 0);
-        unsafe { println!("size: {}", core::ptr::read(b.data.as_ptr() as *const usize)); }
-        unsafe { println!("offset: {}", core::ptr::read(b.data.as_ptr().add(8) as *const usize)); }
+        unsafe {
+            println!("size: {}", core::ptr::read(b.data.as_ptr() as *const usize));
+        }
+        unsafe {
+            println!(
+                "offset: {}",
+                core::ptr::read(b.data.as_ptr().add(8) as *const usize)
+            );
+        }
         for i in 16..b.data.len() {
             let d = b.data[i];
             if d == 0 {

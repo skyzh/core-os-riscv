@@ -3,8 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use core::fmt::{Write, Error, self};
 use crate::syscall;
+use core::fmt::{self, Error, Write};
 
 struct StdIO {}
 

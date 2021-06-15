@@ -7,13 +7,15 @@
 
 #![allow(non_snake_case)]
 
-use crate::symbols::{NCPUS, SCHEDULER_INTERVAL};
-use crate::println;
 use crate::arch::{hart_id, sp};
+use crate::println;
+use crate::symbols::{NCPUS, SCHEDULER_INTERVAL};
 
 pub const CLINT_BASE: usize = 0x200_0000;
 pub const CLINT_MTIMECMP_BASE: usize = CLINT_BASE + 0x4000;
-pub const fn CLINT_MTIMECMP(hart: usize) -> usize { CLINT_MTIMECMP_BASE + 8 * hart }
+pub const fn CLINT_MTIMECMP(hart: usize) -> usize {
+    CLINT_MTIMECMP_BASE + 8 * hart
+}
 pub const CLINT_MTIME_BASE: usize = CLINT_BASE + 0xBFF8;
 
 /// space for timer trap to save information.
@@ -47,6 +49,11 @@ pub unsafe fn timer_init() {
 
 pub fn debug() {
     unsafe {
-        println!("0x{:x} 0x{:x}, {}", MSCRATCH0.as_mut_ptr() as usize, MSCRATCH0[hart_id()][4], MSCRATCH0[hart_id()][5]);
+        println!(
+            "0x{:x} 0x{:x}, {}",
+            MSCRATCH0.as_mut_ptr() as usize,
+            MSCRATCH0[hart_id()][4],
+            MSCRATCH0[hart_id()][5]
+        );
     }
 }

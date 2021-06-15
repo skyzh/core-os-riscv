@@ -14,19 +14,19 @@ use core::ptr::null_mut;
 #[derive(Clone)]
 pub struct TrapFrame {
     /// integer registers
-    pub regs: [usize; 32],   // 0 - 255
+    pub regs: [usize; 32], // 0 - 255
     /// floating point registers
-    pub fregs: [usize; 32],  // 256 - 511
+    pub fregs: [usize; 32], // 256 - 511
     /// kernel satp register
-    pub satp: usize,         // 512 - 519
+    pub satp: usize, // 512 - 519
     /// kernel sp
-    pub sp: usize,           // 520
+    pub sp: usize, // 520
     /// kernel hartid
-    pub hartid: usize,       // 528
+    pub hartid: usize, // 528
     /// `usertrap` function address
-    pub trap: usize,         // 536
+    pub trap: usize, // 536
     /// sret target address
-    pub epc: usize           // 544
+    pub epc: usize, // 544
 }
 
 impl TrapFrame {
@@ -39,7 +39,7 @@ impl TrapFrame {
             sp: 0,
             hartid: 0,
             trap: 0,
-            epc: 0
+            epc: 0,
         }
     }
 }
@@ -63,5 +63,5 @@ pub enum Register {
     a4 = 14,
     a5 = 15,
     a6 = 16,
-    a7 = 17
+    a7 = 17,
 }

@@ -5,9 +5,9 @@
 
 //! RISC-V Platform-Level Interrupt Controller
 
-use crate::spinlock::Mutex;
-use crate::process::my_cpu;
 use crate::arch::hart_id;
+use crate::process::my_cpu;
+use crate::spinlock::Mutex;
 
 pub const PLIC_BASE: usize = 0x0c00_0000;
 pub const PLIC_PRIORITY: usize = PLIC_BASE + 0x0;
@@ -20,22 +20,34 @@ pub const PLIC_MCLAIM_BASE: usize = PLIC_BASE + 0x200004;
 pub const PLIC_SCLAIM_BASE: usize = PLIC_BASE + 0x201004;
 
 #[allow(non_snake_case)]
-pub const fn PLIC_MENABLE(hart: usize) -> usize { PLIC_MENABLE_BASE + hart * 0x100 }
+pub const fn PLIC_MENABLE(hart: usize) -> usize {
+    PLIC_MENABLE_BASE + hart * 0x100
+}
 
 #[allow(non_snake_case)]
-pub const fn PLIC_SENABLE(hart: usize) -> usize { PLIC_SENABLE_BASE + hart * 0x100 }
+pub const fn PLIC_SENABLE(hart: usize) -> usize {
+    PLIC_SENABLE_BASE + hart * 0x100
+}
 
 #[allow(non_snake_case)]
-pub const fn PLIC_MPRIORITY(hart: usize) -> usize { PLIC_MPRIORITY_BASE + hart * 0x2000 }
+pub const fn PLIC_MPRIORITY(hart: usize) -> usize {
+    PLIC_MPRIORITY_BASE + hart * 0x2000
+}
 
 #[allow(non_snake_case)]
-pub const fn PLIC_SPRIORITY(hart: usize) -> usize { PLIC_SPRIORITY_BASE + hart * 0x2000 }
+pub const fn PLIC_SPRIORITY(hart: usize) -> usize {
+    PLIC_SPRIORITY_BASE + hart * 0x2000
+}
 
 #[allow(non_snake_case)]
-pub const fn PLIC_MCLAIM(hart: usize) -> usize { PLIC_MCLAIM_BASE + hart * 0x2000 }
+pub const fn PLIC_MCLAIM(hart: usize) -> usize {
+    PLIC_MCLAIM_BASE + hart * 0x2000
+}
 
 #[allow(non_snake_case)]
-pub const fn PLIC_SCLAIM(hart: usize) -> usize { PLIC_SCLAIM_BASE + hart * 0x2000 }
+pub const fn PLIC_SCLAIM(hart: usize) -> usize {
+    PLIC_SCLAIM_BASE + hart * 0x2000
+}
 
 pub const UART0_IRQ: u32 = 10;
 
@@ -145,7 +157,9 @@ static mut __PLIC: Plic = Plic::new();
 
 /// Global function to get an instance of PLIC driver
 #[allow(non_snake_case)]
-pub fn PLIC() -> &'static mut Plic { unsafe { &mut __PLIC } }
+pub fn PLIC() -> &'static mut Plic {
+    unsafe { &mut __PLIC }
+}
 
 /// Initialize PLIC
 ///
