@@ -5,28 +5,26 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::{println, panic, info};
 use crate::process::{my_cpu, my_proc, Process, ProcessState};
 use crate::spinlock::MutexGuard;
+use crate::{info, panic, println};
 
 /// Kernel context
 #[repr(C)]
 pub struct Context {
     // ra + sp + s0 ~ s11
-    pub regs: [usize; 14]
+    pub regs: [usize; 14],
 }
 
 impl Context {
     pub const fn zero() -> Self {
-        Self {
-            regs: [0; 14]
-        }
+        Self { regs: [0; 14] }
     }
 }
 
 pub enum ContextRegisters {
     ra = 0,
-    sp = 1
+    sp = 1,
 }
 
 extern "C" {
@@ -36,7 +34,9 @@ extern "C" {
 
 /// switch context
 pub fn swtch(current: &mut Context, next: Context) {
-    unsafe { __swtch(current, &next); }
+    unsafe {
+        __swtch(current, &next);
+    }
 }
 
 /// switch to scheduler context

@@ -3,16 +3,18 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use crate::arch::wait_forever;
 use crate::arch;
-use crate::trap::usertrapret;
-use crate::symbols::*;
-use crate::process::{ProcInPool, PROCS_POOL, ProcessState, swtch, Register, Context, my_cpu, Process};
-use crate::{info, println};
+use crate::arch::wait_forever;
+use crate::jump::*;
 use crate::panic;
+use crate::process::{
+    my_cpu, swtch, Context, ProcInPool, Process, ProcessState, Register, PROCS_POOL,
+};
+use crate::symbols::*;
+use crate::trap::usertrapret;
+use crate::{info, println};
 use alloc::boxed::Box;
 use core::borrow::BorrowMut;
-use crate::jump::*;
 
 /// Find a runnable process whose pid >= `from_pid`
 fn find_next_runnable_proc(from_pid: usize) -> Option<Box<Process>> {
@@ -21,7 +23,7 @@ fn find_next_runnable_proc(from_pid: usize) -> Option<Box<Process>> {
         let in_pool = &mut pool[pid];
         let schedule_this = match in_pool {
             ProcInPool::Pooling(p) => p.state == ProcessState::RUNNABLE,
-            _ => false
+            _ => false,
         };
         if schedule_this {
             let p = core::mem::replace(in_pool, ProcInPool::Scheduled);
@@ -39,8 +41,12 @@ pub fn put_back_proc(mut p: Box<Process>) {
     let p_in_pool = &mut pool[p.pid as usize];
     p.drop_on_put_back = None;
     match p_in_pool {
-        ProcInPool::Pooling(_) => { panic!("pid {} already occupied", p.pid); }
-        _ => { core::mem::replace(p_in_pool, ProcInPool::Pooling(p)); }
+        ProcInPool::Pooling(_) => {
+            panic!("pid {} already occupied", p.pid);
+        }
+        _ => {
+            core::mem::replace(p_in_pool, ProcInPool::Pooling(p));
+        }
     }
 }
 

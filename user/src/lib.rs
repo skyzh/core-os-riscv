@@ -8,9 +8,9 @@
 #![no_std]
 #![feature(global_asm)]
 
+pub mod constant;
 pub mod print;
 pub mod syscall;
-pub mod constant;
 mod syscall_internal;
 
 use core::panic::PanicInfo;
@@ -22,6 +22,5 @@ fn panic(_info: &PanicInfo) -> ! {
 
 #[no_mangle]
 extern "C" fn abort() -> ! {
-	loop {
-	}
+    loop {}
 }

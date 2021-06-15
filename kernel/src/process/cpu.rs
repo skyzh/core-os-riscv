@@ -3,12 +3,12 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use super::{Process, TrapFrame, Context};
-use alloc::boxed::Box;
-use core::mem::MaybeUninit;
-use core::cell::UnsafeCell;
-use crate::{arch, panic};
+use super::{Context, Process, TrapFrame};
 use crate::arch::hart_id;
+use crate::{arch, panic};
+use alloc::boxed::Box;
+use core::cell::UnsafeCell;
+use core::mem::MaybeUninit;
 
 /// Holding CPU information
 #[repr(C)]
@@ -82,7 +82,7 @@ impl IntrLock {
 
 /// IntrLock Guard
 pub struct IntrLockGuard<'a> {
-    lock: &'a IntrLock
+    lock: &'a IntrLock,
 }
 
 impl<'a> Drop for IntrLockGuard<'_> {

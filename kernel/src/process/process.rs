@@ -3,24 +3,23 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use super::{TrapFrame, Context, Register, ContextRegisters};
-use crate::{page, panic, info, warn};
-use crate::symbols::*;
-use crate::mem;
+use super::{Context, ContextRegisters, Register, TrapFrame};
 use crate::arch;
-use crate::println;
-use crate::trap::usertrapret;
-use alloc::boxed::Box;
-use crate::process::{put_back_proc, my_proc, PROCS_POOL, my_cpu, sched, ProcInPool};
-use crate::page::{Page, Table, EntryAttributes};
-use crate::process::Register::a0;
-use crate::jump::*;
-use crate::spinlock::{Mutex, MutexGuard};
-use alloc::sync::Arc;
 use crate::file::{File, FsFile};
+use crate::jump::*;
+use crate::mem;
+use crate::page::{EntryAttributes, Page, Table};
+use crate::println;
+use crate::process::Register::a0;
+use crate::process::{my_cpu, my_proc, put_back_proc, sched, ProcInPool, PROCS_POOL};
+use crate::spinlock::{Mutex, MutexGuard};
+use crate::symbols::*;
+use crate::trap::usertrapret;
+use crate::{info, page, panic, warn};
+use alloc::boxed::Box;
+use alloc::sync::Arc;
 
-#[derive(PartialEq)]
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub enum ProcessState {
     UNUSED,
     SLEEPING,
@@ -56,6 +55,8 @@ impl Process {
 
         let kstack = mem::ALLOC().lock().allocate(PAGE_SIZE * 1024) as usize;
 
+        const FILE: Option<Arc<File>> = None;
+
         let mut p = Self {
             trapframe,
             pgtable,
@@ -66,7 +67,7 @@ impl Process {
             pid,
             channel: 0,
             drop_on_put_back: None,
-            files: [None; 256],
+            files: [FILE; 256],
         };
 
         // map trampoline
@@ -106,9 +107,9 @@ pub extern "C" fn forkret() -> ! {
 /// be stripped with objdump, as specified in Makefile.
 fn init_code() -> &'static [u8] {
     #[cfg(debug_assertions)]
-        let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/debug/initcode");
+    let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/debug/initcode");
     #[cfg(not(debug_assertions))]
-        let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/release/initcode");
+    let x = include_bytes!("../../../target/riscv64gc-unknown-none-elf/release/initcode");
     x
 }
 
@@ -152,7 +153,7 @@ pub fn fork() -> i32 {
     for i in 0..fork_p.files.len() {
         fork_p.files[i] = match &p.files[i] {
             Some(x) => Some(x.clone()),
-            None => None
+            None => None,
         }
     }
     fork_p.trapframe.regs[a0 as usize] = 0;
@@ -199,10 +200,7 @@ pub fn exec(path: &str) {
     }
     info!("parsing...");
     p.pgtable.unmap_user();
-    let entry = crate::elf::parse_elf(
-        &*content,
-        &mut p.pgtable,
-    );
+    let entry = crate::elf::parse_elf(&*content, &mut p.pgtable);
     info!("done");
     // map user stack
     let sp = map_stack(&mut p.pgtable, 0x80001000);
@@ -223,7 +221,6 @@ pub fn exit(status: i32) -> ! {
     sched();
     unreachable!();
 }
-
 
 /// A Mutex that will be locked if a process is being slept but not yet put back into `PROCS_POOL`.
 pub static PROCS_POOL_SLEEP: Mutex<()> = Mutex::new((), "proc pool sleep");
@@ -252,7 +249,7 @@ pub fn sleep<T, U>(channel: *const T, lck: MutexGuard<U>) -> MutexGuard<U> {
         let p_in_pool = &mut pool[p.pid as usize];
         match p_in_pool {
             ProcInPool::Scheduled => {}
-            _ => panic!("invalid proc pool state")
+            _ => panic!("invalid proc pool state"),
         }
         *p_in_pool = ProcInPool::BeingSlept;
     }
@@ -296,7 +293,9 @@ pub fn wakeup<T>(channel: *const T) {
                 PROCS_POOL_SLEEP.lock();
                 pool = weak_lock.into_guard();
             }
-            _ => { i += 1; }
+            _ => {
+                i += 1;
+            }
         }
     }
 }

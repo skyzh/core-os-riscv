@@ -5,18 +5,18 @@
 
 //! Machine mode and supervisor mode traps
 
-use crate::{println, print, info, panic};
-use crate::process::{TrapFrame, self, Process, CPU, my_proc, my_cpu, yield_cpu};
 use crate::arch;
-use crate::symbols::*;
-use crate::page;
-use crate::spinlock::Mutex;
-use crate::syscall;
-use crate::process::Register::a0;
 use crate::arch::{hart_id, sp};
-use crate::jump::*;
 use crate::intr::devintr;
 use crate::intr::Intr::Timer;
+use crate::jump::*;
+use crate::page;
+use crate::process::Register::a0;
+use crate::process::{self, my_cpu, my_proc, yield_cpu, Process, TrapFrame, CPU};
+use crate::spinlock::Mutex;
+use crate::symbols::*;
+use crate::syscall;
+use crate::{info, panic, print, println};
 
 /// Process interrupt from supervisor mode
 #[no_mangle]
@@ -38,7 +38,10 @@ extern "C" fn kerneltrap() {
     // number. So, here we narrow down just the cause number.
     let cause_num = cause.code();
     if sstatus.spp() != register::sstatus::SPP::Supervisor {
-        panic!("not from supervisor mode, async {}, {:x}, hart {}, epc {:x}, tval {}", is_async, cause_num, hart, epc, tval);
+        panic!(
+            "not from supervisor mode, async {}, {:x}, hart {}, epc {:x}, tval {}",
+            is_async, cause_num, hart, epc, tval
+        );
     }
     if arch::intr_get() {
         panic!("interrupt not disabled");
@@ -139,7 +142,7 @@ pub extern "C" fn usertrap() -> ! {
         intr = devintr();
         match intr {
             None => panic!("unexpected scause {:x}", scause),
-            _ => ()
+            _ => (),
         }
     }
 

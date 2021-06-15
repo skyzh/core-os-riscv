@@ -4,7 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 //! Module for processing syscall
-//! 
+//!
 //! All functions that begin with `sys_` will extract
 //! parameters from trap frame, turn pointers into
 //! Rust primitives and call corresponding functions
@@ -13,20 +13,20 @@
 //! For specifications and how to do syscalls, refer to
 //! [syscall module in user crate](../../user/syscall/index.html).
 
-mod gen;
 mod file;
+mod gen;
 
-pub use gen::*;
-use crate::process::{TrapFrame, Register, my_proc, fork, exec, exit, Process};
-use crate::{info, panic, print, println};
-use crate::page;
-use crate::mem::{align_val, page_down};
-use crate::symbols::{PAGE_ORDER, PAGE_SIZE};
-use file::*;
-use alloc::sync::Arc;
 use crate::file::File;
-use alloc::boxed::Box;
+use crate::mem::{align_val, page_down};
+use crate::page;
+use crate::process::{exec, exit, fork, my_proc, Process, Register, TrapFrame};
 use crate::spinlock::Mutex;
+use crate::symbols::{PAGE_ORDER, PAGE_SIZE};
+use crate::{info, panic, print, println};
+use alloc::boxed::Box;
+use alloc::sync::Arc;
+use file::*;
+pub use gen::*;
 
 /// Get the `pos`th argument from syscall
 pub fn argraw(tf: &TrapFrame, pos: usize) -> usize {
@@ -37,7 +37,7 @@ pub fn argraw(tf: &TrapFrame, pos: usize) -> usize {
         3 => tf.regs[Register::a3 as usize],
         4 => tf.regs[Register::a4 as usize],
         5 => tf.regs[Register::a5 as usize],
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
@@ -71,13 +71,12 @@ pub fn arg_ptr_mut(pgtable: &page::Table, tf: &TrapFrame, pos: usize, sz: usize)
     arg_ptr(pgtable, tf, pos, sz) as *mut u8
 }
 
-
 /// Get file corresponding to a file descriptor
 pub fn arg_fd(p: &Process, pos: usize) -> &Arc<File> {
     let fd = argraw(&p.trapframe, pos);
     match &p.files[fd] {
         Some(x) => return x,
-        None => panic!("invalid file handler {}", fd)
+        None => panic!("invalid file handler {}", fd),
     }
 }
 
@@ -135,6 +134,6 @@ pub fn syscall() -> i32 {
         SYS_DUP => sys_dup(),
         SYS_OPEN => sys_open(),
         SYS_CLOSE => sys_close(),
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }

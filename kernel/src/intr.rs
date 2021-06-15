@@ -5,17 +5,17 @@
 
 //! Handle interrupts
 
-use riscv::register::*;
-use crate::plic;
-use crate::uart::uartintr;
 use crate::arch;
-use crate::virtio::virtiointr;
+use crate::plic;
 use crate::println;
+use crate::uart::uartintr;
+use crate::virtio::virtiointr;
+use riscv::register::*;
 
 #[derive(PartialEq)]
 pub enum Intr {
     Timer,
-    Device
+    Device,
 }
 
 /// Process device interrupts
@@ -28,10 +28,10 @@ pub fn devintr() -> Option<Intr> {
             match interrupt {
                 plic::UART0_IRQ => {
                     uartintr();
-                },
+                }
                 plic::VIRTIO0_IRQ => {
                     virtiointr();
-                },
+                }
                 _ => {
                     println!("Unrecognized external interrupt: {}", interrupt);
                 }

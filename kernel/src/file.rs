@@ -6,7 +6,7 @@
 //! File in core-os including file in filesystem, device, pipe and symbol link
 
 pub mod device;
-pub use device::{Device, Console};
+pub use device::{Console, Device};
 
 pub mod fsfile;
 pub use fsfile::FsFile;
@@ -17,5 +17,5 @@ use alloc::boxed::Box;
 pub enum File {
     Device(Box<dyn Device>),
     FsFile(FsFile),
-    Pipe
+    Pipe,
 }

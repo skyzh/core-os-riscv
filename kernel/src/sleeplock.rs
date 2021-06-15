@@ -5,9 +5,9 @@
 
 //! A lock which puts current process into sleep and allows interrupt
 
-use crate::spinlock::{Mutex, MutexGuard};
-use crate::process::{sleep, my_proc, wakeup};
 use crate::info;
+use crate::process::{my_proc, sleep, wakeup};
+use crate::spinlock::{Mutex, MutexGuard};
 
 /// locked, pid
 struct SleepLockInfo {
@@ -45,9 +45,7 @@ impl SleepLock {
         }
         lk.locked = true;
         lk.pid = my_proc().pid;
-        SleepLockGuard {
-            lock: self
-        }
+        SleepLockGuard { lock: self }
     }
 
     pub fn holding(&self) -> bool {

@@ -1,28 +1,28 @@
 // Copyright (c) 2020 Alex Chi
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
 //! Macros for output
 
-use core::fmt;
 use crate::spinlock::Mutex;
+use core::fmt;
 
 pub static INFO_LOCK: Mutex<()> = Mutex::new((), "info");
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
-	use core::fmt::Write;
-	let mut uart = crate::uart::UART().lock();
-	uart.write_fmt(args).unwrap();
+    use core::fmt::Write;
+    let mut uart = crate::uart::UART().lock();
+    uart.write_fmt(args).unwrap();
 }
 
 #[doc(hidden)]
 pub fn _panic_print(args: fmt::Arguments) {
-    use core::fmt::Write;
     use crate::uart::*;
-	let mut uart = Uart::new(UART_BASE_ADDR);
-	uart.write_fmt(args).unwrap();
+    use core::fmt::Write;
+    let mut uart = Uart::new(UART_BASE_ADDR);
+    uart.write_fmt(args).unwrap();
 }
 
 /// Print information

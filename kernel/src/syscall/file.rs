@@ -5,13 +5,13 @@
 
 //! File-related syscalls
 
+use crate::file::{Console, File, FsFile};
 use crate::process::my_proc;
-use crate::syscall::{arg_int, arg_uint, arg_ptr, arg_fd, arg_ptr_mut};
-use crate::file::{File, Console, FsFile};
-use alloc::sync::Arc;
 use crate::spinlock::Mutex;
 use crate::symbols::PAGE_SIZE;
+use crate::syscall::{arg_fd, arg_int, arg_ptr, arg_ptr_mut, arg_uint};
 use crate::virtio::BSIZE;
+use alloc::sync::Arc;
 
 /// write syscall
 pub fn sys_write() -> i32 {
@@ -26,7 +26,9 @@ pub fn sys_write() -> i32 {
     match (*file).as_ref() {
         File::Device(dev) => dev.write(u8_slice),
         File::FsFile(file) => file.write(u8_slice),
-        _ => { unimplemented!(); }
+        _ => {
+            unimplemented!();
+        }
     }
 }
 
@@ -43,7 +45,9 @@ pub fn sys_read() -> i32 {
     match (*file).as_ref() {
         File::Device(dev) => dev.read(u8_slice),
         File::FsFile(file) => file.read(u8_slice),
-        _ => { unimplemented!(); }
+        _ => {
+            unimplemented!();
+        }
     }
 }
 
@@ -51,8 +55,12 @@ pub fn sys_read() -> i32 {
 fn next_available_fd<T>(files: &[Option<T>]) -> Option<usize> {
     for i in 0..files.len() {
         match files[i] {
-            None => { return Some(i); }
-            _ => { continue; }
+            None => {
+                return Some(i);
+            }
+            _ => {
+                continue;
+            }
         }
     }
     return None;
@@ -67,7 +75,9 @@ pub fn sys_open() -> i32 {
     let path = core::str::from_utf8(unsafe { core::slice::from_raw_parts(content, sz) }).unwrap();
     let fd = match next_available_fd(&p.files) {
         Some(fd) => fd,
-        None => { return -1; }
+        None => {
+            return -1;
+        }
     };
     if path == "/console" {
         p.files[fd] = Some(Arc::new(File::Device(box Console {})));
@@ -91,7 +101,9 @@ pub fn sys_dup() -> i32 {
     let old_fd = arg_uint(&p.trapframe, 0);
     let fd = match next_available_fd(&p.files) {
         Some(fd) => fd,
-        None => { return -1; }
+        None => {
+            return -1;
+        }
     };
     p.files[fd] = Some(p.files[old_fd].as_ref().unwrap().clone());
     use crate::info;
